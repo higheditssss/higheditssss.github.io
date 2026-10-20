@@ -14,7 +14,7 @@ const IMG = 'https://image.tmdb.org/t/p/';
 const STATUSES = ['watching', 'watched', 'watchlist', 'paused', 'dropped'];
 const MAX_FAVS = 5;
 // adrese folosite de site, nu pot fi username-uri
-const RESERVED = new Set(['admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre']);
+const RESERVED = new Set(['descopera', 'cauta', 'admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre']);
 
 const err = (message, status = 400) => Object.assign(new Error(message), { status });
 const uid6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
@@ -151,7 +151,7 @@ export async function createBackend(config) {
   async function loadHome() {
     let home = null;
     try { const s = await getDoc(doc(fs, 'site', 'home')); home = s.exists() ? s.data() : null; } catch { /* regula lipsa sau offline */ }
-    const stale = !home || !home.updatedAt || Date.now() - Date.parse(home.updatedAt) > 12 * 3600 * 1000;
+    const stale = !home || !home.updatedAt || !home.popularTv || Date.now() - Date.parse(home.updatedAt) > 12 * 3600 * 1000;
     if (stale && user) {
       const cfg = await loadSiteConfig();
       if (cfg && cfg.tmdbKey && cfg.adminUid === user.uid) {
@@ -168,12 +168,17 @@ export async function createBackend(config) {
       poster: r.poster_path ? IMG + 'w342' + r.poster_path : '', backdrop: r.backdrop_path ? IMG + 'w1280' + r.backdrop_path : '',
       rating: Math.round((r.vote_average || 0) * 10) / 10,
     });
-    const get = async (type) => {
-      const pages = await Promise.all([1, 2].map((page) => tmdb(`/trending/${type}/week`, { language: l, page })));
+    // o lista TMDB (2 pagini = 40 de titluri) -> elemente mici pentru prima pagina
+    const get = async (path, type) => {
+      const pages = await Promise.all([1, 2].map((page) => tmdb(path, { language: l, page, region: 'RO' })));
       return pages.flatMap((p) => p.results || []).filter((r) => r.poster_path).slice(0, 40).map((r) => pick(r, type));
     };
-    const [tv, movie] = await Promise.all([get('tv'), get('movie')]);
-    const home = { updatedAt: new Date().toISOString(), tv, movie };
+    const [tv, movie, popularTv, popularMovie, topTv, topMovie] = await Promise.all([
+      get('/trending/tv/week', 'tv'), get('/trending/movie/week', 'movie'),
+      get('/tv/popular', 'tv'), get('/movie/popular', 'movie'),
+      get('/tv/top_rated', 'tv'), get('/movie/top_rated', 'movie'),
+    ]);
+    const home = { updatedAt: new Date().toISOString(), tv, movie, popularTv, popularMovie, topTv, topMovie };
     await setDoc(doc(fs, 'site', 'home'), home);
     return home;
   }

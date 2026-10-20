@@ -504,3 +504,39 @@ body.loading #app::after {
   .logo-text { font-size: 18px; letter-spacing: .18em; }
   .hsearch.open input { background: var(--surface); }
 }
+
+/* ---------- Descopera ---------- */
+.main-nav { display: flex; gap: 4px; margin-left: 18px; }
+.main-nav a { padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 14px; color: #d3d6dc; background: rgba(38,38,46,.6); }
+.main-nav a:hover { background: var(--surface-3); color: var(--text); }
+.main-nav a.active { background: var(--surface-3); color: var(--text); }
+.disc-page { padding-top: 100px; }
+.disc-title { font-size: clamp(28px, 4vw, 40px); margin: 6px 0 4px; }
+.disc-sub { margin: 0 0 26px; }
+.disc-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 16px; }
+.disc-card .poster-img { position: relative; }
+.disc-over {
+  position: absolute; inset: auto 0 0 0; padding: 30px 10px 10px; display: flex; flex-direction: column; gap: 2px;
+  background: linear-gradient(to top, rgba(0,0,0,.92), transparent); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s;
+}
+.disc-over b { font-size: 13px; line-height: 1.2; }
+.disc-over span { font-size: 12px; color: #c9ccd2; }
+.disc-over em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent-text); margin-top: 4px; }
+@media (hover: hover) { .disc-card:hover .disc-over { opacity: 1; transform: none; } }
+.disc-who { position: absolute; left: 6px; bottom: 6px; }
+.disc-who .avatar.xs { width: 30px; height: 30px; border-radius: 9px; font-size: 13px; margin: 0; border: 2px solid var(--bg); }
+@media (max-width: 1100px) { .disc-row { grid-template-columns: repeat(6, minmax(0, 1fr)); } .disc-row > :nth-child(n + 7) { display: none; } }
+@media (max-width: 760px) {
+  .main-nav { margin-left: 4px; }
+  .main-nav a { padding: 7px 11px; font-size: 13px; }
+  .disc-page { padding-top: 84px; }
+  .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding-bottom: 6px; scrollbar-width: none; }
+  .disc-row > :nth-child(n + 7) { display: block; }
+}
+@media (max-width: 640px) {
+  .logo-text { display: none; }
+  #quick-log { padding: 0 10px; }
+}
+.hs-results a.hs-all { justify-content: center; margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 10px 10px; font-size: 13px; font-weight: 600; color: var(--accent-text); }
+.hs-all kbd { font: inherit; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: var(--surface-3); color: var(--muted); }
+.sr-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }

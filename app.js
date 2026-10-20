@@ -561,7 +561,8 @@
     }
     let username = '';
     try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
-    slot.innerHTML = `${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html">⚙ Setări</a>`;
+    slot.innerHTML = `<button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
+    slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });
   }
 
   // ---------- pagina principala ----------
@@ -729,7 +730,14 @@
     box.addEventListener('click', (e) => { if (e.target.closest('a')) { input.value = ''; close(); } });
     input.addEventListener('focus', () => { if (input.value.trim()) box.classList.remove('hidden'); });
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { const first = box.querySelector('a'); if (first) first.click(); }
+      if (e.key === 'Enter' && input.value.trim()) {
+        e.preventDefault();
+        const q = input.value.trim();
+        input.value = '';
+        close();
+        input.blur();
+        navigate(`${BASE}cauta?q=${encodeURIComponent(q)}`);
+      }
     });
     input.addEventListener('input', () => {
       clearTimeout(timer);
@@ -779,9 +787,162 @@
 
       box.innerHTML = (peopleHtml ? `<div class="hs-group">Membri</div>${peopleHtml}` : '')
         + (titlesHtml ? `<div class="hs-group">Seriale și filme</div>${titlesHtml}` : '')
+        + `<a class="hs-all" href="${BASE}cauta?q=${encodeURIComponent(q)}">Vezi toate rezultatele pentru „${esc(q)}” <kbd>Enter</kbd></a>`
         + (!backend.user ? '<div class="hs-hint"><a href="admin.html#cont-nou">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : '');
       if (!peopleHtml && !titlesHtml) box.insertAdjacentHTML('afterbegin', '<div class="hs-empty">Nu am găsit nimic.</div>');
     }
+  }
+
+  // ---------- Descopera (prima pagina dupa logare, ca la Serializd) ----------
+
+  const DISCOVER = [
+    ['seriale-populare', 'Seriale populare', 'popularTv'],
+    ['seriale-in-trend', 'Seriale în trend', 'tv'],
+    ['filme-populare', 'Filme populare', 'popularMovie'],
+    ['filme-in-trend', 'Filme în trend', 'movie'],
+    ['seriale-apreciate', 'Cele mai apreciate seriale', 'topTv'],
+    ['filme-apreciate', 'Cele mai apreciate filme', 'topMovie'],
+  ];
+  let homeData = null;
+  const loadHomeData = () => (homeData || (homeData = backend.loadHome().catch(() => ({}))));
+
+  function discoverCard(t, owned) {
+    const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? '' : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
+      <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">
+        <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ★ ' + t.rating.toFixed(1) : ''}</span>
+          ${backend.user ? `<em>${owned ? '✓ În biblioteca ta' : '＋ Adaugă'}</em>` : ''}</div>
+      </div></a>`;
+  }
+
+  function pageDiscover(listKey) {
+    const one = DISCOVER.find((d) => d[0] === listKey);
+    const head = one
+      ? `<a class="see-all" href="${BASE}descopera">‹ Descoperă</a><h1 class="disc-title">${one[1]}</h1>`
+      : `<h1 class="disc-title">Descoperă</h1><p class="muted disc-sub">Ce se vede acum. Click pe un poster ca să-l adaugi în jurnal.</p>`;
+    const rows = (one ? [one] : DISCOVER).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
+        ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}descopera/${key}">Vezi tot ›</a></div>`}
+        <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
+      </section>`).join('');
+    return `<div class="container page disc-page">${head}${rows}
+      ${one ? '' : `<section class="section" id="disc-friends-wrap"><div class="section-head"><h2>Activitatea prietenilor</h2></div><div id="disc-friends"></div></section>`}
+    </div>`;
+  }
+
+  async function fillDiscover(listKey) {
+    const [home, me] = await Promise.all([
+      loadHomeData(),
+      backend.user ? api('/api/public').catch(() => null) : null,
+    ]);
+    const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.id && x.type === t.type);
+    for (const [key, , field] of DISCOVER) {
+      const box = document.getElementById('disc-' + key);
+      if (!box) continue;
+      const list = (home[field] || []).slice(0, listKey ? 40 : 8);
+      if (!list.length) { box.closest('section').remove(); continue; }
+      box.innerHTML = list.map((t) => discoverCard(t, owned(t))).join('');
+    }
+    if (!document.querySelector('.disc-section')) {
+      document.querySelector('.disc-page').insertAdjacentHTML('beforeend', empty('Listele se încarcă după ce administratorul site-ului intră o dată (are nevoie de cheia TMDB).'));
+    }
+
+    // activitatea celor pe care ii urmaresti
+    const wrap = document.getElementById('disc-friends-wrap');
+    if (!wrap) return;
+    const following = (me && me.profile.following) || [];
+    if (!following.length) {
+      wrap.querySelector('#disc-friends').innerHTML = empty(backend.user ? 'Urmărește-ți prietenii (butonul „+ Urmărește” de pe profilul lor) ca să vezi aici ce au văzut.' : 'Fă-ți cont ca să-ți urmărești prietenii.');
+      return;
+    }
+    const people = (await Promise.all(following.map(loadFollowed))).filter((d) => d && !d.private && d.profile.username);
+    const feed = [];
+    for (const d of people) {
+      const titles = new Map(d.titles.map((t) => [t.id, t]));
+      for (const e of d.diary) { const t = titles.get(e.titleId); if (t) feed.push({ d, e, t }); }
+    }
+    feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
+    const box = document.getElementById('disc-friends');
+    if (!box) return;
+    box.innerHTML = feed.length ? `<div class="disc-row">${feed.slice(0, 8).map(({ d, e, t }) => `
+      <a class="poster" href="${esc(userTitleHref(d, t))}" title="${esc(d.profile.name)} · ${esc(t.title)}">
+        <div class="poster-img">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : `<div class="poster-fallback"><span>${esc(t.title)}</span></div>`}
+          <span class="disc-who">${userAvatar(d, 'xs')}</span></div>
+        <div class="poster-meta">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+      </a>`).join('')}</div>` : empty('Prietenii tăi n-au notat nimic încă.');
+  }
+
+  // ---------- pagina de rezultate (/cauta?q=...) ----------
+
+  function pageSearch(q) {
+    const sk = (n) => Array.from({ length: n }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('');
+    return `<div class="container page disc-page">
+      <h1 class="disc-title">Rezultate pentru „${esc(q)}”</h1>
+      <p class="muted disc-sub" id="sr-count">Caut…</p>
+      <section class="section" id="sr-people-wrap" hidden><div class="section-head"><h2>Membri</h2></div><div class="member-list sr-people" id="sr-people"></div></section>
+      <section class="section" id="sr-tv-wrap"><div class="section-head"><h2>Seriale</h2></div><div class="grid lg" id="sr-tv">${sk(8)}</div></section>
+      <section class="section" id="sr-movie-wrap"><div class="section-head"><h2>Filme</h2></div><div class="grid lg" id="sr-movie">${sk(8)}</div></section>
+    </div>`;
+  }
+
+  async function fillSearch(q) {
+    const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const nq = norm(q);
+    const [members, me, home] = await Promise.all([
+      backend.listMembers().catch(() => []),
+      backend.user ? api('/api/public').catch(() => null) : null,
+      backend.user ? null : loadHomeData(),
+    ]);
+    let tv = [];
+    let movie = [];
+    if (backend.user) {
+      [tv, movie] = await Promise.all([
+        api(`/api/tmdb/search?type=tv&q=${encodeURIComponent(q)}`).catch(() => []),
+        api(`/api/tmdb/search?type=movie&q=${encodeURIComponent(q)}`).catch(() => []),
+      ]);
+    } else {
+      // fara cont: doar din listele populare salvate pe site
+      const pool = new Map();
+      for (const key of ['tv', 'movie', 'popularTv', 'popularMovie', 'topTv', 'topMovie']) {
+        for (const t of (home && home[key]) || []) if (norm(t.title).includes(nq)) pool.set(t.type + t.id, { ...t, tmdbId: t.id });
+      }
+      tv = [...pool.values()].filter((t) => t.type === 'tv');
+      movie = [...pool.values()].filter((t) => t.type === 'movie');
+    }
+    if (!document.getElementById('sr-tv')) return;
+
+    const people = members.filter((p) => p.username && (norm(p.username).includes(nq) || norm(p.name).includes(nq)));
+    const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.tmdbId && x.type === t.type);
+    const card = (t) => discoverCard({ ...t, id: t.tmdbId, rating: t.rating || 0 }, owned(t)).replace('<img src=""', '<img src="data:,"');
+
+    const fill = (id, list) => {
+      const wrap = document.getElementById(id + '-wrap');
+      if (!list.length) { wrap.hidden = true; return; }
+      wrap.hidden = false;
+      document.getElementById(id).innerHTML = list.map((t) => (t.poster
+        ? card(t)
+        : `<a class="poster disc-card" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.tmdbId}` : '#')}"><div class="poster-img"><div class="poster-fallback"><span>${esc(t.title)}</span></div></div></a>`)).join('');
+    };
+    fill('sr-tv', tv);
+    fill('sr-movie', movie);
+
+    const pw = document.getElementById('sr-people-wrap');
+    if (people.length) {
+      pw.hidden = false;
+      document.getElementById('sr-people').innerHTML = people.slice(0, 12).map((p) => `
+        <a class="member-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
+          <div class="member-banner" style="${p.banner && /^https?:|^data:/.test(p.banner) ? `background-image:url('${esc(p.banner)}')` : ''}"></div>
+          <div class="member-body">
+            ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
+            <div style="min-width:0"><b>${esc(p.name || p.username)}</b><span class="muted">@${esc(p.username)}</span></div>
+          </div></a>`).join('');
+    }
+
+    const total = tv.length + movie.length + people.length;
+    const count = document.getElementById('sr-count');
+    count.innerHTML = total
+      ? `${tv.length} seriale · ${movie.length} filme${people.length ? ` · ${people.length} membri` : ''}${backend.user ? '. Click pe un poster ca să-l adaugi în jurnal.' : ''}`
+      : 'Nu am găsit nimic.';
+    if (!backend.user) count.insertAdjacentHTML('beforeend', ' <a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> ca să cauți în toate serialele și filmele.');
   }
 
   // ---------- router ----------
@@ -789,6 +950,10 @@
   let backend = null;
   let loadedUser = null;
   let renderToken = 0;
+
+  function setNav(active) {
+    document.querySelectorAll('.main-nav a').forEach((a) => a.classList.toggle('active', a.dataset.nav === active));
+  }
 
   function navigate(url, replace = false) {
     history[replace ? 'replaceState' : 'pushState'](null, '', url);
@@ -806,15 +971,34 @@
     const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
     const parts = rel.split('/').filter(Boolean);
 
-    if (!parts.length) {
+    // fara cont: pagina de prezentare; cu cont (sau /descopera): pagina Descopera
+    if (!parts.length || parts[0] === 'descopera') {
       applyAccent(WL.COLORS[0][1]);
-      app.innerHTML = pageHome();
-      document.title = 'EDITSEL · Jurnal de seriale și filme';
+      loadedUser = null;
+      const discover = parts[0] === 'descopera' || backend.user;
+      app.innerHTML = discover ? pageDiscover(parts[1]) : pageHome();
+      document.body.classList.toggle('on-discover', Boolean(discover));
+      document.title = discover ? 'Descoperă · EDITSEL' : 'EDITSEL · Jurnal de seriale și filme';
       done();
       window.scrollTo(0, 0);
-      fillHome();
+      if (discover) fillDiscover(parts[1]); else fillHome();
+      setNav(discover ? 'descopera' : '');
       return;
     }
+    if (parts[0] === 'cauta') {
+      const q = new URLSearchParams(location.search).get('q') || '';
+      applyAccent(WL.COLORS[0][1]);
+      loadedUser = null;
+      app.innerHTML = pageSearch(q);
+      document.title = `„${q}” · Căutare · EDITSEL`;
+      done();
+      window.scrollTo(0, 0);
+      setNav('');
+      fillSearch(q);
+      return;
+    }
+    document.body.classList.remove('on-discover');
+    setNav('');
 
     const username = parts[0].toLowerCase();
     if (loadedUser !== username) {
