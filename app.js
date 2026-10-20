@@ -561,6 +561,8 @@
     }
     let username = '';
     try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
+    const bn = document.getElementById('bn-profile');
+    if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
     slot.innerHTML = `<button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
     slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });
   }
@@ -945,6 +947,70 @@
     if (!backend.user) count.insertAdjacentHTML('beforeend', ' <a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> ca să cauți în toate serialele și filmele.');
   }
 
+  // ---------- pagina Prieteni (/prieteni): cauti membri si ii urmaresti ----------
+
+  function pageFriendsHub() {
+    if (!backend.user) {
+      return `<div class="container page disc-page">
+        <h1 class="disc-title">Prieteni</h1>
+        ${empty('<a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> sau <a href="admin.html" style="color:var(--accent-text)">intră în cont</a> ca să-ți urmărești prietenii și să vezi ce au văzut.')}
+      </div>`;
+    }
+    return `<div class="container page disc-page">
+      <h1 class="disc-title">Prieteni</h1>
+      <p class="muted disc-sub">Urmărește-ți prietenii ca să le vezi activitatea pe pagina Descoperă și în tab-ul Prieteni de pe profilul tău.</p>
+      <div class="fh-search"><span>⌕</span><input id="fh-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
+      <div id="fh-body"><div class="member-list">${Array.from({ length: 3 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div></div>
+    </div>`;
+  }
+
+  async function fillFriendsHub() {
+    const body = document.getElementById('fh-body');
+    if (!body) return;
+    const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    let [members, me] = await Promise.all([backend.listMembers().catch(() => []), api('/api/public').catch(() => null)]);
+    if (!me || !body.isConnected) return;
+    const myUid = backend.user.uid;
+    members = members.filter((p) => p.username && p.uid !== myUid);
+
+    const row = (p, following) => `<div class="fh-row" style="--friend:${esc(p.accent || 'var(--accent)')}">
+        <a class="fh-person" href="${BASE}${esc(p.username)}">
+          ${p.avatar ? `<img class="avatar sm" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar sm" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
+          <span class="hs-text"><b>${esc(p.name || p.username)}</b><small>@${esc(p.username)}${(p.following || []).includes(myUid) ? ' · te urmărește' : ''}${p.bio ? ' · ' + esc(p.bio.slice(0, 60)) : ''}</small></span>
+        </a>
+        <button class="btn small ${following ? '' : 'primary'}" data-uid="${esc(p.uid)}">${following ? '✓ Urmărești' : (p.following || []).includes(myUid) ? '+ Urmărește înapoi' : '+ Urmărește'}</button>
+      </div>`;
+
+    const draw = () => {
+      const q = norm(document.getElementById('fh-q').value.trim());
+      const following = me.profile.following || [];
+      const match = (p) => !q || norm(p.username).includes(q) || norm(p.name).includes(q);
+      const mine = members.filter((p) => following.includes(p.uid) && match(p));
+      const fans = members.filter((p) => !following.includes(p.uid) && (p.following || []).includes(myUid) && match(p));
+      const others = members.filter((p) => !following.includes(p.uid) && !(p.following || []).includes(myUid) && match(p));
+      const block = (title, list, on, emptyMsg) => `<section class="section"><div class="section-head"><h2>${title}${list.length ? ` · ${list.length}` : ''}</h2></div>
+        ${list.length ? `<div class="fh-list">${list.map((p) => row(p, on)).join('')}</div>` : (emptyMsg ? empty(emptyMsg) : '')}</section>`;
+      body.innerHTML = block('Îi urmărești', mine, true, q ? '' : 'Nu urmărești pe nimeni încă. Alege pe cineva de mai jos.')
+        + (fans.length ? block('Te urmăresc', fans, false) : '')
+        + block(q ? 'Rezultate' : 'Sugestii', others, false, q ? 'Niciun membru găsit.' : 'Nu mai sunt alți membri. Trimite-le prietenilor link-ul site-ului!');
+    };
+    draw();
+    document.getElementById('fh-q').addEventListener('input', draw);
+    body.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-uid]');
+      if (!btn) return;
+      btn.disabled = true;
+      const uid = btn.dataset.uid;
+      const cur = me.profile.following || [];
+      const next = cur.includes(uid) ? cur.filter((x) => x !== uid) : [...cur, uid];
+      try {
+        me.profile = await api('/api/profile', { method: 'PUT', body: { following: next } });
+        userCache.clear();
+      } catch (err) { alert(err.message); }
+      draw();
+    });
+  }
+
   // ---------- router ----------
 
   let backend = null;
@@ -952,7 +1018,7 @@
   let renderToken = 0;
 
   function setNav(active) {
-    document.querySelectorAll('.main-nav a').forEach((a) => a.classList.toggle('active', a.dataset.nav === active));
+    document.querySelectorAll('.main-nav a, .bottom-nav a').forEach((a) => a.classList.toggle('active', a.dataset.nav === active));
   }
 
   function navigate(url, replace = false) {
@@ -982,7 +1048,19 @@
       done();
       window.scrollTo(0, 0);
       if (discover) fillDiscover(parts[1]); else fillHome();
-      setNav(discover ? 'descopera' : '');
+      setNav(parts[0] === 'descopera' ? 'descopera' : 'acasa');
+      return;
+    }
+    if (parts[0] === 'prieteni') {
+      applyAccent(WL.COLORS[0][1]);
+      loadedUser = null;
+      document.body.classList.add('on-discover');
+      app.innerHTML = pageFriendsHub();
+      document.title = 'Prieteni · EDITSEL';
+      done();
+      window.scrollTo(0, 0);
+      setNav('prieteni');
+      if (backend.user) fillFriendsHub();
       return;
     }
     if (parts[0] === 'cauta') {
@@ -1124,6 +1202,7 @@
     if (location.hash.startsWith('#/')) history.replaceState(null, '', BASE);
     renderAuthSlot();
     setupSearch();
+    document.getElementById('bn-search').addEventListener('click', (e) => { e.stopPropagation(); window.scrollTo(0, 0); document.querySelector('#hsearch .hs-toggle').click(); });
     b.onAuth(() => { renderAuthSlot(); loadedUser = null; userCache.clear(); render(); });
     render();
   });

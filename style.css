@@ -540,3 +540,38 @@ body.loading #app::after {
 .hs-results a.hs-all { justify-content: center; margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 10px 10px; font-size: 13px; font-weight: 600; color: var(--accent-text); }
 .hs-all kbd { font: inherit; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: var(--surface-3); color: var(--muted); }
 .sr-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+/* ---------- pagina Prieteni ---------- */
+.fh-search { display: flex; align-items: center; gap: 10px; max-width: 560px; height: 50px; padding: 0 18px; margin-bottom: 28px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
+.fh-search:focus-within { border-color: var(--accent); }
+.fh-search span { color: var(--muted); font-size: 18px; }
+.fh-search input { flex: 1; height: 100%; border: 0; outline: none; background: none; font-size: 15px; }
+.fh-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+.fh-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+.fh-row:hover { border-color: color-mix(in srgb, var(--friend, var(--accent)) 50%, var(--border)); }
+.fh-person { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.fh-row .btn { flex: none; }
+@media (max-width: 640px) { .fh-list { grid-template-columns: 1fr; } .main-nav a { padding: 7px 9px; } }
+
+/* ---------- bara de navigare de jos (telefon) ---------- */
+.bottom-nav { display: none; }
+@media (max-width: 640px) {
+  .main-nav { display: none; }
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .bottom-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(12,12,15,.94);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--border);
+  }
+  .bottom-nav a, .bottom-nav button {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; background: none;
+    font-size: 11px; color: var(--muted); cursor: pointer;
+  }
+  .bottom-nav span { font-size: 19px; line-height: 1.1; }
+  .bottom-nav a.active { color: var(--accent-text); }
+  .site-footer { padding-bottom: 20px; }
+}
+
+/* paginile care sunt si .container si .page isi pastreaza marginile laterale */
+.container.page { padding-left: 16px; padding-right: 16px; }
+@media (max-width: 640px) { .container.page { padding-left: 14px; padding-right: 14px; } }
