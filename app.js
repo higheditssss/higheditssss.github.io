@@ -1164,9 +1164,9 @@
   }
 
   // stele cu jumatati: click pe jumatatea stanga = x.5; click pe aceeasi valoare = sterge
-  function starInput(container, value, onChange) {
+  function starInput(container, value, onChange, small = false) {
     let v = value || 0;
-    container.innerHTML = `<span class="star-input">${'<span class="s">★</span>'.repeat(5)}<span class="val"></span></span>`;
+    container.innerHTML = `<span class="star-input ${small ? 'sm' : ''}">${'<span class="s">★</span>'.repeat(5)}<span class="val"></span></span>`;
     const wrap = container.firstElementChild;
     const els = [...wrap.querySelectorAll('.s')];
     const val = wrap.querySelector('.val');
@@ -1201,8 +1201,9 @@
   }
 
   function showQuickAdd(t, isExisting, sourceEl) {
-    const today = new Date().toISOString().slice(0, 10);
-    const d = { status: t.status || 'watched', rating: t.rating || 0, liked: Boolean(t.liked), review: t.review || '', spoiler: Boolean(t.spoiler) };
+    const now = new Date();
+    const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const d = { favorite: Boolean(t.favorite), episodesWatched: t.episodesWatched || 0, seasonRatings: { ...(t.seasonRatings || {}) }, note: t.note || '', poster: t.poster || '', backdrop: t.backdrop || '', status: t.status || 'watched', rating: t.rating || 0, liked: Boolean(t.liked), review: t.review || '', spoiler: Boolean(t.spoiler) };
     const isTv = t.type === 'tv';
     const { el, close } = openModal(`
       <div class="modal-head">
@@ -1234,8 +1235,22 @@
           </div>
         </div>
       </div>
+      <div class="qa-more hidden" id="qa-more">
+        <div class="row-fields">
+          <div class="field"><span class="lbl">Favorit</span><div><button type="button" class="toggle fav ${d.favorite ? 'on' : ''}" id="qa-fav">★ Favorit</button></div></div>
+          ${isTv ? `<div class="field"><label>Episoade văzute</label><div style="display:flex;gap:8px;align-items:center">
+            <input class="input" type="number" min="0" id="qa-eps" style="width:100px" value="${d.episodesWatched}">
+            <span class="muted">${t.episodesCount ? 'din ' + t.episodesCount : ''}</span>
+            ${t.episodesCount ? '<button type="button" class="btn small" id="qa-eps-all">Toate</button>' : ''}</div></div>` : ''}
+        </div>
+        ${isTv && (t.seasons || []).length ? `<div class="field"><span class="lbl">Note pe sezoane</span><div class="box" id="qa-seasons" style="margin:0"></div></div>` : ''}
+        <div class="field"><label for="qa-note">Notiță (apare pe pagina titlului)</label><textarea class="textarea" id="qa-note" style="min-height:60px">${esc(d.note)}</textarea></div>
+        ${t.tmdbId ? `<div class="field"><span class="lbl">Imagini</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn small" data-pick="posters">Alege alt poster</button><button type="button" class="btn small" data-pick="backdrops">Alege alt fundal</button></div>
+          <div class="qa-pick hidden" id="qa-pick"></div></div>` : ''}
+      </div>
       <div class="modal-foot">
-        <a class="btn ghost" href="admin.html?adauga=${t.type}:${t.tmdbId}">Mai multe opțiuni</a>
+        <button type="button" class="btn ghost" id="qa-more-btn">Mai multe opțiuni ▾</button>
         <span class="grow"></span>
         <button class="btn ghost" id="qa-cancel">Anulează</button>
         <button class="btn primary" id="qa-save">${isExisting ? 'Salvează' : 'Adaugă'}</button>
@@ -1253,10 +1268,54 @@
     const syncLog = () => $('#qa-log-fields').classList.toggle('hidden', !$('#qa-log').checked);
     $('#qa-log').addEventListener('change', syncLog);
     syncLog();
+    $('#qa-more-btn').addEventListener('click', (e) => {
+      const more = $('#qa-more');
+      more.classList.toggle('hidden');
+      e.currentTarget.textContent = more.classList.contains('hidden') ? 'Mai multe opțiuni ▾' : 'Mai puține opțiuni ▴';
+      if (!more.classList.contains('hidden')) more.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    $('#qa-fav').addEventListener('click', (e) => { d.favorite = !d.favorite; e.currentTarget.classList.toggle('on', d.favorite); });
+    if ($('#qa-eps-all')) $('#qa-eps-all').addEventListener('click', () => { $('#qa-eps').value = t.episodesCount; });
+    if ($('#qa-seasons')) {
+      for (const sn of t.seasons) {
+        const row = document.createElement('div');
+        row.className = 'season-rate';
+        row.innerHTML = `<span>${esc(sn.name || 'Sezonul ' + sn.number)} <span class="muted" style="font-size:12px">${sn.episodes} ep.</span></span><span></span>`;
+        starInput(row.lastElementChild, d.seasonRatings[String(sn.number)] || 0, (v) => {
+          if (v) d.seasonRatings[String(sn.number)] = v; else delete d.seasonRatings[String(sn.number)];
+        }, true);
+        $('#qa-seasons').appendChild(row);
+      }
+    }
+    el.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', async () => {
+      const kind = b.dataset.pick;
+      const box = $('#qa-pick');
+      box.classList.remove('hidden');
+      box.innerHTML = '<div class="muted">Se încarcă imaginile…</div>';
+      try {
+        const imgs = await api(`/api/tmdb/images?type=${t.type}&id=${t.tmdbId}`);
+        const list = imgs[kind] || [];
+        box.className = 'qa-pick ' + kind;
+        box.innerHTML = list.length ? list.slice(0, 40).map((im, i) => `<button type="button" data-i="${i}"><img src="${esc(im.thumb)}" alt="" loading="lazy"></button>`).join('') : '<div class="muted">Nu există alte imagini.</div>';
+        box.onclick = (ev) => {
+          const pickBtn = ev.target.closest('[data-i]');
+          if (!pickBtn) return;
+          const url = list[Number(pickBtn.dataset.i)].url;
+          if (kind === 'posters') { d.poster = url; el.querySelector('.modal-head .poster').outerHTML = poster({ ...t, poster: url }, { showMeta: false }); }
+          else d.backdrop = url;
+          box.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === pickBtn));
+          toast(kind === 'posters' ? 'Poster ales. Apasă Salvează.' : 'Fundal ales. Apasă Salvează.');
+        };
+      } catch (err) { box.innerHTML = `<div class="muted">${esc(err.message)}</div>`; }
+    }));
     $('#qa-cancel').addEventListener('click', close);
     $('#qa-save').addEventListener('click', async (e) => {
       e.target.disabled = true;
-      const body = { status: d.status, rating: d.rating, liked: d.liked, review: $('#qa-review').value, spoiler: $('#qa-spoiler').checked };
+      const body = {
+        status: d.status, rating: d.rating, liked: d.liked, review: $('#qa-review').value, spoiler: $('#qa-spoiler').checked,
+        favorite: d.favorite, seasonRatings: d.seasonRatings, note: $('#qa-note').value, poster: d.poster, backdrop: d.backdrop,
+        ...($('#qa-eps') ? { episodesWatched: Number($('#qa-eps').value) || 0 } : {}),
+      };
       try {
         const saved = isExisting
           ? await api(`/api/titles/${t.id}`, { method: 'PUT', body })

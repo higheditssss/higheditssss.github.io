@@ -18,7 +18,7 @@ const RESERVED = new Set(['descopera', 'cauta', 'prieteni', 'membri', 'admin', '
 
 const err = (message, status = 400) => Object.assign(new Error(message), { status });
 const uid6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const n = new Date(); return new Date(n.getTime() - n.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const str = (v, max = 5000) => (v == null ? '' : String(v).slice(0, max));
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const rating = (v) => Math.max(0, Math.min(5, Math.round(num(v) * 2) / 2));

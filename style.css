@@ -602,3 +602,14 @@ body.loading #app::after {
   .bell-wrap { position: static; }
   .bell-panel { position: fixed; top: 64px; left: 10px; right: 10px; width: auto; }
 }
+
+/* ---------- pop-up adaugare: optiuni extra ---------- */
+.qa-more { padding: 0 20px 6px; border-top: 1px solid var(--border); padding-top: 18px; }
+.qa-pick { display: grid; gap: 8px; margin-top: 10px; max-height: 280px; overflow-y: auto; }
+.qa-pick.posters { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.qa-pick.backdrops { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.qa-pick button { padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; background: var(--surface-3); }
+.qa-pick.posters button { aspect-ratio: 2 / 3; }
+.qa-pick.backdrops button { aspect-ratio: 16 / 9; }
+.qa-pick button:hover, .qa-pick button.on { border-color: var(--accent); }
+.qa-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }

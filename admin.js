@@ -8,7 +8,8 @@
   let DB = null;
   let STATE = { hasTmdb: false };
   let section = localStorage.getItem('wl_admin_section') || 'add';
-  const today = () => new Date().toISOString().slice(0, 10);
+  // data de azi in ora locala (toISOString ar da ziua din UTC, adica ieri dupa miezul noptii)
+  const today = () => { const n = new Date(); return new Date(n.getTime() - n.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
   const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
   // ---------- utilitare UI ----------
