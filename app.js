@@ -6,7 +6,12 @@
   let DB = null;
   let byId = new Map();
 
-  const titleHref = (t) => `#/t/${t.id}`;
+  // adrese curate, fara #: /<username>, /<username>/seriale, /<username>/serial/dexter-<id>
+  const BASE = (document.querySelector('base') && document.querySelector('base').getAttribute('href')) || '/';
+  const slug = (str) => String(str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  let U = 'profil';
+  const R = (p = '') => BASE + U + (p === '/' ? '' : p);
+  const titleHref = (t) => R(`/${t.type === 'movie' ? 'film' : 'serial'}/${slug(t.title) || 'titlu'}-${t.id}`);
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   // ---------- date derivate ----------
@@ -57,15 +62,15 @@
       : `<div class="avatar">${esc((p.name || '?').trim().charAt(0).toUpperCase())}</div>`;
   }
 
-  const TABS = [
-    ['profil', 'Profil', '#/'],
-    ['seriale', 'Seriale', '#/seriale'],
-    ['filme', 'Filme', '#/filme'],
-    ['recenzii', 'Recenzii', '#/recenzii'],
-    ['likes', 'Aprecieri', '#/likes'],
-    ['jurnal', 'Jurnal', '#/jurnal'],
-    ['liste', 'Liste', '#/liste'],
-    ['stats', 'Statistici', '#/stats'],
+  const tabs = () => [
+    ['profil', 'Profil', R('/')],
+    ['seriale', 'Seriale', R('/seriale')],
+    ['filme', 'Filme', R('/filme')],
+    ['recenzii', 'Recenzii', R('/recenzii')],
+    ['likes', 'Aprecieri', R('/aprecieri')],
+    ['jurnal', 'Jurnal', R('/jurnal')],
+    ['liste', 'Liste', R('/liste')],
+    ['stats', 'Statistici', R('/statistici')],
   ];
 
   function shell(active, content) {
@@ -82,7 +87,7 @@
             ${p.bio ? `<div class="profile-bio">${esc(p.bio)}</div>` : ''}
           </div>
         </div>
-        <nav class="tabs">${TABS.filter(([k]) => k !== 'stats' || p.showStats !== false).map(([k, label, href]) => `<a href="${href}" class="${k === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
+        <nav class="tabs">${tabs().filter(([k]) => k !== 'stats' || p.showStats !== false).map(([k, label, href]) => `<a href="${href}" class="${k === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
         <div class="page">${content}</div>
       </div>`;
   }
@@ -117,10 +122,10 @@
         <h3>Statistici</h3>
         ${histogram(ratings)}
         <div class="stat-rows">
-          <a href="#/seriale?status=watched"><span class="ic">👁</span>Văzute<span class="val">${watched}</span></a>
-          <a href="#/seriale?status=watchlist"><span class="ic">🕒</span>De văzut<span class="val">${watchlist}</span></a>
-          <a href="#/recenzii"><span class="ic">★</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
-          <a href="#/stats"><span class="ic">▤</span>Toate statisticile<span class="val">›</span></a>
+          <a href="${R('/seriale?status=watched')}"><span class="ic">👁</span>Văzute<span class="val">${watched}</span></a>
+          <a href="${R('/seriale?status=watchlist')}"><span class="ic">🕒</span>De văzut<span class="val">${watchlist}</span></a>
+          <a href="${R('/recenzii')}"><span class="ic">★</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
+          <a href="${R('/statistici')}"><span class="ic">▤</span>Toate statisticile<span class="val">›</span></a>
         </div>
       </div>`;
   }
@@ -145,7 +150,7 @@
 
   function listCard(l) {
     const items = l.items.map((id) => byId.get(id)).filter(Boolean);
-    return `<a class="list-card" href="#/lista/${l.id}">
+    return `<a class="list-card" href="${R('/lista/' + l.id)}">
       <div class="stack">${items.slice(0, 5).map((t) => `<div class="s">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>`).join('') || '<div class="s"></div>'}</div>
       <h3>${esc(l.name)}</h3>
       <p>${plural(items.length, 'titlu', 'titluri')}${l.description ? ' · ' + esc(l.description) : ''}</p>
@@ -170,10 +175,10 @@
 
     const main = `
       ${favs.length ? section('Favorite', `<div class="grid lg">${favs.map((t) => poster(t, { href: titleHref(t) })).join('')}</div>`) : ''}
-      ${section('Mă uit acum', watching.length ? `<div class="row-scroll">${watching.map((t) => poster(t, { href: titleHref(t) })).join('')}</div>` : empty('Nimic în curs acum.'), '#/seriale?status=watching')}
-      ${section('Activitate recentă', recent.length ? `<div class="row-scroll">${recent.join('')}</div>` : empty('Încă nu e nimic aici.'), '#/jurnal')}
-      ${reviews.length ? section('Recenzii recente', reviews.map((r) => reviewItem(r)).join(''), '#/recenzii') : ''}
-      ${lists.length ? section('Liste', `<div class="list-cards">${lists.map(listCard).join('')}</div>`, '#/liste') : ''}
+      ${section('Mă uit acum', watching.length ? `<div class="row-scroll">${watching.map((t) => poster(t, { href: titleHref(t) })).join('')}</div>` : empty('Nimic în curs acum.'), R('/seriale?status=watching'))}
+      ${section('Activitate recentă', recent.length ? `<div class="row-scroll">${recent.join('')}</div>` : empty('Încă nu e nimic aici.'), R('/jurnal'))}
+      ${reviews.length ? section('Recenzii recente', reviews.map((r) => reviewItem(r)).join(''), R('/recenzii')) : ''}
+      ${lists.length ? section('Liste', `<div class="list-cards">${lists.map(listCard).join('')}</div>`, R('/liste')) : ''}
     `;
     if (DB.profile.showStats === false) return shell('profil', main);
     return shell('profil', `<div class="layout"><aside class="sidebar">${sidebarStats()}</aside><div>${main}</div></div>`);
@@ -191,7 +196,7 @@
     const base = DB.titles.filter((t) => t.type === type);
     const status = q.get('status') || 'all';
     const sort = SORTS[q.get('sort')] ? q.get('sort') : 'recent';
-    const route = type === 'tv' ? '#/seriale' : '#/filme';
+    const route = type === 'tv' ? R('/seriale') : R('/filme');
     const link = (s, so = sort) => `${route}?status=${s}&sort=${so}`;
     const items = base.filter((t) => status === 'all' || t.status === status).sort(SORTS[sort][1]);
     const wt = watchTime(base);
@@ -275,7 +280,7 @@
     const items = l.items.map((i) => byId.get(i)).filter(Boolean);
     return shell('liste', `
       <div style="margin-bottom:22px">
-        <a class="see-all" href="#/liste">‹ Toate listele</a>
+        <a class="see-all" href="${R('/liste')}">‹ Toate listele</a>
         <h2 style="font-size:28px;margin-top:6px">${esc(l.name)}</h2>
         <div class="muted" style="font-size:13px;margin:4px 0 8px">${plural(items.length, 'titlu', 'titluri')}${l.ranked ? ' · listă clasament' : ''}</div>
         ${l.description ? `<p style="white-space:pre-line;max-width:760px;color:#d3d8dd">${esc(l.description)}</p>` : ''}
@@ -374,7 +379,7 @@
       ? `<div class="card"><h3>${isTv ? 'Creat de' : 'Regia'}</h3>${t.creators.map(esc).join(', ')}${(t.networks || []).length ? `<div class="muted" style="margin-top:8px;font-size:13px">${t.networks.map(esc).join(', ')}</div>` : ''}</div>` : '';
 
     const listsCard = inLists.length
-      ? `<div class="card"><h3>Apare în liste</h3>${inLists.map((l) => `<a href="#/lista/${l.id}" style="display:block;padding:4px 0;color:var(--accent-text)">${esc(l.name)}</a>`).join('')}</div>` : '';
+      ? `<div class="card"><h3>Apare în liste</h3>${inLists.map((l) => `<a href="${R('/lista/' + l.id)}" style="display:block;padding:4px 0;color:var(--accent-text)">${esc(l.name)}</a>`).join('')}</div>` : '';
 
     const review = t.review
       ? section('Recenzia mea', reviewItem({ t, text: t.review, rating: t.rating, liked: t.liked, spoiler: t.spoiler, date: (t.updatedAt || '').slice(0, 10), scope: '' }, false))
@@ -445,27 +450,37 @@
 
   // ---------- router ----------
 
+  function navigate(url, replace = false) {
+    history[replace ? 'replaceState' : 'pushState'](null, '', url);
+    render();
+  }
+
   function render() {
-    const hash = location.hash.replace(/^#/, '') || '/';
-    const [pathPart, query = ''] = hash.split('?');
-    const q = new URLSearchParams(query);
-    const parts = pathPart.split('/').filter(Boolean);
+    const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
+    const parts = rel.split('/').filter(Boolean);
+    if (parts[0] !== U) return navigate(R('/' + parts.slice(1).join('/')) + location.search, true);
+    parts.shift();
+    const q = new URLSearchParams(location.search);
     let html;
     let title = DB.profile.name;
+    const titleId = (seg) => String(seg || '').split('-').pop();
     switch (parts[0]) {
       case undefined: html = pageProfile(); break;
       case 'seriale': html = pageLibrary('tv', q); title += ' · Seriale'; break;
       case 'filme': html = pageLibrary('movie', q); title += ' · Filme'; break;
       case 'recenzii': html = pageReviews(); title += ' · Recenzii'; break;
-      case 'likes': html = pageLikes(); title += ' · Aprecieri'; break;
+      case 'aprecieri': html = pageLikes(); title += ' · Aprecieri'; break;
       case 'jurnal': html = pageDiary(q); title += ' · Jurnal'; break;
       case 'liste': html = pageLists(); title += ' · Liste'; break;
       case 'lista': html = pageList(parts[1]); title += ' · Listă'; break;
-      case 'stats': html = DB.profile.showStats === false ? pageProfile() : pageStats(); title += ' · Statistici'; break;
-      case 't': {
+      case 'statistici': html = DB.profile.showStats === false ? pageProfile() : pageStats(); title += ' · Statistici'; break;
+      case 'serial':
+      case 'film': {
+        parts[1] = titleId(parts[1]);
         html = pageTitle(parts[1]);
         const t = byId.get(parts[1]);
         if (t) title = `${t.title} · ${DB.profile.name}`;
+        parts[0] = 't';
         break;
       }
       default: html = pageProfile();
@@ -479,9 +494,9 @@
   // evenimente delegate
   app.addEventListener('change', (ev) => {
     if (ev.target.id === 'sort') {
-      location.hash = `${ev.target.dataset.route}?status=${ev.target.dataset.status}&sort=${ev.target.value}`;
+      navigate(`${ev.target.dataset.route}?status=${ev.target.dataset.status}&sort=${ev.target.value}`);
     }
-    if (ev.target.id === 'diary-filter') location.hash = `#/jurnal?tip=${ev.target.value}`;
+    if (ev.target.id === 'diary-filter') navigate(R(`/jurnal?tip=${ev.target.value}`));
   });
   app.addEventListener('click', (ev) => {
     const sp = ev.target.closest('.spoiler');
@@ -505,7 +520,15 @@
 
   const header = document.getElementById('header');
   window.addEventListener('scroll', () => header.classList.toggle('solid', window.scrollY > 40), { passive: true });
-  window.addEventListener('hashchange', render);
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a[href]');
+    if (!a || a.target || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname) || url.pathname.startsWith(BASE + 'admin')) return;
+    ev.preventDefault();
+    if (url.pathname + url.search !== location.pathname + location.search) navigate(url.pathname + url.search);
+  });
+  window.addEventListener('popstate', render);
 
   // pe GitHub Pages (static) datele vin din data.json, generat la „Publică online”
   const STATIC = Boolean(window.EDITSEL_STATIC);
@@ -521,6 +544,15 @@
       return;
     }
     byId = new Map(DB.titles.map((t) => [t.id, t]));
+    U = DB.profile.username || slug(DB.profile.name) || 'profil';
+    if (location.hash.startsWith('#/')) {
+      const [hp, hq = ''] = location.hash.slice(2).split('?');
+      const seg = hp.split('/');
+      const map = { likes: '/aprecieri', stats: '/statistici' };
+      let target = seg[0] === 't' && byId.get(seg[1]) ? titleHref(byId.get(seg[1])) : R(map[seg[0]] || (hp ? '/' + hp : ''));
+      if (hq) target += '?' + hq;
+      history.replaceState(null, '', target);
+    }
     render();
   }).catch((err) => {
     app.innerHTML = `<div class="container page" style="padding-top:120px">${empty('Nu am putut încărca profilul: ' + esc(err.message))}</div>`;
