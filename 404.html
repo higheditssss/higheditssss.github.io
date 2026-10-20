@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=mvh8u27y">
-  <link rel="stylesheet" href="admin.css?v=mvh8u27y">
-  <script src="common.js?v=mvh8u27y"></script>
+  <link rel="stylesheet" href="style.css?v=mvh8zcdn">
+  <link rel="stylesheet" href="admin.css?v=mvh8zcdn">
+  <script src="common.js?v=mvh8zcdn"></script>
   <script>
     // culoarea profilului din vizita trecuta, aplicata inainte de afisare (fara clipire)
     // pe un profil: culoarea lui din vizita trecuta; pe pagina principala ramane culoarea site-ului
@@ -53,17 +53,41 @@
   </nav>
 
   <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <span class="logo-text small">EDITSEL</span>
-        <p>Jurnal de seriale și filme.</p>
-        <p class="copy">© <span id="year"></span> EDITSEL. Toate drepturile rezervate.</p>
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="footer-logo" href="./"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="34" height="34" aria-hidden="true"><defs><linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent-hover)"/><stop offset=".55" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-deep)"/></linearGradient><mask id="fgm"><rect width="100" height="100" fill="#fff"/><path fill="#000" d="M36 33h28v8H45v5h16v8H45v5h19v8H36z"/></mask></defs><g mask="url(#fgm)"><rect x="18.5" y="18.5" width="63" height="63" rx="15" transform="rotate(45 50 50)" fill="url(#fg)"/></g></svg><span class="logo-text">EDITSEL</span></a>
+          <p>Jurnalul tău de seriale și filme. Notează ce vezi, dă note, scrie recenzii și vezi ce urmăresc prietenii tăi.</p>
+          <a class="btn small primary footer-join" id="footer-join" href="admin.html#cont-nou">Creează cont gratuit</a>
+        </div>
+        <nav class="footer-col" aria-label="Explorează">
+          <h4>Explorează</h4>
+          <a href="descopera">Descoperă</a>
+          <a href="membri">Membri</a>
+          <a href="#" id="footer-search">Căutare</a>
+        </nav>
+        <nav class="footer-col" aria-label="Contul tău">
+          <h4>Contul tău</h4>
+          <a href="admin.html" id="footer-profile">Profilul meu</a>
+          <a href="prieteni">Prieteni</a>
+          <a href="admin.html">Setări</a>
+        </nav>
+        <div class="footer-credits">
+          <h4>Surse</h4>
+          <a class="credit-row" href="https://www.themoviedb.org/" target="_blank" rel="noopener">
+            <span class="tmdb-badge">TMDB</span>
+            <span>Postere, descrieri, sezoane și actori</span>
+          </a>
+          <a class="credit-row" href="https://www.justwatch.com/" target="_blank" rel="noopener">
+            <span class="jw-badge">JustWatch</span>
+            <span>Unde poți viziona</span>
+          </a>
+        </div>
       </div>
-      <div class="credits">
-        <a class="tmdb-badge" href="https://www.themoviedb.org/" target="_blank" rel="noopener" title="The Movie Database">TMDB</a>
-        <p>Datele și imaginile despre seriale și filme sunt furnizate de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">The Movie Database (TMDB)</a>.
-          Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</p>
-        <p>Informațiile despre platformele de streaming vin de la <a href="https://www.justwatch.com/" target="_blank" rel="noopener">JustWatch</a>, prin TMDB.</p>
+      <div class="footer-bottom">
+        <span>© <span id="year"></span> EDITSEL</span>
+        <span class="footer-legal">Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</span>
+        <a href="#" id="to-top">Sus ↑</a>
       </div>
     </div>
   </footer>
@@ -78,8 +102,8 @@
     </div>
   </div>
 
-  <script src="firebase-config.js?v=mvh8u27y"></script>
-  <script type="module" src="backend.js?v=mvh8u27y"></script>
-  <script src="app.js?v=mvh8u27y"></script>
+  <script src="firebase-config.js?v=mvh8zcdn"></script>
+  <script type="module" src="backend.js?v=mvh8zcdn"></script>
+  <script src="app.js?v=mvh8zcdn"></script>
 </body>
 </html>

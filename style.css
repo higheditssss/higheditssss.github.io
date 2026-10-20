@@ -261,17 +261,36 @@ a.diary-row:hover { background: var(--surface-2); }
 .vbars .col span { font-size: 11px; color: var(--muted); }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 
-.site-footer { border-top: 1px solid var(--border); padding: 34px 0 44px; color: var(--muted); font-size: 13px; margin-top: 20px; }
-.site-footer p { margin: 6px 0 0; }
-.site-footer a { color: var(--text); text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 2px; }
-.site-footer a:hover { color: var(--accent-text); }
-.footer-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 32px; }
-.footer-grid .copy { color: var(--faint); margin-top: 14px; }
-.credits { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: start; }
-.credits .tmdb-badge { grid-row: span 2; }
+.site-footer { position: relative; margin-top: 40px; padding: 56px 0 28px; color: var(--muted); font-size: 14px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,.015)); }
+.site-footer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: min(1100px, 90%); height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 55%, transparent), transparent); }
+.footer-top { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.3fr); gap: 40px; }
+.footer-logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.footer-logo .logo-text { font-size: 18px; }
+.footer-brand p { margin: 0; max-width: 340px; line-height: 1.6; }
+.footer-join { margin-top: 18px; }
+.footer-col, .footer-credits { display: flex; flex-direction: column; gap: 10px; }
+.site-footer h4 { margin: 4px 0 6px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--text); }
+.footer-col a { width: fit-content; color: var(--muted); transition: color .15s, transform .15s; }
+.footer-col a:hover { color: var(--text); transform: translateX(3px); }
+.credit-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 13px; transition: border-color .15s; }
+.credit-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); color: var(--text); }
+.jw-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 7px; font-weight: 700; font-size: 12px; color: #fff; background: #f5c518; background: linear-gradient(90deg, #fbd536, #f2a91e); color: #1b1b1b; flex: none; }
+.footer-bottom { display: flex; align-items: center; gap: 18px; margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--faint); }
+.footer-legal { flex: 1; }
+#to-top { color: var(--muted); }
+#to-top:hover { color: var(--accent-text); }
+@media (max-width: 900px) { .footer-top { grid-template-columns: 1fr 1fr; } .footer-brand, .footer-credits { grid-column: 1 / -1; } }
+@media (max-width: 640px) {
+  .site-footer { padding-top: 40px; }
+  .footer-top { gap: 28px; }
+  .footer-bottom { flex-wrap: wrap; gap: 8px 14px; }
+  .footer-legal { order: 3; flex-basis: 100%; }
+}
+.tmdb-badge { grid-row: span 2; }
 .credits p:first-of-type { margin-top: 0; }
 .tmdb-badge {
-  display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 12px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 10px; border-radius: 7px; flex: none;
   font-family: var(--head); font-weight: 700; font-size: 14px; letter-spacing: .08em; color: #0d253f !important; text-decoration: none !important;
   background: linear-gradient(90deg, #90cea1, #3cbec9 55%, #01b4e4);
 }
@@ -613,3 +632,5 @@ body.loading #app::after {
 .qa-pick.backdrops button { aspect-ratio: 16 / 9; }
 .qa-pick button:hover, .qa-pick button.on { border-color: var(--accent); }
 .qa-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+@media (max-width: 640px) { .footer-logo .logo-text { display: inline; } }

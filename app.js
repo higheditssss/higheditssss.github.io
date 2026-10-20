@@ -697,11 +697,17 @@
     const slot = document.getElementById('auth-slot');
     if (!slot) return;
     if (!backend || !backend.user) {
+      const fj = document.getElementById('footer-join');
+      if (fj) fj.hidden = false;
       slot.innerHTML = '<a class="btn small ghost" href="admin.html">Intră</a><a class="btn small primary" href="admin.html#cont-nou">Creează cont</a>';
       return;
     }
     let username = '';
     try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
+    const fj = document.getElementById('footer-join');
+    if (fj) fj.hidden = true;
+    const fp = document.getElementById('footer-profile');
+    if (fp && username) fp.href = BASE + username;
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
     slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
@@ -1548,6 +1554,8 @@
 
   // popup unic despre API-ul TMDB (se tine minte in browser dupa „Am inteles”)
   document.getElementById('year').textContent = new Date().getFullYear();
+  document.getElementById('footer-search').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); window.scrollTo({ top: 0, behavior: 'smooth' }); document.querySelector('#hsearch .hs-toggle').click(); });
+  document.getElementById('to-top').addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   const NOTICE_KEY = 'editsel_api_notice_v1';
   const notice = document.getElementById('api-notice');
   let seen = false;
