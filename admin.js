@@ -126,6 +126,21 @@
     profileLink.classList.remove('hidden');
     WL.applyAccent(DB.profile.accent);
     renderShell();
+    openFromLink();
+  }
+
+  // admin.html?adauga=tv:1405 (din cautarea de pe site): deschide direct fereastra titlului
+  async function openFromLink() {
+    const params = new URLSearchParams(location.search);
+    const m = /^(tv|movie):(\d+)$/.exec(params.get('adauga') || '');
+    if (!m) return;
+    history.replaceState(null, '', location.pathname);
+    const existing = DB.titles.find((t) => t.type === m[1] && t.tmdbId === Number(m[2]));
+    if (existing) return openTitleEditor(existing);
+    try {
+      const details = await run(() => api(`/api/tmdb/details?type=${m[1]}&id=${m[2]}`));
+      openTitleEditor(null, details);
+    } catch { /* eroarea e afisata de run() */ }
   }
 
   function renderAuth(mode) {

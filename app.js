@@ -702,6 +702,88 @@
     }).join('') || empty('Încă nu s-a înscris nimeni. Fii primul!');
   }
 
+  // ---------- cautare in antet: seriale, filme si membri ----------
+
+  function setupSearch() {
+    const wrap = document.getElementById('hsearch');
+    if (!wrap) return;
+    const input = wrap.querySelector('input');
+    const box = document.getElementById('hs-results');
+    const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    let members = null;
+    let popular = null;
+    let mine = null;
+    let timer = 0;
+    let seq = 0;
+
+    const open = () => { wrap.classList.add('open'); input.focus(); };
+    const close = () => { wrap.classList.remove('open'); box.classList.add('hidden'); };
+    wrap.querySelector('.hs-toggle').addEventListener('click', () => (wrap.classList.contains('open') && !input.value ? close() : open()));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); open(); }
+      if (e.key === 'Escape' && wrap.classList.contains('open')) { input.value = ''; close(); input.blur(); }
+    });
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) { box.classList.add('hidden'); if (!input.value) wrap.classList.remove('open'); }
+    });
+    box.addEventListener('click', (e) => { if (e.target.closest('a')) { input.value = ''; close(); } });
+    input.addEventListener('focus', () => { if (input.value.trim()) box.classList.remove('hidden'); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { const first = box.querySelector('a'); if (first) first.click(); }
+    });
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(run, 280);
+    });
+
+    const titleLink = (t) => (backend.user
+      ? `admin.html?adauga=${t.type}:${t.tmdbId}`
+      : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`);
+
+    async function run() {
+      const q = input.value.trim();
+      const my = ++seq;
+      if (!q) { box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      box.innerHTML = '<div class="hs-empty">Caut…</div>';
+      const nq = norm(q);
+
+      if (!members) members = await backend.listMembers().catch(() => []);
+      const people = members.filter((p) => p.username && (norm(p.username).includes(nq) || norm(p.name).includes(nq))).slice(0, 5);
+
+      let titles = [];
+      if (backend.user) {
+        const [res, me] = await Promise.all([
+          api(`/api/tmdb/search?type=multi&q=${encodeURIComponent(q)}`).catch(() => []),
+          mine || api('/api/public').catch(() => null),
+        ]);
+        mine = me;
+        titles = res.slice(0, 8);
+      } else {
+        if (!popular) {
+          const h = await backend.loadHome().catch(() => ({ tv: [], movie: [] }));
+          popular = [...(h.tv || []), ...(h.movie || [])].map((t) => ({ ...t, tmdbId: t.id }));
+        }
+        titles = popular.filter((t) => norm(t.title).includes(nq)).slice(0, 8);
+      }
+      if (my !== seq) return;
+
+      const owned = (t) => mine && mine.titles.some((x) => x.tmdbId === t.tmdbId && x.type === t.type);
+      const peopleHtml = people.map((p) => `<a href="${BASE}${esc(p.username)}">
+          ${p.avatar ? `<img class="hs-avatar" src="${esc(p.avatar)}" alt="">` : `<span class="hs-avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`}
+          <span class="hs-text"><b>${esc(p.name || p.username)}</b><small>@${esc(p.username)}</small></span></a>`).join('');
+      const titlesHtml = titles.map((t) => `<a href="${esc(titleLink(t))}" ${backend.user ? '' : 'target="_blank" rel="noopener"'}>
+          ${t.poster ? `<img class="hs-poster" src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="hs-poster"></span>'}
+          <span class="hs-text"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
+          ${backend.user ? `<span class="hs-action">${owned(t) ? 'Editează' : '＋ Adaugă'}</span>` : ''}</a>`).join('');
+
+      box.innerHTML = (peopleHtml ? `<div class="hs-group">Membri</div>${peopleHtml}` : '')
+        + (titlesHtml ? `<div class="hs-group">Seriale și filme</div>${titlesHtml}` : '')
+        + (!backend.user ? '<div class="hs-hint"><a href="admin.html#cont-nou">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : '');
+      if (!peopleHtml && !titlesHtml) box.insertAdjacentHTML('afterbegin', '<div class="hs-empty">Nu am găsit nimic.</div>');
+    }
+  }
+
   // ---------- router ----------
 
   let backend = null;
@@ -857,6 +939,7 @@
     backend = b;
     if (location.hash.startsWith('#/')) history.replaceState(null, '', BASE);
     renderAuthSlot();
+    setupSearch();
     b.onAuth(() => { renderAuthSlot(); loadedUser = null; userCache.clear(); render(); });
     render();
   });
