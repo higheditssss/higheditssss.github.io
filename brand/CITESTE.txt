@@ -1,6 +1,11 @@
-Pune aici imaginile generate:
+Logo-urile EDITSEL sunt in folderul "generat", cate un folder pentru fiecare culoare (codul culorii):
 
-  logo.png     - logo-ul orizontal (inaltime ~200px, fundal transparent). Apare in meniu.
-  favicon.png  - iconita patrata 512x512. Apare in tab-ul browserului.
+  logo-mare.png          2400x640, text alb (fundal inchis)
+  logo-mare-deschis.png  2400x640, text inchis (fundal deschis)
+  icon.png               1024x1024, poza de profil / iconita
+  og-image.png           1200x630, imaginea care apare la share
+  favicon.png            512x512, doar semnul
+  apple-touch-icon.png   180x180, iconita pe ecranul telefonului
 
-Daca lipsesc, site-ul afiseaza automat textul EDITSEL.
+Le gasesti si in Admin -> Setari -> Logo si iconite.
+Ca sa le regenerezi (dupa ce schimbi designul): node tools/genereaza-logo.js

@@ -1,4 +1,4 @@
-// Pagina publica: afiseaza doar profilul tau (citire). Modificarile se fac din /admin.
+// Pagina publica: profilurile membrilor (citire). Fiecare isi editeaza profilul din admin.html, dupa logare.
 (function () {
   const { applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api } = WL;
   const app = document.getElementById('app');
@@ -71,6 +71,7 @@
     ['jurnal', 'Jurnal', R('/jurnal')],
     ['liste', 'Liste', R('/liste')],
     ['stats', 'Statistici', R('/statistici')],
+    ['prieteni', 'Prieteni', R('/prieteni')],
   ];
 
   function shell(active, content) {
@@ -84,10 +85,11 @@
           <div>
             <h1>${esc(p.name)}</h1>
             <div class="sub">${p.username ? '@' + esc(p.username) + ' · ' : ''}Membru din ${fmtDate(p.joined)}</div>
+            <div id="follow-slot" class="follow-slot"></div>
             ${p.bio ? `<div class="profile-bio">${esc(p.bio)}</div>` : ''}
           </div>
         </div>
-        <nav class="tabs">${tabs().filter(([k]) => k !== 'stats' || p.showStats !== false).map(([k, label, href]) => `<a href="${href}" class="${k === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
+        <nav class="tabs">${tabs().filter(([k]) => (k !== 'stats' || p.showStats !== false) && (k !== 'prieteni' || (p.following || []).length)).map(([k, label, href]) => `<a href="${href}" class="${k === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
         <div class="page">${content}</div>
       </div>`;
   }
@@ -180,8 +182,11 @@
       ${reviews.length ? section('Recenzii recente', reviews.map((r) => reviewItem(r)).join(''), R('/recenzii')) : ''}
       ${lists.length ? section('Liste', `<div class="list-cards">${lists.map(listCard).join('')}</div>`, R('/liste')) : ''}
     `;
-    if (DB.profile.showStats === false) return shell('profil', main);
-    return shell('profil', `<div class="layout"><aside class="sidebar">${sidebarStats()}</aside><div>${main}</div></div>`);
+    if (DB.profile.showStats === false) {
+      const fc = friendsSidebarCard();
+      return shell('profil', fc ? `<div class="layout"><aside class="sidebar">${fc}</aside><div>${main}</div></div>` : main);
+    }
+    return shell('profil', `<div class="layout"><aside class="sidebar">${sidebarStats()}${friendsSidebarCard()}</aside><div>${main}</div></div>`);
   }
 
   const SORTS = {
@@ -434,36 +439,233 @@
       </div>`;
   }
 
-  async function loadProviders(t) {
-    if (!t || !t.tmdbId) return;
+  function loadProviders(t) {
     const box = document.getElementById('providers');
-    let d;
-    if (STATIC) d = (DB.providers || {})[t.id];
-    else try { d = await api(`/api/providers?type=${t.type}&id=${t.tmdbId}`); } catch { return; }
-    if (!d || !box || !box.isConnected) return;
+    const d = t && t.providers;
+    if (!d || d.none || !box) return;
     const group = (label, list) => list && list.length
       ? `<div class="prov-group"><span class="label-sm">${label}</span><div class="prov-logos">${list.map((x) => `<img src="${esc(x.logo)}" alt="${esc(x.name)}" title="${esc(x.name)}" loading="lazy">`).join('')}</div></div>` : '';
     const html = group('Abonament', d.flatrate) + group('Gratuit', d.free) + group('Închiriere', d.rent) + group('Cumpărare', d.buy);
     if (!html) return;
-    box.innerHTML = `<div class="card"><h3>Unde poți viziona</h3>${html}${d.link ? `<a class="see-all" style="display:inline-block;margin-top:10px" href="${esc(d.link)}" target="_blank" rel="noopener">Detalii ›</a>` : ''}<div class="hint" style="margin-top:8px;font-size:11px;color:var(--faint)">Sursa: JustWatch prin TMDB</div></div>`;
+    box.innerHTML = `<div class="card"><h3>Unde poți viziona${d.region ? ' · ' + esc(d.region) : ''}</h3>${html}${d.link ? `<a class="see-all" style="display:inline-block;margin-top:10px" href="${esc(d.link)}" target="_blank" rel="noopener">Detalii ›</a>` : ''}<div class="hint" style="margin-top:8px;font-size:11px;color:var(--faint)">Sursa: JustWatch prin TMDB</div></div>`;
+  }
+
+  // ---------- prieteni = conturile pe care le urmaresti ----------
+
+  const userCache = new Map();
+  function loadFollowed(uid) {
+    if (!userCache.has(uid)) userCache.set(uid, backend.loadUserByUid(uid).catch(() => null));
+    return userCache.get(uid);
+  }
+  const userHome = (d) => BASE + d.profile.username;
+  const userTitleHref = (d, t) => `${userHome(d)}/${t.type === 'movie' ? 'film' : 'serial'}/${slug(t.title) || 'titlu'}-${t.id}`;
+  const userAvatar = (d, size = '') => (d.profile.avatar
+    ? `<img class="avatar ${size}" src="${esc(d.profile.avatar)}" alt="" loading="lazy">`
+    : `<div class="avatar ${size}" style="${d.profile.accent ? `color:${esc(d.profile.accent)}` : ''}">${esc((d.profile.name || d.profile.username || '?').charAt(0).toUpperCase())}</div>`);
+
+  function friendsSidebarCard() {
+    const following = DB.profile.following || [];
+    if (!following.length) return '';
+    return `<div class="card"><h3>Prieteni · ${following.length}</h3><div class="friend-dots" id="friend-dots">${following.map(() => '<div class="avatar sm"></div>').join('')}</div>
+      <a class="see-all" style="display:inline-block;margin-top:12px" href="${R('/prieteni')}">Vezi prietenii ›</a></div>`;
+  }
+
+  async function fillFriendsSidebar() {
+    const box = document.getElementById('friend-dots');
+    if (!box) return;
+    const list = (await Promise.all((DB.profile.following || []).map(loadFollowed))).filter((d) => d && d.profile.username);
+    if (!box.isConnected) return;
+    box.innerHTML = list.map((d) => `<a href="${esc(userHome(d))}" title="${esc(d.profile.name)}">${userAvatar(d, 'sm')}</a>`).join('');
+  }
+
+  function pageFriends() {
+    const following = DB.profile.following || [];
+    if (!following.length) return shell('prieteni', empty('Nu urmărește pe nimeni încă.'));
+    return shell('prieteni', `<div class="friend-cards" id="friend-cards">${following.map(() => '<div class="card friend-card skeleton"></div>').join('')}</div>
+      <div id="friend-feed"></div>`);
+  }
+
+  async function fillFriendsPage() {
+    const cards = document.getElementById('friend-cards');
+    if (!cards) return;
+    const list = (await Promise.all((DB.profile.following || []).map(loadFollowed))).filter((d) => d && d.profile.username);
+    if (!cards.isConnected) return;
+    cards.innerHTML = list.map((d) => {
+      if (d.private) {
+        return `<a class="card friend-card" href="${esc(userHome(d))}">${userAvatar(d)}<div><b>${esc(d.profile.name || d.profile.username)}</b><span class="muted">🔒 Profil privat</span></div></a>`;
+      }
+      const tv = d.titles.filter((t) => t.type === 'tv').length;
+      const mv = d.titles.filter((t) => t.type === 'movie').length;
+      return `<a class="card friend-card" href="${esc(userHome(d))}" style="--friend:${esc(d.profile.accent || 'var(--accent)')}">
+        ${userAvatar(d)}
+        <div style="min-width:0"><b>${esc(d.profile.name)}</b>
+          <span class="muted">@${esc(d.profile.username)} · ${tv} seriale · ${mv} filme · ${d.diary.length} în jurnal</span></div>
+        <span class="arrow">›</span></a>`;
+    }).join('') || empty('Conturile urmărite nu mai există.');
+
+    // activitatea recenta a prietenilor, amestecata, cea mai noua prima
+    const feed = [];
+    for (const d of list) {
+      if (d.private) continue;
+      const titles = new Map(d.titles.map((t) => [t.id, t]));
+      for (const e of d.diary) {
+        const t = titles.get(e.titleId);
+        if (t) feed.push({ d, e, t });
+      }
+    }
+    feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
+    const box = document.getElementById('friend-feed');
+    if (!box || !feed.length) return;
+    box.innerHTML = section('Activitatea prietenilor', `<div class="diary-box">${feed.slice(0, 30).map(({ d, e, t }) => `
+      <a class="diary-row" href="${esc(userTitleHref(d, t))}">
+        <div class="diary-day">${userAvatar(d, 'xs')}</div>
+        <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
+        <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div>
+          <div class="diary-sub">${esc(d.profile.name)} · ${esc(scopeLabel(e, t))} · ${fmtDate(e.date)}</div></div>
+        <div class="diary-flags">${e.rewatch ? '<span title="Revăzut">↻</span>' : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+      </a>`).join('')}</div>`);
+  }
+
+  // butonul Urmareste / Editeaza profilul de langa nume
+  async function fillFollowButton() {
+    const slot = document.getElementById('follow-slot');
+    if (!slot || !backend.user) return;
+    if (backend.user.uid === DB.uid) {
+      slot.innerHTML = '<a class="btn small" href="admin.html">✎ Editează profilul</a>';
+      return;
+    }
+    let me;
+    try { me = await api('/api/public'); } catch { return; }
+    if (!slot.isConnected) return;
+    const draw = () => {
+      const on = (me.profile.following || []).includes(DB.uid);
+      slot.innerHTML = `<button class="btn small ${on ? '' : 'primary'}" id="follow-btn">${on ? '✓ Urmărești' : '+ Urmărește'}</button>`;
+      slot.querySelector('#follow-btn').addEventListener('click', async (ev) => {
+        ev.currentTarget.disabled = true;
+        const following = on ? me.profile.following.filter((x) => x !== DB.uid) : [...(me.profile.following || []), DB.uid];
+        try { me.profile = await api('/api/profile', { method: 'PUT', body: { following } }); } catch (e) { alert(e.message); }
+        draw();
+      });
+    };
+    draw();
+  }
+
+  // ---------- antet: cont ----------
+
+  async function renderAuthSlot() {
+    const slot = document.getElementById('auth-slot');
+    if (!slot) return;
+    if (!backend || !backend.user) {
+      slot.innerHTML = '<a class="btn small ghost" href="admin.html">Intră</a><a class="btn small primary" href="admin.html#cont-nou">Creează cont</a>';
+      return;
+    }
+    let username = '';
+    try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
+    slot.innerHTML = `${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html">⚙ Setări</a>`;
+  }
+
+  // ---------- pagina principala ----------
+
+  function pageHome() {
+    return `<div class="home-hero">
+        <div class="container">
+          <div class="home-logo">${WL.logoSvg(null, { size: 84, id: 'hl' })}</div>
+          <h1>Jurnalul tău de <span>seriale și filme</span></h1>
+          <p>Ține evidența a ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi.</p>
+          <div class="home-cta" id="home-cta">
+            ${backend.user ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a>' : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>'}
+          </div>
+        </div>
+      </div>
+      <div class="container page">
+        ${section('Membri', '<div class="member-grid" id="members"><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div></div>')}
+      </div>`;
+  }
+
+  async function fillMembers() {
+    const box = document.getElementById('members');
+    if (!box) return;
+    let list = [];
+    try { list = await backend.listMembers(); } catch (e) { console.error(e); }
+    if (!box.isConnected) return;
+    box.innerHTML = list.filter((p) => p.username).map((p) => `
+      <a class="card friend-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
+        ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
+        <div style="min-width:0"><b>${esc(p.name || p.username)}</b><span class="muted">@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio.slice(0, 60)) : ''}</span></div>
+        <span class="arrow">›</span>
+      </a>`).join('') || empty('Încă nu s-a înscris nimeni. Fii primul!');
   }
 
   // ---------- router ----------
+
+  let backend = null;
+  let loadedUser = null;
+  let renderToken = 0;
 
   function navigate(url, replace = false) {
     history[replace ? 'replaceState' : 'pushState'](null, '', url);
     render();
   }
 
-  function render() {
+  const titleId = (seg) => String(seg || '').split('-').pop();
+
+  function done() {
+    document.body.classList.remove('loading');
+  }
+
+  async function render() {
+    const token = ++renderToken;
     const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
     const parts = rel.split('/').filter(Boolean);
-    if (parts[0] !== U) return navigate(R('/' + parts.slice(1).join('/')) + location.search, true);
+
+    if (!parts.length) {
+      applyAccent(WL.COLORS[0][1]);
+      app.innerHTML = pageHome();
+      document.title = 'EDITSEL · Jurnal de seriale și filme';
+      done();
+      window.scrollTo(0, 0);
+      fillMembers();
+      return;
+    }
+
+    const username = parts[0].toLowerCase();
+    if (loadedUser !== username) {
+      if (!document.body.classList.contains('loading')) app.innerHTML = '<div class="page-loading"></div>';
+      let data;
+      try { data = await backend.loadUser(username); } catch (e) { data = { error: e }; }
+      if (token !== renderToken) return;
+      if (!data || data.error) {
+        done();
+        app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">
+          <h1 style="font-size:28px">${data && data.error ? 'Nu am putut încărca profilul' : 'Profil inexistent'}</h1>
+          <p class="muted">${data && data.error ? esc(data.error.message) : `Nu există niciun utilizator @${esc(username)}.`}</p>
+          <a class="btn" href="./">‹ Pagina principală</a></div>`;
+        document.title = 'EDITSEL';
+        loadedUser = null;
+        return;
+      }
+      DB = data;
+      byId = new Map(DB.titles.map((t) => [t.id, t]));
+      U = DB.profile.username || username;
+      loadedUser = username;
+      applyAccent(DB.profile.accent);
+      try { localStorage.setItem('editsel_accent', DB.profile.accent || ''); } catch {}
+    }
+    done();
+
+    if (DB.private) {
+      app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">
+        <h1 style="font-size:28px">@${esc(username)}</h1>
+        <p class="muted">🔒 Profilul ăsta este privat.</p><a class="btn" href="./">‹ Pagina principală</a></div>`;
+      document.title = 'EDITSEL';
+      return;
+    }
+    if (parts[0] !== U) return navigate(BASE + U + rel.slice(parts[0].length) + location.search, true);
+
     parts.shift();
     const q = new URLSearchParams(location.search);
     let html;
     let title = DB.profile.name;
-    const titleId = (seg) => String(seg || '').split('-').pop();
     switch (parts[0]) {
       case undefined: html = pageProfile(); break;
       case 'seriale': html = pageLibrary('tv', q); title += ' · Seriale'; break;
@@ -473,6 +675,7 @@
       case 'jurnal': html = pageDiary(q); title += ' · Jurnal'; break;
       case 'liste': html = pageLists(); title += ' · Liste'; break;
       case 'lista': html = pageList(parts[1]); title += ' · Listă'; break;
+      case 'prieteni': html = pageFriends(); title += ' · Prieteni'; break;
       case 'statistici': html = DB.profile.showStats === false ? pageProfile() : pageStats(); title += ' · Statistici'; break;
       case 'serial':
       case 'film': {
@@ -488,6 +691,9 @@
     app.innerHTML = html;
     document.title = title;
     if (parts[0] === 't') loadProviders(byId.get(parts[1]));
+    fillFriendsSidebar();
+    fillFollowButton();
+    if (parts[0] === 'prieteni') fillFriendsPage();
     // pe telefon tab-urile se deruleaza: tab-ul activ adus in centru
     const tabsEl = app.querySelector('.tabs');
     const activeTab = tabsEl && tabsEl.querySelector('a.active');
@@ -528,37 +734,24 @@
     const a = ev.target.closest('a[href]');
     if (!a || a.target || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
     const url = new URL(a.href, location.href);
-    if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname) || url.pathname.startsWith(BASE + 'admin')) return;
+    if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname)) return;
     ev.preventDefault();
     if (url.pathname + url.search !== location.pathname + location.search) navigate(url.pathname + url.search);
   });
   window.addEventListener('popstate', render);
 
-  // pe GitHub Pages (static) datele vin din data.json, generat la „Publică online”
-  const STATIC = Boolean(window.EDITSEL_STATIC);
-  (STATIC ? fetch('data.json', { cache: 'no-cache' }).then((r) => r.json()) : api('/api/public')).then((data) => {
-    DB = data;
-    applyAccent(DB.profile.accent);
-    if (DB.private) {
+  WL.backend().then((b) => {
+    if (!b || !b.api) {
+      done();
       app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">
-        ${DB.profile.avatar ? `<img class="avatar" style="margin:0 auto 16px" src="${esc(DB.profile.avatar)}" alt="">` : ''}
-        <h1 style="font-size:28px">${esc(DB.profile.name)}</h1>
-        <p class="muted">🔒 Profilul ăsta este privat.</p></div>`;
-      document.title = DB.profile.name;
+        <h1 style="font-size:26px">Site-ul nu e conectat încă</h1>
+        <p class="muted">${b && b.missingConfig ? 'Lipsește configurarea Firebase (firebase-config.js).' : 'Nu am putut porni conexiunea cu baza de date.'}</p></div>`;
       return;
     }
-    byId = new Map(DB.titles.map((t) => [t.id, t]));
-    U = DB.profile.username || slug(DB.profile.name) || 'profil';
-    if (location.hash.startsWith('#/')) {
-      const [hp, hq = ''] = location.hash.slice(2).split('?');
-      const seg = hp.split('/');
-      const map = { likes: '/aprecieri', stats: '/statistici' };
-      let target = seg[0] === 't' && byId.get(seg[1]) ? titleHref(byId.get(seg[1])) : R(map[seg[0]] || (hp ? '/' + hp : ''));
-      if (hq) target += '?' + hq;
-      history.replaceState(null, '', target);
-    }
+    backend = b;
+    if (location.hash.startsWith('#/')) history.replaceState(null, '', BASE);
+    renderAuthSlot();
+    b.onAuth(() => { renderAuthSlot(); loadedUser = null; userCache.clear(); render(); });
     render();
-  }).catch((err) => {
-    app.innerHTML = `<div class="container page" style="padding-top:120px">${empty('Nu am putut încărca profilul: ' + esc(err.message))}</div>`;
   });
 })();

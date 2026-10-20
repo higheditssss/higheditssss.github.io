@@ -89,7 +89,14 @@
     </div>`;
   }
 
+  // Backend-ul (Firebase, din backend.js) e asteptat prin window.WLBackend; fara el, se foloseste serverul local.
+  if (!window.WLBackend) window.WLBackend = new Promise((resolve) => { window.__resolveBackend = resolve; });
+  const backend = () => window.WLBackend;
+
   async function api(path, opts = {}) {
+    const b = await backend();
+    if (b && b.api) return b.api(path, opts);
+    if (b && b.missingConfig) throw Object.assign(new Error('Site-ul nu e conectat încă la Firebase (firebase-config.js).'), { status: 503 });
     const r = await fetch(path, {
       method: opts.method || 'GET',
       headers: opts.body !== undefined ? { 'Content-Type': 'application/json' } : {},
@@ -143,7 +150,34 @@
     };
     const root = document.documentElement.style;
     for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
+    try { setFavicon(hex); } catch (e) { /* favicon optional */ }
   }
 
-  window.WL = { COLORS, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
+  // Semnul EDITSEL: romb in culoarea de accent, cu un „E” decupat.
+  // Cu hex -> culori fixe (fisiere, favicon); fara hex -> variabilele CSS ale site-ului.
+  function logoSvg(hex, { size = 100, id = 'g' } = {}) {
+    const light = hex ? mix(hex, '#ffffff', 0.28) : 'var(--accent-hover)';
+    const base = hex || 'var(--accent)';
+    const deep = hex ? mix(hex, '#000000', 0.32) : 'var(--accent-deep)';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
+      <defs>
+        <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" style="stop-color:${light}"/><stop offset=".55" style="stop-color:${base}"/><stop offset="1" style="stop-color:${deep}"/>
+        </linearGradient>
+        <mask id="${id}m"><rect width="100" height="100" fill="#fff"/>
+          <path fill="#000" d="M36 33h28v8H45v5h16v8H45v5h19v8H36z"/>
+        </mask>
+      </defs>
+      <g mask="url(#${id}m)"><rect x="18.5" y="18.5" width="63" height="63" rx="15" transform="rotate(45 50 50)" fill="url(#${id})"/></g>
+    </svg>`;
+  }
+
+  function setFavicon(hex) {
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.type = 'image/svg+xml';
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(logoSvg(hex, { size: 64, id: 'f' }));
+  }
+
+  window.WL = { backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
 })();

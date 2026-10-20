@@ -5,23 +5,32 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EDITSEL</title>
+  <meta name="description" content="EDITSEL – jurnal de seriale și filme. Notează ce vezi, dă note, scrie recenzii și urmărește-ți prietenii.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EDITSEL">
+  <meta property="og:title" content="EDITSEL · Jurnal de seriale și filme">
+  <meta property="og:description" content="Notează ce vezi, dă note, scrie recenzii și urmărește-ți prietenii.">
+  <meta property="og:image" content="https://higheditssss.github.io/brand/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#09090b">
   <link rel="icon" href="brand/favicon.png">
-  <link rel="apple-touch-icon" href="brand/favicon.png">
+  <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script>window.EDITSEL_STATIC = true;</script>
+  <script src="common.js"></script>
+  <script>
+    // culoarea profilului din vizita trecuta, aplicata inainte de afisare (fara clipire)
+    try { var c = localStorage.getItem('editsel_accent'); if (c) WL.applyAccent(c); } catch (e) {}
+  </script>
 </head>
-<body>
+<body class="loading">
   <header class="site-header" id="header">
     <div class="container header-inner">
-      <a class="logo" href="./">
-        <img src="brand/logo.png" alt="EDITSEL" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()">
-        <span class="logo-mark"></span><span class="logo-text">EDITSEL</span>
-      </a>
+      <a class="logo" href="./" aria-label="EDITSEL"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent-hover)"/><stop offset=".55" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-deep)"/></linearGradient><mask id="lgm"><rect width="100" height="100" fill="#fff"/><path fill="#000" d="M36 33h28v8H45v5h16v8H45v5h19v8H36z"/></mask></defs><g mask="url(#lgm)"><rect x="18.5" y="18.5" width="63" height="63" rx="15" transform="rotate(45 50 50)" fill="url(#lg)"/></g></svg><span class="logo-text">EDITSEL</span></a>
       <div class="header-spacer"></div>
+      <div class="auth-slot" id="auth-slot"></div>
     </div>
   </header>
 
@@ -31,7 +40,7 @@
     <div class="container footer-grid">
       <div>
         <span class="logo-text small">EDITSEL</span>
-        <p>Jurnalul meu de seriale și filme.</p>
+        <p>Jurnal de seriale și filme.</p>
         <p class="copy">© <span id="year"></span> EDITSEL. Toate drepturile rezervate.</p>
       </div>
       <div class="credits">
@@ -48,12 +57,13 @@
       <span class="tmdb-badge">TMDB</span>
       <h2 id="api-notice-title">Despre datele de pe site</h2>
       <p>EDITSEL folosește <b>API-ul TMDB</b> (The Movie Database) pentru postere, imagini, descrieri, sezoane și actori, iar pentru platformele de streaming folosește date de la JustWatch.</p>
-      <p class="muted">Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB. Ratingurile, recenziile și jurnalul sunt ale mele.</p>
+      <p class="muted">Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB. Ratingurile, recenziile și jurnalele sunt ale membrilor.</p>
       <button class="btn primary" id="api-notice-ok">Am înțeles</button>
     </div>
   </div>
 
-  <script src="common.js"></script>
+  <script src="firebase-config.js"></script>
+  <script type="module" src="backend.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
