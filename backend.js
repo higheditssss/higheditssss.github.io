@@ -14,7 +14,7 @@ const IMG = 'https://image.tmdb.org/t/p/';
 const STATUSES = ['watching', 'watched', 'watchlist', 'paused', 'dropped'];
 const MAX_FAVS = 5;
 // adrese folosite de site, nu pot fi username-uri
-const RESERVED = new Set(['descopera', 'cauta', 'prieteni', 'admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre']);
+const RESERVED = new Set(['descopera', 'cauta', 'prieteni', 'membri', 'admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre']);
 
 const err = (message, status = 400) => Object.assign(new Error(message), { status });
 const uid6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');

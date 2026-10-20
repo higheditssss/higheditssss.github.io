@@ -683,7 +683,17 @@
 
   // ---------- antet: cont ----------
 
+  function swapNav(logged) {
+    document.querySelectorAll('.main-nav a[data-nav="descopera"], .main-nav a[data-nav="membri"], .bottom-nav a[data-nav="descopera"], .bottom-nav a[data-nav="membri"]').forEach((a) => {
+      const bottom = a.closest('.bottom-nav');
+      a.dataset.nav = logged ? 'membri' : 'descopera';
+      a.setAttribute('href', logged ? 'membri' : 'descopera');
+      a.innerHTML = (bottom ? `<span>${logged ? '☷' : '◈'}</span>` : '') + (logged ? 'Membri' : 'Descoperă');
+    });
+  }
+
   async function renderAuthSlot() {
+    swapNav(Boolean(backend && backend.user));
     const slot = document.getElementById('auth-slot');
     if (!slot) return;
     if (!backend || !backend.user) {
@@ -912,7 +922,7 @@
       const peopleHtml = people.map((p) => `<a href="${BASE}${esc(p.username)}">
           ${p.avatar ? `<img class="hs-avatar" src="${esc(p.avatar)}" alt="">` : `<span class="hs-avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`}
           <span class="hs-text"><b>${esc(p.name || p.username)}</b><small>@${esc(p.username)}</small></span></a>`).join('');
-      const titlesHtml = titles.map((t) => `<a href="${esc(titleLink(t))}" ${backend.user ? '' : 'target="_blank" rel="noopener"'}>
+      const titlesHtml = titles.map((t) => `<a href="${esc(titleLink(t))}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
           ${t.poster ? `<img class="hs-poster" src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="hs-poster"></span>'}
           <span class="hs-text"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
           ${backend.user ? `<span class="hs-action">${owned(t) ? 'Editează' : '＋ Adaugă'}</span>` : ''}</a>`).join('');
@@ -940,7 +950,7 @@
 
   function discoverCard(t, owned) {
     const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
-    return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? '' : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
+    return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
       <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">
         <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ★ ' + t.rating.toFixed(1) : ''}</span>
           ${backend.user ? `<em>${owned ? '✓ În biblioteca ta' : '＋ Adaugă'}</em>` : ''}</div>
@@ -1130,6 +1140,189 @@
     });
   }
 
+  // ---------- adaugare rapida: pop-up direct pe pagina (fara sa mergi in Setari) ----------
+
+  function toast(msg, isErr = false) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (isErr ? ' err' : '');
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), isErr ? 4500 : 2400);
+  }
+
+  function openModal(html) {
+    const back = document.createElement('div');
+    back.className = 'modal-back';
+    back.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    function close() { back.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; }
+    back.addEventListener('mousedown', (e) => { if (e.target === back) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(back);
+    document.body.style.overflow = 'hidden';
+    return { el: back.querySelector('.modal'), close };
+  }
+
+  // stele cu jumatati: click pe jumatatea stanga = x.5; click pe aceeasi valoare = sterge
+  function starInput(container, value, onChange) {
+    let v = value || 0;
+    container.innerHTML = `<span class="star-input">${'<span class="s">★</span>'.repeat(5)}<span class="val"></span></span>`;
+    const wrap = container.firstElementChild;
+    const els = [...wrap.querySelectorAll('.s')];
+    const val = wrap.querySelector('.val');
+    const paint = (x) => { els.forEach((s, i) => { s.className = 's ' + (x >= i + 1 ? 'full' : x >= i + 0.5 ? 'half' : ''); }); val.textContent = x ? x.toFixed(1) : '—'; };
+    const at = (e) => {
+      const s = e.target.closest('.s');
+      if (!s) return null;
+      const r = s.getBoundingClientRect();
+      return els.indexOf(s) + ((e.clientX - r.left) < r.width / 2 ? 0.5 : 1);
+    };
+    wrap.addEventListener('mousemove', (e) => { const x = at(e); if (x) paint(x); });
+    wrap.addEventListener('mouseleave', () => paint(v));
+    wrap.addEventListener('click', (e) => { const x = at(e); if (!x) return; v = x === v ? 0 : x; paint(v); onChange(v); });
+    paint(v);
+  }
+
+  async function quickAdd(type, tmdbId, sourceEl) {
+    if (!backend || !backend.user) { location.href = 'admin.html#cont-nou'; return; }
+    const loading = openModal('<div class="modal-body"><div class="muted">Se încarcă…</div></div>');
+    let me;
+    let details;
+    try {
+      me = await api('/api/public');
+      const existing = me.titles.find((t) => t.type === type && t.tmdbId === Number(tmdbId));
+      details = existing || await api(`/api/tmdb/details?type=${type}&id=${tmdbId}`);
+      loading.close();
+      showQuickAdd(details, Boolean(existing), sourceEl);
+    } catch (e) {
+      loading.close();
+      toast(e.message, true);
+    }
+  }
+
+  function showQuickAdd(t, isExisting, sourceEl) {
+    const today = new Date().toISOString().slice(0, 10);
+    const d = { status: t.status || 'watched', rating: t.rating || 0, liked: Boolean(t.liked), review: t.review || '', spoiler: Boolean(t.spoiler) };
+    const isTv = t.type === 'tv';
+    const { el, close } = openModal(`
+      <div class="modal-head">
+        <div style="width:70px;flex:none">${poster(t, { showMeta: false })}</div>
+        <div style="min-width:0">
+          <h2>${esc(t.title)}</h2>
+          <div class="muted" style="font-size:14px">${[t.year, isTv ? 'Serial' : 'Film', (t.genres || []).slice(0, 3).join(', ')].filter(Boolean).map(esc).join(' · ')}</div>
+          ${isExisting ? '<span class="badge accent" style="margin-top:6px">În biblioteca ta</span>' : ''}
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="field"><span class="lbl">Status</span>
+          <div class="seg" id="qa-status">${Object.entries(STATUS).map(([k, s]) => `<button type="button" data-v="${k}" class="${d.status === k ? 'on' : ''}">${s.icon} ${s.label}</button>`).join('')}</div>
+        </div>
+        <div class="row-fields">
+          <div class="field"><span class="lbl">Notă</span><div id="qa-rating"></div></div>
+          <div class="field"><span class="lbl">Îți place?</span><div><button type="button" class="toggle like ${d.liked ? 'on' : ''}" id="qa-like">♥ Îmi place</button></div></div>
+        </div>
+        <div class="field"><label for="qa-review">Recenzie (opțional)</label>
+          <textarea class="textarea" id="qa-review" style="min-height:80px" placeholder="Ce părere ai?">${esc(d.review)}</textarea>
+          <label class="check"><input type="checkbox" id="qa-spoiler" ${d.spoiler ? 'checked' : ''}> Conține spoilere</label>
+        </div>
+        <div class="box" style="margin:0">
+          <label class="check"><input type="checkbox" id="qa-log" ${isExisting || d.status === 'watchlist' ? '' : 'checked'}> <b>Adaugă în jurnal</b></label>
+          <div class="row-fields" id="qa-log-fields" style="margin-top:12px">
+            <div class="field"><label>Data</label><input class="input" type="date" id="qa-date" value="${today}"></div>
+            ${isTv ? '<div class="field"><label>Sezon</label><input class="input" type="number" min="0" id="qa-s"></div><div class="field"><label>Episod</label><input class="input" type="number" min="0" id="qa-e"></div>' : ''}
+            <div class="field" style="justify-content:flex-end"><label class="check"><input type="checkbox" id="qa-rw"> Revăzut</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <a class="btn ghost" href="admin.html?adauga=${t.type}:${t.tmdbId}">Mai multe opțiuni</a>
+        <span class="grow"></span>
+        <button class="btn ghost" id="qa-cancel">Anulează</button>
+        <button class="btn primary" id="qa-save">${isExisting ? 'Salvează' : 'Adaugă'}</button>
+      </div>`);
+    const $ = (s) => el.querySelector(s);
+    starInput($('#qa-rating'), d.rating, (v) => { d.rating = v; });
+    $('#qa-status').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      d.status = b.dataset.v;
+      el.querySelectorAll('#qa-status button').forEach((x) => x.classList.toggle('on', x === b));
+      if (!isExisting) { $('#qa-log').checked = d.status !== 'watchlist'; syncLog(); }
+    });
+    $('#qa-like').addEventListener('click', (e) => { d.liked = !d.liked; e.currentTarget.classList.toggle('on', d.liked); });
+    const syncLog = () => $('#qa-log-fields').classList.toggle('hidden', !$('#qa-log').checked);
+    $('#qa-log').addEventListener('change', syncLog);
+    syncLog();
+    $('#qa-cancel').addEventListener('click', close);
+    $('#qa-save').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      const body = { status: d.status, rating: d.rating, liked: d.liked, review: $('#qa-review').value, spoiler: $('#qa-spoiler').checked };
+      try {
+        const saved = isExisting
+          ? await api(`/api/titles/${t.id}`, { method: 'PUT', body })
+          : await api('/api/titles', { method: 'POST', body: { ...t, ...body } });
+        if ($('#qa-log').checked) {
+          await api('/api/diary', { method: 'POST', body: {
+            titleId: saved.id, date: $('#qa-date').value || today, rating: d.rating, liked: d.liked, rewatch: $('#qa-rw').checked,
+            season: isTv ? $('#qa-s').value : '', episode: isTv ? $('#qa-e').value : '',
+          } });
+        }
+        close();
+        toast(isExisting ? 'Salvat' : `„${saved.title}” a fost adăugat`);
+        loadedUser = null; // profilul tau se reincarca data viitoare
+        const mark = sourceEl && sourceEl.querySelector('.disc-over em, .hs-action');
+        if (mark) mark.textContent = '✓ În biblioteca ta';
+      } catch (err) {
+        e.target.disabled = false;
+        toast(err.message, true);
+      }
+    });
+  }
+
+  // orice link „adauga” de pe site deschide pop-up-ul in loc sa schimbe pagina
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a[data-add]');
+    if (!a || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    const [type, id] = a.dataset.add.split(':');
+    const box = document.getElementById('hs-results');
+    if (box) box.classList.add('hidden');
+    quickAdd(type, id, a);
+  }, true);
+
+  // ---------- pagina Membri ----------
+
+  function pageMembers() {
+    return `<div class="container page disc-page">
+      <h1 class="disc-title">Membri</h1>
+      <p class="muted disc-sub">Toți cei care își țin jurnalul pe EDITSEL.</p>
+      <div class="fh-search"><span>⌕</span><input id="mb-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
+      <div class="sr-people" id="mb-list">${Array.from({ length: 6 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div>
+    </div>`;
+  }
+
+  async function fillMembersPage() {
+    const box = document.getElementById('mb-list');
+    if (!box) return;
+    const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const members = (await backend.listMembers().catch(() => [])).filter((p) => p.username);
+    if (!box.isConnected) return;
+    const draw = () => {
+      const q = norm(document.getElementById('mb-q').value.trim());
+      const list = members.filter((p) => !q || norm(p.username).includes(q) || norm(p.name).includes(q));
+      box.innerHTML = list.map((p) => `
+        <a class="member-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
+          <div class="member-banner" style="${p.banner && /^https?:|^data:/.test(p.banner) ? `background-image:url('${esc(p.banner)}')` : ''}"></div>
+          <div class="member-body">
+            ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
+            <div style="min-width:0"><b>${esc(p.name || p.username)}${backend.user && p.uid === backend.user.uid ? ' <span class="badge accent">tu</span>' : ''}</b><span class="muted">@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio.slice(0, 50)) : ''}</span></div>
+          </div></a>`).join('') || empty(q ? 'Niciun membru găsit.' : 'Încă nu s-a înscris nimeni.');
+    };
+    draw();
+    document.getElementById('mb-q').addEventListener('input', draw);
+  }
+
   // ---------- router ----------
 
   let backend = null;
@@ -1168,6 +1361,18 @@
       window.scrollTo(0, 0);
       if (discover) fillDiscover(parts[1]); else fillHome();
       setNav(parts[0] === 'descopera' ? 'descopera' : 'acasa');
+      return;
+    }
+    if (parts[0] === 'membri') {
+      applyAccent(WL.COLORS[0][1]);
+      loadedUser = null;
+      document.body.classList.add('on-discover');
+      app.innerHTML = pageMembers();
+      document.title = 'Membri · EDITSEL';
+      done();
+      window.scrollTo(0, 0);
+      setNav('membri');
+      fillMembersPage();
       return;
     }
     if (parts[0] === 'prieteni') {
