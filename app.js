@@ -578,18 +578,17 @@
     const cta = logged
       ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
       : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>';
-    return `<section class="home-hero"><div class="home-backdrop" id="home-backdrop"></div>
-        <div class="container home-hero-grid">
-          <div class="home-copy">
-            <span class="home-kicker">${WL.logoSvg(null, { size: 22, id: 'hk' })} EDITSEL</span>
-            <h1>Tot ce vezi.<br><span>Într-un singur loc.</span></h1>
-            <p>Jurnalul tău de seriale și filme: dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi.</p>
-            <div class="home-cta">${cta}</div>
-            <div class="home-stats" id="home-stats"></div>
-          </div>
-          <div class="poster-wall" id="poster-wall" aria-hidden="true">
-            ${Array.from({ length: 12 }, (_, i) => `<div class="pw-card" style="--i:${i}"></div>`).join('')}
-          </div>
+    return `<section class="home-hero">
+        <div class="mosaic" id="poster-wall" aria-hidden="true">
+          ${Array.from({ length: 48 }, (_, i) => `<div class="pw-card" style="--i:${i}"></div>`).join('')}
+        </div>
+        <div class="mosaic-shade"></div>
+        <div class="container hero-copy">
+          <span class="home-kicker">Jurnal de seriale și filme</span>
+          <h1>Toate filmele și serialele tale.<br><span>Într-un singur loc.</span></h1>
+          <p>Notează ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi. Gratuit, fără reclame.</p>
+          <div class="home-cta">${cta}</div>
+          <div class="home-stats" id="home-stats"></div>
         </div>
       </section>
 
@@ -649,23 +648,14 @@
         </a>`).join('');
     }
     const allTrending = [...(trending.tv || []), ...(trending.movie || [])];
-    const backdrops = allTrending.filter((t) => t.backdrop);
-    const bd = document.getElementById('home-backdrop');
-    if (bd && backdrops.length) {
-      const pickBd = backdrops[Math.floor(Math.random() * backdrops.length)];
-      const img = new Image();
-      img.onload = () => { bd.style.backgroundImage = `url('${pickBd.backdrop}')`; bd.classList.add('on'); };
-      img.src = pickBd.backdrop;
-    }
-
     // peretele de postere: din bibliotecile membrilor activi
     const posters = shuffle([...new Set([
       ...allTrending.map((t) => t.poster),
       ...data.active.flatMap((d) => d.titles.map((t) => t.poster)),
-    ].filter((p) => p && /^https?:/.test(p)))]).slice(0, 12);
+    ].filter((p) => p && /^https?:/.test(p)))]).slice(0, 48);
     const wall = document.getElementById('poster-wall');
     if (wall && posters.length) {
-      wall.innerHTML = Array.from({ length: 12 }, (_, i) => {
+      wall.innerHTML = Array.from({ length: 48 }, (_, i) => {
         const src = posters[i % posters.length];
         return `<div class="pw-card" style="--i:${i}"><img src="${esc(src)}" alt="" loading="lazy"></div>`;
       }).join('');
