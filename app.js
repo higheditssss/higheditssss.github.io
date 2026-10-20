@@ -450,7 +450,8 @@
     box.innerHTML = `<div class="card"><h3>Unde poți viziona${d.region ? ' · ' + esc(d.region) : ''}</h3>${html}${d.link ? `<a class="see-all" style="display:inline-block;margin-top:10px" href="${esc(d.link)}" target="_blank" rel="noopener">Detalii ›</a>` : ''}<div class="hint" style="margin-top:8px;font-size:11px;color:var(--faint)">Sursa: JustWatch prin TMDB</div></div>`;
   }
 
-  // ---------- prieteni = conturile pe care le urmaresti ----------
+  // ---------- prieteni: cereri de prietenie ----------
+  // A ii trimite cerere lui B = B apare in A.following. Prieteni = fiecare il are pe celalalt in following.
 
   const userCache = new Map();
   function loadFollowed(uid) {
@@ -463,37 +464,40 @@
     ? `<img class="avatar ${size}" src="${esc(d.profile.avatar)}" alt="" loading="lazy">`
     : `<div class="avatar ${size}" style="${d.profile.accent ? `color:${esc(d.profile.accent)}` : ''}">${esc((d.profile.name || d.profile.username || '?').charAt(0).toUpperCase())}</div>`);
 
+  // prietenii (reciproci) ai unui profil incarcat
+  async function friendsOf(d) {
+    const list = await Promise.all((d.profile.following || []).map(loadFollowed));
+    return list.filter((x) => x && !x.private && x.profile.username && (x.profile.following || []).includes(d.uid));
+  }
+
   function friendsSidebarCard() {
-    const following = DB.profile.following || [];
-    if (!following.length) return '';
-    return `<div class="card"><h3>Prieteni · ${following.length}</h3><div class="friend-dots" id="friend-dots">${following.map(() => '<div class="avatar sm"></div>').join('')}</div>
+    if (!(DB.profile.following || []).length) return '';
+    return `<div class="card" id="friends-card"><h3>Prieteni <span id="friend-count"></span></h3><div class="friend-dots" id="friend-dots"><div class="avatar sm"></div><div class="avatar sm"></div></div>
       <a class="see-all" style="display:inline-block;margin-top:12px" href="${R('/prieteni')}">Vezi prietenii ›</a></div>`;
   }
 
   async function fillFriendsSidebar() {
     const box = document.getElementById('friend-dots');
     if (!box) return;
-    const list = (await Promise.all((DB.profile.following || []).map(loadFollowed))).filter((d) => d && d.profile.username);
+    const list = await friendsOf(DB);
     if (!box.isConnected) return;
+    if (!list.length) { document.getElementById('friends-card').remove(); return; }
+    document.getElementById('friend-count').textContent = '· ' + list.length;
     box.innerHTML = list.map((d) => `<a href="${esc(userHome(d))}" title="${esc(d.profile.name)}">${userAvatar(d, 'sm')}</a>`).join('');
   }
 
   function pageFriends() {
-    const following = DB.profile.following || [];
-    if (!following.length) return shell('prieteni', empty('Nu urmărește pe nimeni încă.'));
-    return shell('prieteni', `<div class="friend-cards" id="friend-cards">${following.map(() => '<div class="card friend-card skeleton"></div>').join('')}</div>
+    if (!(DB.profile.following || []).length) return shell('prieteni', empty('Nu are prieteni încă.'));
+    return shell('prieteni', `<div class="friend-cards" id="friend-cards"><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div></div>
       <div id="friend-feed"></div>`);
   }
 
   async function fillFriendsPage() {
     const cards = document.getElementById('friend-cards');
     if (!cards) return;
-    const list = (await Promise.all((DB.profile.following || []).map(loadFollowed))).filter((d) => d && d.profile.username);
+    const list = await friendsOf(DB);
     if (!cards.isConnected) return;
     cards.innerHTML = list.map((d) => {
-      if (d.private) {
-        return `<a class="card friend-card" href="${esc(userHome(d))}">${userAvatar(d)}<div><b>${esc(d.profile.name || d.profile.username)}</b><span class="muted">🔒 Profil privat</span></div></a>`;
-      }
       const tv = d.titles.filter((t) => t.type === 'tv').length;
       const mv = d.titles.filter((t) => t.type === 'movie').length;
       return `<a class="card friend-card" href="${esc(userHome(d))}" style="--friend:${esc(d.profile.accent || 'var(--accent)')}">
@@ -501,32 +505,56 @@
         <div style="min-width:0"><b>${esc(d.profile.name)}</b>
           <span class="muted">@${esc(d.profile.username)} · ${tv} seriale · ${mv} filme · ${d.diary.length} în jurnal</span></div>
         <span class="arrow">›</span></a>`;
-    }).join('') || empty('Conturile urmărite nu mai există.');
+    }).join('') || empty('Nu are prieteni încă.');
+    renderFeed(document.getElementById('friend-feed'), list, 30, 'Activitatea prietenilor');
+  }
 
-    // activitatea recenta a prietenilor, amestecata, cea mai noua prima
+  // activitatea recenta a unor profiluri, amestecata, cea mai noua prima
+  function renderFeed(box, people, max, title) {
+    if (!box) return;
     const feed = [];
-    for (const d of list) {
-      if (d.private) continue;
+    for (const d of people) {
       const titles = new Map(d.titles.map((t) => [t.id, t]));
-      for (const e of d.diary) {
-        const t = titles.get(e.titleId);
-        if (t) feed.push({ d, e, t });
-      }
+      for (const e of d.diary) { const t = titles.get(e.titleId); if (t) feed.push({ d, e, t }); }
     }
     feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
-    const box = document.getElementById('friend-feed');
-    if (!box || !feed.length) return;
-    box.innerHTML = section('Activitatea prietenilor', `<div class="diary-box">${feed.slice(0, 30).map(({ d, e, t }) => `
+    if (!feed.length) { box.innerHTML = title ? '' : empty('Prietenii tăi n-au notat nimic încă.'); return; }
+    const rows = `<div class="diary-box">${feed.slice(0, max).map(({ d, e, t }) => `
       <a class="diary-row" href="${esc(userTitleHref(d, t))}">
         <div class="diary-day">${userAvatar(d, 'xs')}</div>
         <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
         <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div>
           <div class="diary-sub">${esc(d.profile.name)} · ${esc(scopeLabel(e, t))} · ${fmtDate(e.date)}</div></div>
         <div class="diary-flags">${e.rewatch ? '<span title="Revăzut">↻</span>' : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
-      </a>`).join('')}</div>`);
+      </a>`).join('')}</div>`;
+    box.innerHTML = title ? section(title, rows) : rows;
   }
 
-  // butonul Urmareste / Editeaza profilul de langa nume
+  // relatia dintre mine si alt profil
+  function relation(me, other) {
+    const myUid = backend.user.uid;
+    const iSent = (me.profile.following || []).includes(other.uid);
+    const theySent = (other.profile ? other.profile.following || [] : other.following || []).includes(myUid);
+    const declined = (me.profile.declined || []).includes(other.uid);
+    if (iSent && theySent) return 'friends';
+    if (iSent) return 'sent';
+    if (theySent && !declined) return 'received';
+    return 'none';
+  }
+
+  // schimba relatia: add (cerere / acceptare), cancel (anulare / stergere prieten), decline (refuz)
+  async function setRelation(me, uid, action) {
+    let following = [...(me.profile.following || [])];
+    let declined = [...(me.profile.declined || [])];
+    if (action === 'add') { following.push(uid); declined = declined.filter((x) => x !== uid); }
+    if (action === 'cancel') { following = following.filter((x) => x !== uid); declined.push(uid); }
+    if (action === 'decline') declined.push(uid);
+    me.profile = await api('/api/profile', { method: 'PUT', body: { following: [...new Set(following)], declined: [...new Set(declined)] } });
+    userCache.clear();
+    updateRequestBadge();
+  }
+
+  // butonul de prietenie de langa nume
   async function fillFollowButton() {
     const slot = document.getElementById('follow-slot');
     if (!slot || !backend.user) return;
@@ -537,17 +565,120 @@
     let me;
     try { me = await api('/api/public'); } catch { return; }
     if (!slot.isConnected) return;
+    const target = { uid: DB.uid, profile: DB.profile };
     const draw = () => {
-      const on = (me.profile.following || []).includes(DB.uid);
-      slot.innerHTML = `<button class="btn small ${on ? '' : 'primary'}" id="follow-btn">${on ? '✓ Urmărești' : '+ Urmărește'}</button>`;
-      slot.querySelector('#follow-btn').addEventListener('click', async (ev) => {
-        ev.currentTarget.disabled = true;
-        const following = on ? me.profile.following.filter((x) => x !== DB.uid) : [...(me.profile.following || []), DB.uid];
-        try { me.profile = await api('/api/profile', { method: 'PUT', body: { following } }); } catch (e) { alert(e.message); }
-        draw();
-      });
+      const rel = relation(me, target);
+      const buttons = {
+        friends: '<button class="btn small" data-act="cancel" data-confirm="1">✓ Prieteni</button>',
+        sent: '<button class="btn small" data-act="cancel">Cerere trimisă · Anulează</button>',
+        received: '<button class="btn small primary" data-act="add">✓ Acceptă cererea</button><button class="btn small ghost" data-act="decline">Refuză</button>',
+        none: '<button class="btn small primary" data-act="add">+ Adaugă prieten</button>',
+      };
+      slot.innerHTML = `<div class="follow-btns">${buttons[rel]}</div>`;
     };
     draw();
+    slot.addEventListener('click', async (ev) => {
+      const b = ev.target.closest('[data-act]');
+      if (!b) return;
+      if (b.dataset.confirm && !confirm(`Îl scoți pe ${DB.profile.name} de la prieteni?`)) return;
+      b.disabled = true;
+      try { await setRelation(me, DB.uid, b.dataset.act); } catch (e) { alert(e.message); }
+      draw();
+    });
+  }
+
+  // ---------- clopotelul de notificari ----------
+  // cereri primite (cu Accepta / Refuza) + prietenii noi; ce ai vazut se tine minte in browser
+
+  const seenKey = () => 'editsel_seen_' + backend.user.uid;
+  const getSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(seenKey()) || '[]')); } catch { return new Set(); } };
+  const saveSeen = (set) => { try { localStorage.setItem(seenKey(), JSON.stringify([...set].slice(-500))); } catch { /* fara memorie locala */ } };
+  let notifState = { items: [], me: null, members: [] };
+
+  async function loadNotifications() {
+    const [members, me] = await Promise.all([backend.listMembers().catch(() => []), api('/api/public').catch(() => null)]);
+    if (!me) return null;
+    const others = members.filter((p) => p.username && p.uid !== backend.user.uid);
+    const items = [];
+    for (const p of others) {
+      const rel = relation(me, p);
+      if (rel === 'received') items.push({ id: 'r:' + p.uid, type: 'request', p });
+      if (rel === 'friends') items.push({ id: 'f:' + p.uid, type: 'friend', p });
+    }
+    // cererile primite sunt mereu sus
+    items.sort((a, b) => (a.type === b.type ? 0 : a.type === 'request' ? -1 : 1));
+    notifState = { items, me, members: others };
+    return notifState;
+  }
+
+  function setBellCount(n) {
+    const bell = document.getElementById('bell');
+    if (!bell) return;
+    if (n > 0) bell.setAttribute('data-badge', n); else bell.removeAttribute('data-badge');
+  }
+
+  async function updateRequestBadge() {
+    const links = document.querySelectorAll('.main-nav a[data-nav="prieteni"], .bottom-nav a[data-nav="prieteni"]');
+    if (!backend || !backend.user) { links.forEach((a) => a.removeAttribute('data-badge')); return; }
+    const st = await loadNotifications();
+    if (!st) return;
+    const requests = st.items.filter((n) => n.type === 'request').length;
+    links.forEach((a) => (requests ? a.setAttribute('data-badge', requests) : a.removeAttribute('data-badge')));
+    const seen = getSeen();
+    setBellCount(st.items.filter((n) => n.type === 'request' || !seen.has(n.id)).length);
+  }
+
+  function drawBellPanel() {
+    const panel = document.getElementById('bell-panel');
+    if (!panel) return;
+    const seen = getSeen();
+    const av = (p) => (p.avatar ? `<img class="hs-avatar" src="${esc(p.avatar)}" alt="">` : `<span class="hs-avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`);
+    const list = notifState.items.slice(0, 30);
+    panel.innerHTML = `<div class="bell-head">Notificări</div>${list.length ? list.map((n) => `
+      <div class="bell-item ${n.type === 'request' || !seen.has(n.id) ? 'new' : ''}" data-uid="${esc(n.p.uid)}">
+        <a href="${BASE}${esc(n.p.username)}">${av(n.p)}</a>
+        <div class="bell-text">
+          ${n.type === 'request'
+            ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ți-a trimis o cerere de prietenie.
+               <div class="follow-btns"><button class="btn small primary" data-act="add">✓ Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button></div>`
+            : `Tu și <a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> sunteți acum prieteni.`}
+        </div>
+      </div>`).join('') : '<div class="hs-empty">Nu ai notificări.</div>'}
+      <a class="hs-all" href="${BASE}prieteni">Toți prietenii ›</a>`;
+  }
+
+  function setupBell() {
+    const bell = document.getElementById('bell');
+    const panel = document.getElementById('bell-panel');
+    if (!bell || !panel) return;
+    bell.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const opening = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !opening);
+      if (!opening) return;
+      panel.innerHTML = '<div class="hs-empty">Se încarcă…</div>';
+      await updateRequestBadge();
+      drawBellPanel();
+      // prieteniile noi se considera vazute odata ce deschizi clopotelul
+      const seen = getSeen();
+      notifState.items.filter((n) => n.type === 'friend').forEach((n) => seen.add(n.id));
+      saveSeen(seen);
+      setBellCount(notifState.items.filter((n) => n.type === 'request').length);
+    });
+    panel.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const btn = e.target.closest('button[data-act]');
+      if (btn) {
+        btn.disabled = true;
+        try { await setRelation(notifState.me, btn.closest('[data-uid]').dataset.uid, btn.dataset.act); } catch (err) { alert(err.message); }
+        await updateRequestBadge();
+        drawBellPanel();
+        if (location.pathname.startsWith(BASE + 'prieteni')) render();
+        return;
+      }
+      if (e.target.closest('a')) panel.classList.add('hidden');
+    });
+    document.addEventListener('click', () => panel.classList.add('hidden'));
   }
 
   // ---------- antet: cont ----------
@@ -563,7 +694,9 @@
     try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
-    slot.innerHTML = `<button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
+    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
+    setupBell();
+    updateRequestBadge();
     slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });
   }
 
@@ -573,7 +706,7 @@
     ['▤', 'Jurnal', 'Notează fiecare episod și film văzut, cu dată, notă și ♥. Totul ordonat pe luni.'],
     ['★', 'Note și recenzii', 'Stele cu jumătăți, recenzii cu spoilere ascunse și note pe fiecare sezon.'],
     ['☰', 'Liste', 'Topuri, colecții, „de văzut în weekend” — liste numerotate sau simple.'],
-    ['☺', 'Prieteni', 'Urmărește-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.'],
+    ['☺', 'Prieteni', 'Adaugă-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.'],
   ];
 
   function pageHome() {
@@ -845,29 +978,13 @@
       document.querySelector('.disc-page').insertAdjacentHTML('beforeend', empty('Listele se încarcă după ce administratorul site-ului intră o dată (are nevoie de cheia TMDB).'));
     }
 
-    // activitatea celor pe care ii urmaresti
-    const wrap = document.getElementById('disc-friends-wrap');
-    if (!wrap) return;
-    const following = (me && me.profile.following) || [];
-    if (!following.length) {
-      wrap.querySelector('#disc-friends').innerHTML = empty(backend.user ? 'Urmărește-ți prietenii (butonul „+ Urmărește” de pe profilul lor) ca să vezi aici ce au văzut.' : 'Fă-ți cont ca să-ți urmărești prietenii.');
-      return;
-    }
-    const people = (await Promise.all(following.map(loadFollowed))).filter((d) => d && !d.private && d.profile.username);
-    const feed = [];
-    for (const d of people) {
-      const titles = new Map(d.titles.map((t) => [t.id, t]));
-      for (const e of d.diary) { const t = titles.get(e.titleId); if (t) feed.push({ d, e, t }); }
-    }
-    feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
+    // activitatea prietenilor (cereri acceptate)
     const box = document.getElementById('disc-friends');
     if (!box) return;
-    box.innerHTML = feed.length ? `<div class="disc-row">${feed.slice(0, 8).map(({ d, e, t }) => `
-      <a class="poster" href="${esc(userTitleHref(d, t))}" title="${esc(d.profile.name)} · ${esc(t.title)}">
-        <div class="poster-img">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : `<div class="poster-fallback"><span>${esc(t.title)}</span></div>`}
-          <span class="disc-who">${userAvatar(d, 'xs')}</span></div>
-        <div class="poster-meta">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
-      </a>`).join('')}</div>` : empty('Prietenii tăi n-au notat nimic încă.');
+    if (!me) { box.innerHTML = empty('Fă-ți cont ca să-ți adaugi prietenii.'); return; }
+    const friends = await friendsOf({ uid: backend.user.uid, profile: me.profile });
+    if (!friends.length) { box.innerHTML = empty('Nu ai prieteni încă. Trimite cereri de pe pagina <a href="prieteni" style="color:var(--accent-text)">Prieteni</a>.'); return; }
+    renderFeed(box, friends, 12);
   }
 
   // ---------- pagina de rezultate (/cauta?q=...) ----------
@@ -944,18 +1061,18 @@
     if (!backend.user) count.insertAdjacentHTML('beforeend', ' <a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> ca să cauți în toate serialele și filmele.');
   }
 
-  // ---------- pagina Prieteni (/prieteni): cauti membri si ii urmaresti ----------
+  // ---------- pagina Prieteni (/prieteni): cereri, prieteni, sugestii ----------
 
   function pageFriendsHub() {
     if (!backend.user) {
       return `<div class="container page disc-page">
         <h1 class="disc-title">Prieteni</h1>
-        ${empty('<a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> sau <a href="admin.html" style="color:var(--accent-text)">intră în cont</a> ca să-ți urmărești prietenii și să vezi ce au văzut.')}
+        ${empty('<a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> sau <a href="admin.html" style="color:var(--accent-text)">intră în cont</a> ca să-ți adaugi prietenii și să vezi ce au văzut.')}
       </div>`;
     }
     return `<div class="container page disc-page">
       <h1 class="disc-title">Prieteni</h1>
-      <p class="muted disc-sub">Urmărește-ți prietenii ca să le vezi activitatea pe pagina Descoperă și în tab-ul Prieteni de pe profilul tău.</p>
+      <p class="muted disc-sub">Trimite cereri de prietenie. Când celălalt acceptă, vă vedeți unul altuia activitatea.</p>
       <div class="fh-search"><span>⌕</span><input id="fh-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
       <div id="fh-body"><div class="member-list">${Array.from({ length: 3 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div></div>
     </div>`;
@@ -967,43 +1084,48 @@
     const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     let [members, me] = await Promise.all([backend.listMembers().catch(() => []), api('/api/public').catch(() => null)]);
     if (!me || !body.isConnected) return;
-    const myUid = backend.user.uid;
-    members = members.filter((p) => p.username && p.uid !== myUid);
+    members = members.filter((p) => p.username && p.uid !== backend.user.uid);
 
-    const row = (p, following) => `<div class="fh-row" style="--friend:${esc(p.accent || 'var(--accent)')}">
+    const ACTIONS = {
+      received: '<button class="btn small primary" data-act="add">✓ Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button>',
+      friends: '<button class="btn small" data-act="cancel" data-confirm="1">✓ Prieteni</button>',
+      sent: '<button class="btn small" data-act="cancel">Anulează cererea</button>',
+      none: '<button class="btn small primary" data-act="add">+ Adaugă prieten</button>',
+    };
+    const row = (p, rel) => `<div class="fh-row" data-uid="${esc(p.uid)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
         <a class="fh-person" href="${BASE}${esc(p.username)}">
           ${p.avatar ? `<img class="avatar sm" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar sm" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
-          <span class="hs-text"><b>${esc(p.name || p.username)}</b><small>@${esc(p.username)}${(p.following || []).includes(myUid) ? ' · te urmărește' : ''}${p.bio ? ' · ' + esc(p.bio.slice(0, 60)) : ''}</small></span>
+          <span class="hs-text"><b>${esc(p.name || p.username)}</b><small>@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio.slice(0, 60)) : ''}</small></span>
         </a>
-        <button class="btn small ${following ? '' : 'primary'}" data-uid="${esc(p.uid)}">${following ? '✓ Urmărești' : (p.following || []).includes(myUid) ? '+ Urmărește înapoi' : '+ Urmărește'}</button>
+        <div class="follow-btns">${ACTIONS[rel]}</div>
       </div>`;
 
     const draw = () => {
       const q = norm(document.getElementById('fh-q').value.trim());
-      const following = me.profile.following || [];
       const match = (p) => !q || norm(p.username).includes(q) || norm(p.name).includes(q);
-      const mine = members.filter((p) => following.includes(p.uid) && match(p));
-      const fans = members.filter((p) => !following.includes(p.uid) && (p.following || []).includes(myUid) && match(p));
-      const others = members.filter((p) => !following.includes(p.uid) && !(p.following || []).includes(myUid) && match(p));
-      const block = (title, list, on, emptyMsg) => `<section class="section"><div class="section-head"><h2>${title}${list.length ? ` · ${list.length}` : ''}</h2></div>
-        ${list.length ? `<div class="fh-list">${list.map((p) => row(p, on)).join('')}</div>` : (emptyMsg ? empty(emptyMsg) : '')}</section>`;
-      body.innerHTML = block('Îi urmărești', mine, true, q ? '' : 'Nu urmărești pe nimeni încă. Alege pe cineva de mai jos.')
-        + (fans.length ? block('Te urmăresc', fans, false) : '')
-        + block(q ? 'Rezultate' : 'Sugestii', others, false, q ? 'Niciun membru găsit.' : 'Nu mai sunt alți membri. Trimite-le prietenilor link-ul site-ului!');
+      const groups = { received: [], friends: [], sent: [], none: [] };
+      members.filter(match).forEach((p) => groups[relation(me, p)].push(p));
+      const block = (title, key, emptyMsg) => {
+        const list = groups[key];
+        if (!list.length && !emptyMsg) return '';
+        return `<section class="section"><div class="section-head"><h2>${title}${list.length ? ` · ${list.length}` : ''}</h2></div>
+          ${list.length ? `<div class="fh-list">${list.map((p) => row(p, key)).join('')}</div>` : empty(emptyMsg)}</section>`;
+      };
+      body.innerHTML = block('Cereri de prietenie', 'received')
+        + block('Prietenii tăi', 'friends', q ? '' : 'Nu ai prieteni încă. Trimite o cerere cuiva de mai jos.')
+        + block('Cereri trimise', 'sent')
+        + block(q ? 'Rezultate' : 'Sugestii', 'none', q ? 'Niciun membru găsit.' : 'Nu mai sunt alți membri. Trimite-le prietenilor link-ul site-ului!');
     };
     draw();
     document.getElementById('fh-q').addEventListener('input', draw);
     body.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-uid]');
+      const btn = e.target.closest('button[data-act]');
       if (!btn) return;
+      const uid = btn.closest('[data-uid]').dataset.uid;
+      const p = members.find((x) => x.uid === uid);
+      if (btn.dataset.confirm && !confirm(`Îl scoți pe ${p ? p.name || p.username : 'acest membru'} de la prieteni?`)) return;
       btn.disabled = true;
-      const uid = btn.dataset.uid;
-      const cur = me.profile.following || [];
-      const next = cur.includes(uid) ? cur.filter((x) => x !== uid) : [...cur, uid];
-      try {
-        me.profile = await api('/api/profile', { method: 'PUT', body: { following: next } });
-        userCache.clear();
-      } catch (err) { alert(err.message); }
+      try { await setRelation(me, uid, btn.dataset.act); } catch (err) { alert(err.message); }
       draw();
     });
   }

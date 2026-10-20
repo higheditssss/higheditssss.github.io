@@ -1137,46 +1137,10 @@
     draw();
   }
 
-  // --- Prieteni: conturile pe care le urmaresti ---
-  async function setFriends(el) {
-    const b = await WL.backend();
-    const following = DB.profile.following || [];
-    el.innerHTML = `<p class="muted" style="margin-top:0">Urmărește alți membri EDITSEL. Apar în tab-ul <b>Prieteni</b> de pe profilul tău, împreună cu activitatea lor. Poți urmări pe cineva și direct de pe profilul lui, cu butonul <b>+ Urmărește</b>.</p>
-      <div style="display:flex;gap:8px;max-width:520px;margin-bottom:18px">
-        <input class="input" id="fr-user" placeholder="username-ul prietenului, ex: andrei">
-        <button class="btn primary" id="fr-add">Urmărește</button>
-      </div>
-      <div class="list-items" id="fr-list">${following.length ? following.map(() => '<div class="list-item skeleton-row"></div>').join('') : '<div class="muted">Nu urmărești pe nimeni încă.</div>'}</div>`;
-    const save = async (list, msg) => { await saveProfile({ following: list }, msg); setFriends(el); };
-    el.querySelector('#fr-add').addEventListener('click', async (e) => {
-      const name = el.querySelector('#fr-user').value.trim().replace(/^@/, '').toLowerCase();
-      if (!name) return;
-      e.target.disabled = true;
-      try {
-        const uid = await b.uidForUsername(name);
-        if (!uid) throw new Error(`Nu există niciun utilizator @${name}.`);
-        if (uid === b.user.uid) throw new Error('Ăsta ești tu 🙂');
-        if (following.includes(uid)) throw new Error(`Îl urmărești deja pe @${name}.`);
-        await save([...following, uid], `Îl urmărești pe @${name}`);
-      } catch (err) { toast(err.message, true); e.target.disabled = false; }
-    });
-    // numele conturilor urmarite
-    const people = await Promise.all(following.map((uid) => b.loadUserByUid(uid).catch(() => null)));
-    const box = el.querySelector('#fr-list');
-    if (!box || !box.isConnected || !following.length) return;
-    box.innerHTML = following.map((uid, i) => {
-      const d = people[i];
-      const label = d && d.profile.username ? `<b>${esc(d.profile.name || d.profile.username)}</b> <span class="muted" style="font-size:13px">@${esc(d.profile.username)}${d.private ? ' · privat' : ''}</span>` : '<span class="muted">Cont șters</span>';
-      return `<div class="list-item" style="grid-template-columns:minmax(0,1fr) auto">
-        <span>${label}</span>
-        <span style="white-space:nowrap">${d && d.profile.username ? `<a class="btn small ghost" href="${esc(d.profile.username)}" target="_blank">↗</a>` : ''}<button class="btn small ghost" data-rm="${i}" title="Nu mai urmări">✕</button></span>
-      </div>`;
-    }).join('');
-    box.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-rm]');
-      if (!btn) return;
-      save(following.filter((_, i) => i !== Number(btn.dataset.rm)), 'Nu îl mai urmărești');
-    });
+  // --- Prieteni: se gestioneaza pe pagina /prieteni a site-ului (cereri, acceptare) ---
+  function setFriends(el) {
+    el.innerHTML = `<p class="muted" style="margin-top:0">Prietenii se adaugă prin cereri de prietenie: trimiți o cerere, iar când celălalt o acceptă deveniți prieteni și vă vedeți activitatea.</p>
+      <a class="btn primary" href="prieteni">☺ Deschide pagina Prieteni</a>`;
   }
 
   // --- Backup ---

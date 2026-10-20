@@ -26,7 +26,7 @@ const clean = (o) => JSON.parse(JSON.stringify(o)); // Firestore nu accepta unde
 
 const PROFILE_DEFAULTS = {
   name: '', username: '', bio: '', avatar: '', banner: '', bannerFrom: '', statsBanner: '', statsBannerFrom: '',
-  accent: '#d8d2c9', showStats: true, private: false, region: 'RO', favorites: [], following: [], joined: '',
+  accent: '#d8d2c9', showStats: true, private: false, region: 'RO', favorites: [], following: [], declined: [], joined: '',
 };
 
 function cleanTitle(input, existing = {}) {
@@ -409,6 +409,7 @@ export async function createBackend(config) {
       if ('showStats' in b) set('showStats', Boolean(b.showStats));
       if ('private' in b) set('private', Boolean(b.private));
       if ('region' in b && /^[A-Z]{2}$/.test(b.region)) set('region', b.region);
+      if ('declined' in b && Array.isArray(b.declined)) set('declined', [...new Set(b.declined.map((x) => str(x, 128)))].filter(Boolean).slice(-300));
       if ('following' in b && Array.isArray(b.following)) set('following', [...new Set(b.following.map((x) => str(x, 128)))].filter((x) => x && x !== user.uid).slice(0, 200));
       upd.updatedAt = new Date().toISOString();
       if (JSON.stringify(upd).length > 900000) throw err('Imaginile sunt prea mari. Încearcă o poză mai mică.');
