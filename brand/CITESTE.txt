@@ -1,0 +1,6 @@
+Pune aici imaginile generate:
+
+  logo.png     - logo-ul orizontal (inaltime ~200px, fundal transparent). Apare in meniu.
+  favicon.png  - iconita patrata 512x512. Apare in tab-ul browserului.
+
+Daca lipsesc, site-ul afiseaza automat textul EDITSEL.

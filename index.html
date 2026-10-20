@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDITSEL</title>
+  <link rel="icon" href="brand/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>window.EDITSEL_STATIC = true;</script>
+</head>
+<body>
+  <header class="site-header" id="header">
+    <div class="container header-inner">
+      <a class="logo" href="#/">
+        <img src="brand/logo.png" alt="EDITSEL" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()">
+        <span class="logo-mark"></span><span class="logo-text">EDITSEL</span>
+      </a>
+      <div class="header-spacer"></div>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <span class="logo-text small">EDITSEL</span>
+        <p>Jurnalul meu de seriale și filme.</p>
+        <p class="copy">© <span id="year"></span> EDITSEL. Toate drepturile rezervate.</p>
+      </div>
+      <div class="credits">
+        <a class="tmdb-badge" href="https://www.themoviedb.org/" target="_blank" rel="noopener" title="The Movie Database">TMDB</a>
+        <p>Datele și imaginile despre seriale și filme sunt furnizate de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">The Movie Database (TMDB)</a>.
+          Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</p>
+        <p>Informațiile despre platformele de streaming vin de la <a href="https://www.justwatch.com/" target="_blank" rel="noopener">JustWatch</a>, prin TMDB.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="notice-back hidden" id="api-notice" role="dialog" aria-modal="true" aria-labelledby="api-notice-title">
+    <div class="notice">
+      <span class="tmdb-badge">TMDB</span>
+      <h2 id="api-notice-title">Despre datele de pe site</h2>
+      <p>EDITSEL folosește <b>API-ul TMDB</b> (The Movie Database) pentru postere, imagini, descrieri, sezoane și actori, iar pentru platformele de streaming folosește date de la JustWatch.</p>
+      <p class="muted">Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB. Ratingurile, recenziile și jurnalul sunt ale mele.</p>
+      <button class="btn primary" id="api-notice-ok">Am înțeles</button>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
