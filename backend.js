@@ -297,7 +297,7 @@ export async function createBackend(config) {
     if (!r.ok) throw err('TMDB a răspuns ' + r.status, 502);
     return r.json();
   }
-  const lang = async () => ((await loadSiteConfig()) || {}).language || 'ro-RO';
+  const lang = async () => (window.EDITSEL_LANG === 'en' ? 'en-US' : ((await loadSiteConfig()) || {}).language || 'ro-RO');
 
   async function tmdbSearch(q, type) {
     const kind = type === 'tv' || type === 'movie' ? type : 'multi';

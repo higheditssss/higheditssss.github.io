@@ -1215,7 +1215,7 @@
       <div class="modal-head">
         <div style="width:70px;flex:none">${poster(t, { showMeta: false })}</div>
         <div style="min-width:0">
-          <h2>${esc(t.title)}</h2>
+          <h2 class="notranslate">${esc(t.title)}</h2>
           <div class="muted" style="font-size:14px">${[t.year, isTv ? 'Serial' : 'Film', (t.genres || []).slice(0, 3).join(', ')].filter(Boolean).map(esc).join(' · ')}</div>
           ${isExisting ? '<span class="badge accent" style="margin-top:6px">În biblioteca ta</span>' : ''}
         </div>

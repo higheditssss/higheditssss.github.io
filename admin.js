@@ -314,7 +314,7 @@
       <div class="modal-head">
         <div id="m-poster">${poster(d, { showMeta: false })}</div>
         <div style="min-width:0">
-          <h2 id="m-title">${esc(d.title || 'Titlu nou')}</h2>
+          <h2 id="m-title" class="notranslate">${esc(d.title || 'Titlu nou')}</h2>
           <div class="muted" style="font-size:14px" id="m-sub"></div>
         </div>
       </div>

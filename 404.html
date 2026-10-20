@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=mvh8zcdn">
-  <link rel="stylesheet" href="admin.css?v=mvh8zcdn">
-  <script src="common.js?v=mvh8zcdn"></script>
+  <link rel="stylesheet" href="style.css?v=mvh95x2v">
+  <link rel="stylesheet" href="admin.css?v=mvh95x2v">
+  <script src="common.js?v=mvh95x2v"></script>
   <script>
     // culoarea profilului din vizita trecuta, aplicata inainte de afisare (fara clipire)
     // pe un profil: culoarea lui din vizita trecuta; pe pagina principala ramane culoarea site-ului
@@ -38,6 +38,7 @@
         <input type="search" placeholder="Caută seriale, filme, membri…" autocomplete="off" aria-label="Caută">
         <div class="hs-results hidden" id="hs-results"></div>
       </div>
+      <div class="lang-switch" role="group" aria-label="Limba"><button type="button" data-lang="ro">RO</button><button type="button" data-lang="en">EN</button></div>
       <div class="auth-slot" id="auth-slot"></div>
     </div>
   </header>
@@ -87,6 +88,7 @@
       <div class="footer-bottom">
         <span>© <span id="year"></span> EDITSEL</span>
         <span class="footer-legal">Acest site folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</span>
+        <div class="lang-switch" role="group" aria-label="Limba"><button type="button" data-lang="ro">RO</button><button type="button" data-lang="en">EN</button></div>
         <a href="#" id="to-top">Sus ↑</a>
       </div>
     </div>
@@ -102,8 +104,9 @@
     </div>
   </div>
 
-  <script src="firebase-config.js?v=mvh8zcdn"></script>
-  <script type="module" src="backend.js?v=mvh8zcdn"></script>
-  <script src="app.js?v=mvh8zcdn"></script>
+  <script src="i18n.js?v=mvh95x2v"></script>
+  <script src="firebase-config.js?v=mvh95x2v"></script>
+  <script type="module" src="backend.js?v=mvh95x2v"></script>
+  <script src="app.js?v=mvh95x2v"></script>
 </body>
 </html>

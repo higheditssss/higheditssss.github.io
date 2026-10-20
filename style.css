@@ -634,3 +634,10 @@ body.loading #app::after {
 .qa-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 @media (max-width: 640px) { .footer-logo .logo-text { display: inline; } }
+
+/* ---------- comutator RO / EN ---------- */
+.lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(38,38,46,.7); flex: none; }
+.lang-switch button { border: 0; background: none; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); cursor: pointer; }
+.lang-switch button.on { background: var(--accent); color: var(--accent-ink); }
+.footer-bottom .lang-switch { background: var(--surface); border: 1px solid var(--border); }
+@media (max-width: 640px) { .header-inner .lang-switch button { padding: 4px 7px; font-size: 11px; } }
