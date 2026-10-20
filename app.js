@@ -591,7 +591,6 @@
           <h1>Toate filmele și serialele tale.<br><span>Într-un singur loc.</span></h1>
           <p>Notează ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi. Gratuit, fără reclame.</p>
           <div class="home-cta">${cta}</div>
-          <div class="home-stats" id="home-stats"></div>
         </div>
       </section>
 
