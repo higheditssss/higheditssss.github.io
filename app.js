@@ -591,6 +591,7 @@
           <h1>Toate filmele și serialele tale.<br><span>Într-un singur loc.</span></h1>
           <p>Notează ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi. Gratuit, fără reclame.</p>
           <div class="home-cta">${cta}</div>
+          <div class="home-stats" id="home-stats"></div>
         </div>
       </section>
 
@@ -663,12 +664,9 @@
       }).join('');
     }
 
-    const titlesCount = data.active.reduce((n, d) => n + d.titles.length, 0);
-    const diaryCount = data.active.reduce((n, d) => n + d.diary.length, 0);
     const stats = document.getElementById('home-stats');
     if (stats && data.members.length) {
-      stats.innerHTML = `<div><b>${data.members.length}</b><span>${data.members.length === 1 ? 'membru' : 'membri'}</span></div>
-        <div><b>${titlesCount}</b><span>titluri</span></div><div><b>${diaryCount}</b><span>în jurnale</span></div>`;
+      stats.innerHTML = `<div><b>${data.members.length}</b><span>${data.members.length === 1 ? 'membru' : 'membri'}</span></div>`;
     }
 
     // activitatea recenta din toate jurnalele
