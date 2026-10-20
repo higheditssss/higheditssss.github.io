@@ -225,7 +225,7 @@
       ? `<div class="grid">${items.map((t) => poster(t, { href: titleHref(t) })).join('')}</div>`
       : empty(type === 'tv' ? 'Niciun serial aici.' : 'Niciun film aici.');
 
-    return shell(type === 'tv' ? 'seriale' : 'filme', `<div class="layout"><aside class="sidebar">${side}</aside><div>${grid}</div></div>`);
+    return shell(type === 'tv' ? 'seriale' : 'filme', `<div class="layout lib-layout"><aside class="sidebar">${side}</aside><div>${grid}</div></div>`);
   }
 
   function pageReviews() {
@@ -488,6 +488,10 @@
     app.innerHTML = html;
     document.title = title;
     if (parts[0] === 't') loadProviders(byId.get(parts[1]));
+    // pe telefon tab-urile se deruleaza: tab-ul activ adus in centru
+    const tabsEl = app.querySelector('.tabs');
+    const activeTab = tabsEl && tabsEl.querySelector('a.active');
+    if (activeTab) tabsEl.scrollLeft = activeTab.offsetLeft - (tabsEl.clientWidth - activeTab.offsetWidth) / 2;
     window.scrollTo(0, 0);
   }
 
