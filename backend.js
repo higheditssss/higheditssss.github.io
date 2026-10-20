@@ -26,7 +26,7 @@ const clean = (o) => JSON.parse(JSON.stringify(o)); // Firestore nu accepta unde
 
 const PROFILE_DEFAULTS = {
   name: '', username: '', bio: '', avatar: '', banner: '', bannerFrom: '', statsBanner: '', statsBannerFrom: '',
-  accent: '#5b7cfa', showStats: true, private: false, region: 'RO', favorites: [], following: [], joined: '',
+  accent: '#7c4dff', showStats: true, private: false, region: 'RO', favorites: [], following: [], joined: '',
 };
 
 function cleanTitle(input, existing = {}) {
@@ -145,6 +145,13 @@ export async function createBackend(config) {
     const s = await getDocs(query(collection(fs, 'users'), where('private', '==', false), limit(200)));
     return s.docs.map((d) => ({ uid: d.id, ...d.data() }))
       .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  }
+
+  // pagina principala: membrii si datele celor mai activi (pentru postere si activitate)
+  async function loadCommunity(n = 8) {
+    const members = await listMembers();
+    const active = await Promise.all(members.filter((m) => m.username).slice(0, n).map((m) => loadUserByUid(m.uid).catch(() => null)));
+    return { members, active: active.filter((d) => d && !d.private) };
   }
 
   // ---------- datele contului logat (cache) ----------
@@ -533,7 +540,7 @@ export async function createBackend(config) {
     onAuth: (fn) => { authListeners.add(fn); return () => authListeners.delete(fn); },
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
-    loadUser, loadUserByUid, listMembers, uidForUsername,
+    loadUser, loadUserByUid, listMembers, loadCommunity, uidForUsername,
     myUsername: async () => (user ? (await me()).profile.username : null),
     exportMine: async () => clean(await me()),
   };

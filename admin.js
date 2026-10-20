@@ -961,7 +961,7 @@
     el.innerHTML = `<p class="muted" style="margin-top:0">Culoarea se aplică pe tot site-ul: butoane, stele, tab-uri, grafice.</p>
       <div class="swatches">${WL.COLORS.map(([name, hex]) => `<button class="swatch-row ${hex === current ? 'on' : ''}" data-hex="${hex}"><span class="swatch" style="background:${hex}"></span>${name}${hex === current ? '<span class="arrow">✓</span>' : ''}</button>`).join('')}</div>
       <div class="field" style="margin-top:18px;max-width:320px"><label>Sau orice culoare</label>
-        <div style="display:flex;gap:10px;align-items:center"><input type="color" id="c-custom" value="${esc(current || '#5b7cfa')}" style="width:54px;height:40px;border:0;background:none;padding:0;cursor:pointer"><button class="btn" id="c-save">Folosește culoarea</button></div>
+        <div style="display:flex;gap:10px;align-items:center"><input type="color" id="c-custom" value="${esc(current || '#7c4dff')}" style="width:54px;height:40px;border:0;background:none;padding:0;cursor:pointer"><button class="btn" id="c-save">Folosește culoarea</button></div>
       </div>`;
     const apply = async (hex) => {
       WL.applyAccent(hex);

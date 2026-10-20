@@ -110,6 +110,7 @@
 
   // Paleta de culori pentru profil (ca la Serializd → Color) + orice culoare custom.
   const COLORS = [
+    ['Mov', '#7c4dff'],
     ['Albastru regal', '#5b7cfa'],
     ['Auriu', '#f4b942'],
     ['Portocaliu apus', '#ff5a1f'],
@@ -118,7 +119,6 @@
     ['Vișiniu', '#9b1c2e'],
     ['Roz', '#ff69b4'],
     ['Prună', '#dda0dd'],
-    ['Mov', '#7c4dff'],
     ['Turcoaz', '#1fb5a5'],
     ['Verde neon', '#8ace00'],
     ['Verde vânător', '#3f7a4a'],

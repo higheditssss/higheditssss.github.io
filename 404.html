@@ -18,11 +18,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=mvh7227g">
-  <script src="common.js?v=mvh7227g"></script>
+  <link rel="stylesheet" href="style.css?v=mvh784kk">
+  <script src="common.js?v=mvh784kk"></script>
   <script>
     // culoarea profilului din vizita trecuta, aplicata inainte de afisare (fara clipire)
-    try { var c = localStorage.getItem('editsel_accent'); if (c) WL.applyAccent(c); } catch (e) {}
+    // pe un profil: culoarea lui din vizita trecuta; pe pagina principala ramane culoarea site-ului
+    try { var c = localStorage.getItem('editsel_accent'); if (c && /[^/]/.test(location.pathname.replace(document.querySelector('base').getAttribute('href'), ''))) WL.applyAccent(c); } catch (e) {}
   </script>
 </head>
 <body class="loading">
@@ -62,8 +63,8 @@
     </div>
   </div>
 
-  <script src="firebase-config.js?v=mvh7227g"></script>
-  <script type="module" src="backend.js?v=mvh7227g"></script>
-  <script src="app.js?v=mvh7227g"></script>
+  <script src="firebase-config.js?v=mvh784kk"></script>
+  <script type="module" src="backend.js?v=mvh784kk"></script>
+  <script src="app.js?v=mvh784kk"></script>
 </body>
 </html>

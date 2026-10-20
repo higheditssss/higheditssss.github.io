@@ -566,34 +566,113 @@
 
   // ---------- pagina principala ----------
 
+  const FEATURES = [
+    ['▤', 'Jurnal', 'Notează fiecare episod și film văzut, cu dată, notă și ♥. Totul ordonat pe luni.'],
+    ['★', 'Note și recenzii', 'Stele cu jumătăți, recenzii cu spoilere ascunse și note pe fiecare sezon.'],
+    ['☰', 'Liste', 'Topuri, colecții, „de văzut în weekend” — liste numerotate sau simple.'],
+    ['☺', 'Prieteni', 'Urmărește-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.'],
+  ];
+
   function pageHome() {
-    return `<div class="home-hero">
-        <div class="container">
-          <div class="home-logo">${WL.logoSvg(null, { size: 84, id: 'hl' })}</div>
-          <h1>Jurnalul tău de <span>seriale și filme</span></h1>
-          <p>Ține evidența a ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi.</p>
-          <div class="home-cta" id="home-cta">
-            ${backend.user ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a>' : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>'}
+    const logged = backend.user;
+    const cta = logged
+      ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
+      : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>';
+    return `<section class="home-hero">
+        <div class="container home-hero-grid">
+          <div class="home-copy">
+            <span class="home-kicker">${WL.logoSvg(null, { size: 22, id: 'hk' })} EDITSEL</span>
+            <h1>Tot ce vezi.<br><span>Într-un singur loc.</span></h1>
+            <p>Jurnalul tău de seriale și filme: dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi.</p>
+            <div class="home-cta">${cta}</div>
+            <div class="home-stats" id="home-stats"></div>
+          </div>
+          <div class="poster-wall" id="poster-wall" aria-hidden="true">
+            ${Array.from({ length: 12 }, (_, i) => `<div class="pw-card" style="--i:${i}"></div>`).join('')}
           </div>
         </div>
-      </div>
-      <div class="container page">
-        ${section('Membri', '<div class="member-grid" id="members"><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div></div>')}
+      </section>
+
+      <div class="container page home-page">
+        <section class="home-features">
+          ${FEATURES.map(([ic, t, d]) => `<div class="feature"><span class="feature-ic">${ic}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}
+        </section>
+
+        <div class="home-columns">
+          <section class="section">
+            <div class="section-head"><h2>Activitate recentă</h2></div>
+            <div id="home-feed"><div class="diary-box">${Array.from({ length: 4 }, () => '<div class="diary-row skeleton-row"></div>').join('')}</div></div>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>Membri</h2></div>
+            <div class="member-list" id="members">${Array.from({ length: 3 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div>
+          </section>
+        </div>
+
+        ${logged ? '' : `<section class="home-final">
+          <h2>Începe-ți jurnalul azi.</h2>
+          <p>Gratuit, fără reclame. Durează un minut.</p>
+          <a class="btn primary" href="admin.html#cont-nou">Creează cont</a>
+        </section>`}
       </div>`;
   }
 
-  async function fillMembers() {
-    const box = document.getElementById('members');
-    if (!box) return;
-    let list = [];
-    try { list = await backend.listMembers(); } catch (e) { console.error(e); }
-    if (!box.isConnected) return;
-    box.innerHTML = list.filter((p) => p.username).map((p) => `
-      <a class="card friend-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
-        ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
-        <div style="min-width:0"><b>${esc(p.name || p.username)}</b><span class="muted">@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio.slice(0, 60)) : ''}</span></div>
-        <span class="arrow">›</span>
-      </a>`).join('') || empty('Încă nu s-a înscris nimeni. Fii primul!');
+  async function fillHome() {
+    if (backend.user) backend.myUsername().then((u) => { const a = document.getElementById('home-my'); if (a && u) a.href = BASE + u; }).catch(() => {});
+    let data = { members: [], active: [] };
+    try { data = await backend.loadCommunity(8); } catch (e) { console.error(e); }
+    if (!document.getElementById('members')) return;
+
+    // peretele de postere: din bibliotecile membrilor activi
+    const posters = [...new Set(data.active.flatMap((d) => d.titles.map((t) => t.poster).filter((p) => p && /^https?:/.test(p))))]
+      .sort(() => Math.random() - 0.5).slice(0, 12);
+    const wall = document.getElementById('poster-wall');
+    if (wall && posters.length) {
+      wall.innerHTML = Array.from({ length: 12 }, (_, i) => {
+        const src = posters[i % posters.length];
+        return `<div class="pw-card" style="--i:${i}"><img src="${esc(src)}" alt="" loading="lazy"></div>`;
+      }).join('');
+    }
+
+    const titlesCount = data.active.reduce((n, d) => n + d.titles.length, 0);
+    const diaryCount = data.active.reduce((n, d) => n + d.diary.length, 0);
+    const stats = document.getElementById('home-stats');
+    if (stats && data.members.length) {
+      stats.innerHTML = `<div><b>${data.members.length}</b><span>${data.members.length === 1 ? 'membru' : 'membri'}</span></div>
+        <div><b>${titlesCount}</b><span>titluri</span></div><div><b>${diaryCount}</b><span>în jurnale</span></div>`;
+    }
+
+    // activitatea recenta din toate jurnalele
+    const feed = [];
+    for (const d of data.active) {
+      const titles = new Map(d.titles.map((t) => [t.id, t]));
+      for (const e of d.diary) { const t = titles.get(e.titleId); if (t) feed.push({ d, e, t }); }
+    }
+    feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
+    const feedBox = document.getElementById('home-feed');
+    if (feedBox) {
+      feedBox.innerHTML = feed.length ? `<div class="diary-box">${feed.slice(0, 10).map(({ d, e, t }) => `
+        <a class="diary-row" href="${esc(userTitleHref(d, t))}">
+          <div class="diary-day">${userAvatar(d, 'xs')}</div>
+          <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
+          <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div>
+            <div class="diary-sub">${esc(d.profile.name)} · ${esc(scopeLabel(e, t))} · ${fmtDate(e.date)}</div></div>
+          <div class="diary-flags">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+        </a>`).join('')}</div>` : empty('Încă nu e nicio activitate. Fii primul care notează ce a văzut!');
+    }
+
+    const counts = new Map(data.active.map((d) => [d.uid, d]));
+    document.getElementById('members').innerHTML = data.members.filter((p) => p.username).map((p) => {
+      const d = counts.get(p.uid);
+      const sub = d ? `${d.titles.filter((t) => t.type === 'tv').length} seriale · ${d.titles.filter((t) => t.type === 'movie').length} filme` : (p.bio ? esc(p.bio.slice(0, 50)) : 'membru nou');
+      return `<a class="member-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
+        <div class="member-banner" style="${p.banner && /^https?:|^data:/.test(p.banner) ? `background-image:url('${esc(p.banner)}')` : ''}"></div>
+        <div class="member-body">
+          ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
+          <div style="min-width:0"><b>${esc(p.name || p.username)}</b><span class="muted">@${esc(p.username)} · ${sub}</span></div>
+        </div>
+      </a>`;
+    }).join('') || empty('Încă nu s-a înscris nimeni. Fii primul!');
   }
 
   // ---------- router ----------
@@ -624,7 +703,7 @@
       document.title = 'EDITSEL · Jurnal de seriale și filme';
       done();
       window.scrollTo(0, 0);
-      fillMembers();
+      fillHome();
       return;
     }
 
