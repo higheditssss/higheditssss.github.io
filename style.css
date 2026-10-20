@@ -8,15 +8,15 @@
   --text: #eef0f4;
   --muted: #969ca7;
   --faint: #5c626c;
-  --accent: #7c4dff;
-  --accent-hover: #9068ff;
-  --accent-deep: #442a8c;
-  --accent-ink: #ffffff;
-  --accent-soft: #251d3f;
-  --accent-text: #9d7aff;
+  --accent: #d8d2c9;
+  --accent-hover: #ded9d1;
+  --accent-deep: #77746f;
+  --accent-ink: #111014;
+  --accent-soft: #363535;
+  --accent-text: #d8d2c9;
   --heart: #ff5466;
-  --star: #9d7aff;
-  --star-accent: #9d7aff;
+  --star: #d8d2c9;
+  --star-accent: #d8d2c9;
   --radius: 12px;
   --max: 1240px;
   --head: 'Space Grotesk', 'Inter', system-ui, sans-serif;
@@ -387,7 +387,7 @@ body.loading #app::after {
 .home-kicker { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; font-family: var(--head); font-weight: 700; font-size: 13px; letter-spacing: .2em;
   background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); color: var(--accent-text); }
 .home-copy h1 { font-size: clamp(38px, 5vw, 66px); font-weight: 700; line-height: 1.02; letter-spacing: -.035em; margin: 22px 0 0; }
-.home-copy h1 span { background: linear-gradient(90deg, var(--accent-text), var(--accent-hover) 60%, #ff7ab6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.home-copy h1 span { background: linear-gradient(90deg, #ffffff, var(--accent) 55%, color-mix(in srgb, var(--accent) 70%, #8a7f70)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .home-copy p { color: #c4c8cf; font-size: 18px; max-width: 520px; margin: 22px 0 0; }
 .home-cta { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
 .home-cta .btn { height: 48px; padding: 0 24px; font-size: 15px; }
@@ -451,3 +451,16 @@ body.loading #app::after {
   .home-features { grid-template-columns: 1fr; gap: 10px; }
   .feature { padding: 18px; }
 }
+
+/* ---------- populare pe prima pagina ---------- */
+.home-backdrop { position: absolute; inset: 0; background: center 30% / cover no-repeat; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+.home-backdrop.on { opacity: .28; }
+.home-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(9,9,11,.4), var(--bg) 92%), linear-gradient(to right, var(--bg) 5%, transparent 45%, rgba(9,9,11,.6)); }
+.home-hero > .container { z-index: 1; }
+.trend-row { grid-auto-columns: 150px; }
+.trend-card .poster-img { position: relative; }
+.tmdb-score { position: absolute; top: 8px; right: 8px; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(9,9,11,.78); color: var(--accent-text); backdrop-filter: blur(4px); }
+.trend-title { margin-top: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trend-year { font-size: 12px; color: var(--muted); }
+.poster-img.skeleton { background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }
+@media (max-width: 640px) { .trend-row { grid-auto-columns: 118px; } }

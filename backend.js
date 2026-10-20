@@ -26,7 +26,7 @@ const clean = (o) => JSON.parse(JSON.stringify(o)); // Firestore nu accepta unde
 
 const PROFILE_DEFAULTS = {
   name: '', username: '', bio: '', avatar: '', banner: '', bannerFrom: '', statsBanner: '', statsBannerFrom: '',
-  accent: '#7c4dff', showStats: true, private: false, region: 'RO', favorites: [], following: [], joined: '',
+  accent: '#d8d2c9', showStats: true, private: false, region: 'RO', favorites: [], following: [], joined: '',
 };
 
 function cleanTitle(input, existing = {}) {
@@ -145,6 +145,37 @@ export async function createBackend(config) {
     const s = await getDocs(query(collection(fs, 'users'), where('private', '==', false), limit(200)));
     return s.docs.map((d) => ({ uid: d.id, ...d.data() }))
       .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  }
+
+  // serialele si filmele populare (site/home): citite de oricine, reimprospatate de administrator la 12 ore
+  async function loadHome() {
+    let home = null;
+    try { const s = await getDoc(doc(fs, 'site', 'home')); home = s.exists() ? s.data() : null; } catch { /* regula lipsa sau offline */ }
+    const stale = !home || !home.updatedAt || Date.now() - Date.parse(home.updatedAt) > 12 * 3600 * 1000;
+    if (stale && user) {
+      const cfg = await loadSiteConfig();
+      if (cfg && cfg.tmdbKey && cfg.adminUid === user.uid) {
+        try { home = await refreshHome(); } catch (e) { console.warn('Nu am putut actualiza popularele:', e.message); }
+      }
+    }
+    return home || { tv: [], movie: [] };
+  }
+
+  async function refreshHome() {
+    const l = await lang();
+    const pick = (r, type) => ({
+      id: r.id, type, title: r.name || r.title || '', year: (r.first_air_date || r.release_date || '').slice(0, 4),
+      poster: r.poster_path ? IMG + 'w342' + r.poster_path : '', backdrop: r.backdrop_path ? IMG + 'w1280' + r.backdrop_path : '',
+      rating: Math.round((r.vote_average || 0) * 10) / 10,
+    });
+    const get = async (type) => {
+      const pages = await Promise.all([1, 2].map((page) => tmdb(`/trending/${type}/week`, { language: l, page })));
+      return pages.flatMap((p) => p.results || []).filter((r) => r.poster_path).slice(0, 40).map((r) => pick(r, type));
+    };
+    const [tv, movie] = await Promise.all([get('tv'), get('movie')]);
+    const home = { updatedAt: new Date().toISOString(), tv, movie };
+    await setDoc(doc(fs, 'site', 'home'), home);
+    return home;
   }
 
   // pagina principala: membrii si datele celor mai activi (pentru postere si activitate)
@@ -540,7 +571,7 @@ export async function createBackend(config) {
     onAuth: (fn) => { authListeners.add(fn); return () => authListeners.delete(fn); },
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
-    loadUser, loadUserByUid, listMembers, loadCommunity, uidForUsername,
+    loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, uidForUsername,
     myUsername: async () => (user ? (await me()).profile.username : null),
     exportMine: async () => clean(await me()),
   };

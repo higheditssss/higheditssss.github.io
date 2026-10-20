@@ -110,6 +110,7 @@
 
   // Paleta de culori pentru profil (ca la Serializd → Color) + orice culoare custom.
   const COLORS = [
+    ['Alb crem', '#d8d2c9'],
     ['Mov', '#7c4dff'],
     ['Albastru regal', '#5b7cfa'],
     ['Auriu', '#f4b942'],
@@ -122,7 +123,6 @@
     ['Turcoaz', '#1fb5a5'],
     ['Verde neon', '#8ace00'],
     ['Verde vânător', '#3f7a4a'],
-    ['Alb crem', '#d8d2c9'],
   ];
 
   const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));

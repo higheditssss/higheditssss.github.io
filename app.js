@@ -578,7 +578,7 @@
     const cta = logged
       ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
       : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>';
-    return `<section class="home-hero">
+    return `<section class="home-hero"><div class="home-backdrop" id="home-backdrop"></div>
         <div class="container home-hero-grid">
           <div class="home-copy">
             <span class="home-kicker">${WL.logoSvg(null, { size: 22, id: 'hk' })} EDITSEL</span>
@@ -594,6 +594,15 @@
       </section>
 
       <div class="container page home-page">
+        <section class="section" id="trend-tv-wrap">
+          <div class="section-head"><h2>Seriale populare acum</h2></div>
+          <div class="row-scroll trend-row" id="trend-tv">${Array.from({ length: 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
+        </section>
+        <section class="section" id="trend-movie-wrap">
+          <div class="section-head"><h2>Filme populare acum</h2></div>
+          <div class="row-scroll trend-row" id="trend-movie">${Array.from({ length: 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
+        </section>
+
         <section class="home-features">
           ${FEATURES.map(([ic, t, d]) => `<div class="feature"><span class="feature-ic">${ic}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}
         </section>
@@ -620,12 +629,40 @@
   async function fillHome() {
     if (backend.user) backend.myUsername().then((u) => { const a = document.getElementById('home-my'); if (a && u) a.href = BASE + u; }).catch(() => {});
     let data = { members: [], active: [] };
-    try { data = await backend.loadCommunity(8); } catch (e) { console.error(e); }
+    let trending = { tv: [], movie: [] };
+    const shuffle = (arr) => arr.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+    await Promise.all([
+      backend.loadCommunity(8).then((d) => { data = d; }).catch((e) => console.error(e)),
+      backend.loadHome().then((h) => { trending = h; }).catch((e) => console.error(e)),
+    ]);
     if (!document.getElementById('members')) return;
 
+    // randurile cu seriale si filme populare, in ordine aleatorie la fiecare vizita
+    for (const type of ['tv', 'movie']) {
+      const row = document.getElementById('trend-' + type);
+      const list = shuffle(trending[type] || []).slice(0, 18);
+      if (!row) continue;
+      if (!list.length) { document.getElementById(`trend-${type}-wrap`).remove(); continue; }
+      row.innerHTML = list.map((t) => `<a class="poster trend-card" href="https://www.themoviedb.org/${t.type}/${t.id}" target="_blank" rel="noopener" title="${esc(t.title)}">
+          <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">${t.rating ? `<span class="tmdb-score">★ ${t.rating.toFixed(1)}</span>` : ''}</div>
+          <div class="trend-title">${esc(t.title)}</div><div class="trend-year">${esc(t.year || '')}</div>
+        </a>`).join('');
+    }
+    const allTrending = [...(trending.tv || []), ...(trending.movie || [])];
+    const backdrops = allTrending.filter((t) => t.backdrop);
+    const bd = document.getElementById('home-backdrop');
+    if (bd && backdrops.length) {
+      const pickBd = backdrops[Math.floor(Math.random() * backdrops.length)];
+      const img = new Image();
+      img.onload = () => { bd.style.backgroundImage = `url('${pickBd.backdrop}')`; bd.classList.add('on'); };
+      img.src = pickBd.backdrop;
+    }
+
     // peretele de postere: din bibliotecile membrilor activi
-    const posters = [...new Set(data.active.flatMap((d) => d.titles.map((t) => t.poster).filter((p) => p && /^https?:/.test(p))))]
-      .sort(() => Math.random() - 0.5).slice(0, 12);
+    const posters = shuffle([...new Set([
+      ...allTrending.map((t) => t.poster),
+      ...data.active.flatMap((d) => d.titles.map((t) => t.poster)),
+    ].filter((p) => p && /^https?:/.test(p)))]).slice(0, 12);
     const wall = document.getElementById('poster-wall');
     if (wall && posters.length) {
       wall.innerHTML = Array.from({ length: 12 }, (_, i) => {
