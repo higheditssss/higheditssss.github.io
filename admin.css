@@ -34,9 +34,16 @@ body.admin { padding-top: 64px; }
 .toggle.on.fav { border-color: #d9b44a; color: #f0cf6c; background: #332b16; }
 
 .star-input { display: inline-flex; align-items: center; gap: 2px; font-size: 28px; line-height: 1; cursor: pointer; user-select: none; }
-.star-input .s { position: relative; color: var(--surface-3); }
+.star-input .s { position: relative; display: inline-block; width: 1em; height: 1em; color: var(--surface-3); }
+.star-input .s .ico { display: block; width: 1em; height: 1em; }
+.star-input .s .h { display: none; color: var(--accent-text); }
+.star-input .s.half .h { display: block; }
 .star-input .s.full { color: var(--accent-text); }
-.star-input .s.half { background: linear-gradient(90deg, var(--accent) 50%, var(--surface-3) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; }
+.toggle .ico { width: 14px; height: 14px; }
+.ui-row-meta .heart .ico { width: 13px; height: 13px; }
+#profile-link .ico { width: 13px; height: 13px; }
+.btn > .ico { width: 15px; height: 15px; }
 .star-input.sm { font-size: 18px; }
 .star-input .val { font-size: 13px; color: var(--muted); margin-left: 8px; min-width: 34px; }
 
@@ -248,3 +255,7 @@ body.admin { padding-top: 64px; }
 /* butoane doar cu X: pătrate/rotunde, cu X-ul exact pe mijloc */
 .btn:has(> .ic-x) { width: 34px; height: 34px; padding: 0; border-radius: 999px; flex: none; }
 .btn .ic-x { display: block; }
+
+/* iconitele SVG din butoanele de status */
+.seg button { display: inline-flex; align-items: center; gap: 6px; }
+.seg button .ico { width: 14px; height: 14px; }

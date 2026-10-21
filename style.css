@@ -161,11 +161,29 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.15; font-family: var(--head); letter-
 .rank { position: absolute; top: 8px; left: 8px; z-index: 1; background: var(--accent); color: var(--accent-ink); font-family: var(--head); font-weight: 700; font-size: 13px; padding: 1px 9px; border-radius: 999px; }
 
 .stars { display: inline-flex; gap: 1px; font-size: 13px; line-height: 1; letter-spacing: 0; }
+/* stele SVG: plina, jumatate (strat taiat la 50%) sau ascunsa */
+.ico { width: 1em; height: 1em; display: inline-block; flex: none; vertical-align: -.125em; }
+.stars .star { position: relative; display: inline-block; width: 1em; height: 1em; }
+.stars .star > .ico, .star .h .ico { display: block; width: 1em; height: 1em; }
 .stars .star.full { color: var(--star); }
 .stars .star.empty { display: none; }
-.stars .star.half { background: linear-gradient(90deg, var(--star) 50%, transparent 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.stars.accent .star.full { color: var(--star-accent); }
-.stars.accent .star.half { background: linear-gradient(90deg, var(--star-accent) 50%, transparent 50%); -webkit-background-clip: text; background-clip: text; }
+.stars .star.half > .ico { visibility: hidden; }
+.star .h { position: absolute; left: 0; top: 0; width: .5em; height: 1em; overflow: hidden; color: var(--star); }
+.stars.accent .star.full, .stars.accent .star .h { color: var(--star-accent); }
+.btn > .ico { width: 15px; height: 15px; }
+.heart { display: inline-flex; }
+.heart .ico { width: 1em; height: 1em; }
+.fav-ic { color: #f0cf6c; display: inline-flex; vertical-align: -.1em; }
+.private-note { display: inline-flex; align-items: center; gap: 6px; }
+.hist-label { display: inline-flex; gap: 1px; color: var(--star); }
+.hist-label .ico { width: 11px; height: 11px; }
+.tmdb-score { display: inline-flex; align-items: center; gap: 3px; }
+.tmdb-score .ico, .disc-over .ico { width: 11px; height: 11px; vertical-align: -1px; }
+.badge .ico { width: 12px; height: 12px; }
+.stat-rows .ic .ico { width: 16px; height: 16px; }
+.install-x { display: grid; place-items: center; }
+.install-x .ico { width: 14px; height: 14px; }
+#to-top .ico { width: 13px; height: 13px; }
 .stars.lg { font-size: 20px; }
 .heart { color: var(--heart); font-size: 13px; line-height: 1; }
 
@@ -760,3 +778,7 @@ body.logged-out .footer-account { display: none; }
 body:not(.logged-out) #footer-join, #footer-join[hidden] { display: none; }
 .bottom-nav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 @media (max-width: 900px) { body.logged-out .footer-top { grid-template-columns: 1fr; } }
+
+/* iconitele SVG din butoanele de status (pop-up adaugare) */
+.seg button { display: inline-flex; align-items: center; gap: 6px; }
+.seg button .ico { width: 14px; height: 14px; }

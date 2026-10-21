@@ -4,12 +4,49 @@
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+  // iconite SVG folosite peste tot (in locul emoji-urilor)
+  const ICON_PATHS = {
+    play: '<path d="M7 4.5v15l12-7.5z"/>',
+    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    pause: '<path d="M9 5v14M15 5v14"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    book: '<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M8 8h6M8 12h6"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
+    history: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 8v4l3 2"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    down: '<path d="m6 9 6 6 6-6"/>',
+    up: '<path d="m6 15 6-6 6 6"/>',
+    arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    arrowDown: '<path d="M12 5v14M5 12l7 7 7-7"/>',
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    upload: '<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    external: '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  };
+  // pline (stea, inima)
+  const ICON_FILLED = {
+    star: '<path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.6L12 17.5l-5.9 3.2 1.2-6.6-4.8-4.6 6.6-.9z"/>',
+    heart: '<path d="M12 21s-7.5-4.6-9.6-9.1C.9 8.6 3 5 6.6 5c2.1 0 3.6 1.2 5.4 3 1.8-1.8 3.3-3 5.4-3 3.6 0 5.7 3.6 4.2 6.9C19.5 16.4 12 21 12 21z"/>',
+  };
+  function ic(name, cls = '') {
+    if (ICON_FILLED[name]) return `<svg class="ico ico-fill ${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICON_FILLED[name]}</svg>`;
+    return `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ''}</svg>`;
+  }
+
   const STATUS = {
-    watching: { label: 'Mă uit acum', short: 'În curs', icon: '▶' },
-    watched: { label: 'Văzut', short: 'Văzute', icon: '👁' },
-    watchlist: { label: 'De văzut', short: 'De văzut', icon: '🕒' },
-    paused: { label: 'Pe pauză', short: 'Pauză', icon: '⏸' },
-    dropped: { label: 'Abandonat', short: 'Abandonate', icon: '🗑' },
+    watching: { label: 'Mă uit acum', short: 'În curs', icon: ic('play') },
+    watched: { label: 'Văzut', short: 'Văzute', icon: ic('eye') },
+    watchlist: { label: 'De văzut', short: 'De văzut', icon: ic('clock') },
+    paused: { label: 'Pe pauză', short: 'Pauză', icon: ic('pause') },
+    dropped: { label: 'Abandonat', short: 'Abandonate', icon: ic('trash') },
   };
 
   const MONTHS = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
@@ -33,12 +70,12 @@
     let html = `<span class="stars ${extraClass}" title="${v} / 5" aria-label="${v} din 5 stele">`;
     for (let i = 1; i <= 5; i++) {
       const cls = v >= i ? 'full' : v >= i - 0.5 ? 'half' : 'empty';
-      html += `<span class="star ${cls}">★</span>`;
+      html += `<span class="star ${cls}">${ic('star')}${cls === 'half' ? `<span class="h">${ic('star')}</span>` : ''}</span>`;
     }
     return html + '</span>';
   }
 
-  const heart = (on) => (on ? '<span class="heart" title="Îmi place">♥</span>' : '');
+  const heart = (on) => (on ? `<span class="heart" title="Îmi place">${ic('heart')}</span>` : '');
 
   function poster(t, opts = {}) {
     const { href, size = '', showMeta = true, rank } = opts;
@@ -83,9 +120,9 @@
     values.forEach((v) => { if (v) buckets[Math.round(v * 2) - 1]++; });
     const max = Math.max(1, ...buckets);
     return `<div class="histogram">
-      <span class="hist-label">★</span>
-      <div class="hist-bars">${buckets.map((c, i) => `<div class="hist-bar" style="height:${Math.max(c ? 6 : 2, (c / max) * 100)}%" title="${(i + 1) / 2} ★ — ${c}"></div>`).join('')}</div>
-      <span class="hist-label">★★★★★</span>
+      <span class="hist-label">${ic('star')}</span>
+      <div class="hist-bars">${buckets.map((c, i) => `<div class="hist-bar" style="height:${Math.max(c ? 6 : 2, (c / max) * 100)}%" title="${(i + 1) / 2} / 5 — ${c}"></div>`).join('')}</div>
+      <span class="hist-label">${ic('star').repeat(5)}</span>
     </div>`;
   }
 
@@ -184,5 +221,5 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 
-  window.WL = { backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
+  window.WL = { ic, backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
 })();

@@ -26,7 +26,7 @@
     'Toate filmele și serialele tale.': 'All your movies and shows.', 'Într-un singur loc.': 'In one place.',
     'Notează ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi. Gratuit, fără reclame.': 'Log what you watch, rate, write reviews, make lists and see what your friends are watching. Free, no ads.',
     'membru': 'member', 'membri': 'members', 'Jurnal': 'Diary', 'Note și recenzii': 'Ratings & reviews', 'Liste': 'Lists',
-    'Notează fiecare episod și film văzut, cu dată, notă și ♥. Totul ordonat pe luni.': 'Log every episode and movie you watch, with date, rating and ♥. All sorted by month.',
+    'Notează fiecare episod și film văzut, cu dată, notă și apreciere. Totul ordonat pe luni.': 'Log every episode and movie you watch, with date, rating and like. All sorted by month.',
     'Stele cu jumătăți, recenzii cu spoilere ascunse și note pe fiecare sezon.': 'Half-star ratings, reviews with hidden spoilers and per-season ratings.',
     'Topuri, colecții, „de văzut în weekend” — liste numerotate sau simple.': 'Rankings, collections, “weekend watchlist” — ranked or simple lists.',
     'Adaugă-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.': 'Add your friends and see what they watched and how much they liked it.',
@@ -100,7 +100,7 @@
     'Profil': 'Profile', 'Nume, bio și poză': 'Name, bio & picture', 'Seriale favorite': 'Favorite shows', 'Culoare': 'Color', 'Confidențialitate': 'Privacy',
     'Postere și bannere': 'Posters & banners', 'Banner profil': 'Profile banner', 'Banner statistici': 'Stats banner', 'Postere personalizate': 'Custom posters',
     'Postere sezoane personalizate': 'Custom season posters', 'Bannere seriale personalizate': 'Custom show banners', 'Logo și iconițe': 'Logo & icons',
-    'Date': 'Data', 'Pune EDITSEL pe ecranul telefonului': 'Put EDITSEL on your home screen', 'Instalează aplicația EDITSEL': 'Install the EDITSEL app', 'Adaugă pe ecran': 'Add to Home Screen', '→ „Adaugă pe ecranul principal”': '→ “Add to Home Screen”', 'Se deschide ca o aplicație, fără bara browserului.': 'Opens like an app, without the browser bar.',
+    'Date': 'Data', 'Adaugă seriale': 'Add shows', 'Pune EDITSEL pe ecranul telefonului': 'Put EDITSEL on your home screen', 'Instalează aplicația EDITSEL': 'Install the EDITSEL app', 'Adaugă pe ecran': 'Add to Home Screen', '→ „Adaugă pe ecranul principal”': '→ “Add to Home Screen”', 'Se deschide ca o aplicație, fără bara browserului.': 'Opens like an app, without the browser bar.',
     'Instalează': 'Install', 'Închide': 'Close', 'Partajează, apoi „Adaugă pe ecranul principal”.': 'Share, then “Add to Home Screen”.', 'Apasă': 'Tap', 'Caută orice serial sau film': 'Search any show or movie', 'Scrie un titlu mai sus și alege-l din rezultate.': 'Type a title above and pick it from the results.',
     'Adaugă din secțiunea „Adaugă”.': 'Add some from the “Add” section.', 'Nimic aici.': 'Nothing here.', 'Adaugă o intrare cu butonul de sus.': 'Add an entry with the button above.',
     'apreciate': 'liked', 'recenzii': 'reviews', 'intrări': 'entries', 'titluri': 'titles', 'seriale': 'shows', 'filme': 'movies', 'favorite': 'favorites', '↻ Revăzut': '↻ Rewatch', 'Intrare nouă': 'New entry', 'Cum te văd ceilalți': 'How others see you', 'Până la 5, sus pe profil': 'Up to 5, top of your profile', 'Culoarea profilului tău': 'Your profile color',
@@ -140,7 +140,7 @@
     'Genuri (separate prin virgulă)': 'Genres (comma separated)', 'Poster (URL)': 'Poster (URL)', 'Imagine fundal (URL)': 'Backdrop image (URL)', 'Alege': 'Pick',
     '↻ Actualizează din TMDB': '↻ Refresh from TMDB', 'Actualizat din TMDB': 'Refreshed from TMDB', 'Titlu nou': 'New title', 'An': 'Year',
     'Folosit pentru timpul petrecut. La status „Văzut” cu 0, se socotesc toate episoadele.': 'Used for time spent. With status “Watched” and 0, all episodes count.',
-    '(cu ratingul și ♥ de mai sus)': '(with the rating and ♥ above)', '(de la TMDB, le poți modifica)': '(from TMDB, you can edit them)',
+    '(cu ratingul și aprecierea de mai sus)': '(with the rating and like above)', '(de la TMDB, le poți modifica)': '(from TMDB, you can edit them)',
     'Pentru toate imaginile unui serial ai nevoie de cheia TMDB (Setări). Până atunci poți alege din imaginile titlurilor tale:': 'You need the TMDB key (Settings) for all images. Until then you can pick from your titles:',
     'Căutarea automată nu e pornită încă pe site (administratorul trebuie să pună cheia TMDB). Până atunci poți adăuga manual.': "Automatic search isn't enabled yet (the admin must add the TMDB key). Until then you can add manually.",
     'Gratuit. Primești profilul tău de seriale și filme.': 'Free. You get your own TV and movie profile.', 'Bine ai revenit!': 'Welcome back!', 'Intră în cont': 'Log in',
@@ -206,6 +206,13 @@
     [/^din (\d+)$/, (m, n) => `of ${n}`],
     [/^(\d+) ep\.$/, (m, n) => `${n} ep.`],
   ];
+
+  // pentru fiecare cheie cu simbol la inceput/sfarsit („✓ Acceptă”, „Mai multe opțiuni ▾”), si varianta fara simbol
+  const SYM = /^[^\p{L}\d„“"(]+\s*|\s*[^\p{L}\d”"\.)?!…]+$/gu;
+  for (const k of Object.keys(D)) {
+    const bare = k.replace(SYM, '');
+    if (bare && bare !== k && !D[bare]) D[bare] = D[k].replace(SYM, '');
+  }
 
   function translateString(s) {
     if (!s || !/[A-Za-zĂÂÎȘȚăâîșț]/.test(s)) return s;

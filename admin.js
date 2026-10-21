@@ -54,7 +54,7 @@
   // Stele cu jumatati: click pe jumatatea stanga = x.5, click pe aceeasi valoare = sterge.
   function starInput(container, value, onChange, small = false) {
     let v = value || 0;
-    container.innerHTML = `<span class="star-input ${small ? 'sm' : ''}">${'<span class="s">★</span>'.repeat(5)}<span class="val"></span></span>`;
+    container.innerHTML = `<span class="star-input ${small ? 'sm' : ''}">${`<span class="s">${WL.ic('star')}<span class="h">${WL.ic('star')}</span></span>`.repeat(5)}<span class="val"></span></span>`;
     const wrap = container.firstElementChild;
     const starsEls = [...wrap.querySelectorAll('.s')];
     const valEl = wrap.querySelector('.val');
@@ -350,8 +350,8 @@
           <div class="field"><span class="lbl">Rating</span><div id="m-rating"></div></div>
           <div class="field"><span class="lbl">Marcaje</span>
             <div style="display:flex;gap:8px">
-              <button type="button" class="toggle like ${d.liked ? 'on' : ''}" id="m-like">♥ Îmi place</button>
-              <button type="button" class="toggle fav ${d.favorite ? 'on' : ''}" id="m-fav">★ Favorit</button>
+              <button type="button" class="toggle like ${d.liked ? 'on' : ''}" id="m-like">${WL.ic('heart')} Îmi place</button>
+              <button type="button" class="toggle fav ${d.favorite ? 'on' : ''}" id="m-fav">${WL.ic('star')} Favorit</button>
             </div>
           </div>
         </div>
@@ -370,7 +370,7 @@
         <div class="field tv-only" id="m-seasons-wrap"><span class="lbl">Note pe sezoane</span><div id="m-seasons" class="box" style="margin:0"></div></div>
 
         <div class="box">
-          <label class="check"><input type="checkbox" id="m-log" ${log.on ? 'checked' : ''}> <b>Adaugă în jurnal</b> <span class="muted">(cu ratingul și ♥ de mai sus)</span></label>
+          <label class="check"><input type="checkbox" id="m-log" ${log.on ? 'checked' : ''}> <b>Adaugă în jurnal</b> <span class="muted">(cu ratingul și aprecierea de mai sus)</span></label>
           <div id="m-log-fields" class="row-fields" style="margin-top:12px">
             <div class="field"><label>Data</label><input class="input" type="date" id="m-log-date" value="${log.date}"></div>
             <div class="field tv-only"><label>Sezon (opțional)</label><input class="input" type="number" min="0" id="m-log-s"></div>
@@ -401,7 +401,7 @@
       </div>
       <div class="modal-foot">
         ${isNew ? '' : '<button class="btn danger" id="m-del">Șterge</button>'}
-        ${!isNew && d.tmdbId && STATE.hasTmdb ? '<button class="btn" id="m-refresh" title="Actualizează posterul, sezoanele, actorii etc.">↻ Actualizează din TMDB</button>' : ''}
+        ${!isNew && d.tmdbId && STATE.hasTmdb ? `<button class="btn" id="m-refresh" title="Actualizează posterul, sezoanele, actorii etc.">${WL.ic('refresh')}Actualizează din TMDB</button>` : ''}
         <span class="grow"></span>
         <button class="btn ghost" id="m-cancel">Anulează</button>
         <button class="btn primary" id="m-save">${isNew ? 'Adaugă' : 'Salvează'}</button>
@@ -572,7 +572,7 @@
       body.innerHTML = rows.length ? rows.map((t) => `<div class="ui-row">
         ${thumb(t)}
         <div class="ui-row-main"><b class="notranslate">${esc(t.title)}</b>
-          <span class="ui-row-meta"><span class="badge">${svgIcon(t.type === 'tv' ? 'tv' : 'film')}${t.type === 'tv' ? 'Serial' : 'Film'}</span>${t.year ? `<span>${esc(t.year)}</span>` : ''}${heart(t.liked)}${t.favorite ? '<span class="fav-star">★</span>' : ''}</span></div>
+          <span class="ui-row-meta"><span class="badge">${svgIcon(t.type === 'tv' ? 'tv' : 'film')}${t.type === 'tv' ? 'Serial' : 'Film'}</span>${t.year ? `<span>${esc(t.year)}</span>` : ''}${heart(t.liked)}${t.favorite ? `<span class="fav-star">${WL.ic('star')}</span>` : ''}</span></div>
         <div class="ui-row-rating">${stars(t.rating, 'accent') || '<span class="muted">—</span>'}</div>
         <select data-status="${t.id}">${Object.entries(STATUS).map(([k, s]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${s.label}</option>`).join('')}</select>
         <button class="icon-btn" data-edit="${t.id}" title="Editează" aria-label="Editează">${svgIcon('pen')}</button>
@@ -628,7 +628,7 @@
             <div class="day-box"><b>${d.getDate()}</b><span>${WL.DAYS[d.getDay()]}</span></div>
             ${thumb(t)}
             <div class="ui-row-main"><b class="notranslate">${esc(t.title)}</b>
-              <span class="ui-row-meta">${scope ? `<span class="badge">${scope}</span>` : ''}${e.rewatch ? '<span class="badge">↻ Revăzut</span>' : ''}${e.review ? `<span class="ui-review notranslate">${esc(e.review)}</span>` : ''}</span></div>
+              <span class="ui-row-meta">${scope ? `<span class="badge">${scope}</span>` : ''}${e.rewatch ? `<span class="badge">${WL.ic('refresh')} Revăzut</span>` : ''}${e.review ? `<span class="ui-review notranslate">${esc(e.review)}</span>` : ''}</span></div>
             <div class="ui-row-rating">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
             <button class="icon-btn" data-edit="${e.id}" title="Editează" aria-label="Editează">${svgIcon('pen')}</button>
           </div>`;
@@ -657,7 +657,7 @@
         <div class="row-fields">
           <div class="field"><span class="lbl">Rating</span><div id="j-rating"></div></div>
           <div class="field"><span class="lbl">Marcaje</span><div style="display:flex;gap:8px">
-            <button type="button" class="toggle like ${e.liked ? 'on' : ''}" id="j-like">♥ Îmi place</button>
+            <button type="button" class="toggle like ${e.liked ? 'on' : ''}" id="j-like">${WL.ic('heart')} Îmi place</button>
             <label class="check"><input type="checkbox" id="j-rw" ${e.rewatch ? 'checked' : ''}> Revăzut</label>
           </div></div>
         </div>
@@ -708,7 +708,7 @@
   function panelLists(panel) {
     const byId = new Map(DB.titles.map((t) => [t.id, t]));
     panel.innerHTML = `
-      <div class="panel-title">Liste<span class="grow"></span><button class="btn primary small" id="l-new">＋ Listă nouă</button></div>
+      <div class="panel-title">Liste<span class="grow"></span><button class="btn primary small" id="l-new">${svgIcon('plus')}Listă nouă</button></div>
       ${DB.lists.length ? `<div class="list-cards">${[...DB.lists].reverse().map((l) => `
         <button class="list-card" data-id="${l.id}" style="background:none;border:0;padding:0;text-align:left;cursor:pointer">
           <div class="stack">${l.items.map((i) => byId.get(i)).filter(Boolean).slice(0, 5).map((t) => `<div class="s">${t.poster ? `<img src="${esc(t.poster)}" alt="">` : ''}</div>`).join('') || '<div class="s"></div>'}</div>
@@ -745,7 +745,7 @@
       $('#l-items').innerHTML = l.items.length ? l.items.map((id, i) => {
         const t = byId.get(id);
         return `<div class="list-item"><span class="muted" style="text-align:center">${i + 1}</span>${thumb(t)}<span>${esc(t ? t.title : '?')}</span>
-          <span style="white-space:nowrap"><button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn small ghost" data-down="${i}" ${i === l.items.length - 1 ? 'disabled' : ''}>↓</button><button class="btn small ghost" data-rm="${i}"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span></div>`;
+          <span style="white-space:nowrap"><button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>${WL.ic('arrowUp')}</button><button class="btn small ghost" data-down="${i}" ${i === l.items.length - 1 ? 'disabled' : ''}>${WL.ic('arrowDown')}</button><button class="btn small ghost" data-rm="${i}"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span></div>`;
       }).join('') : '<div class="muted" style="font-size:14px">Lista e goală.</div>';
     };
     const drawPick = () => {
@@ -1037,7 +1037,7 @@
   function setColor(el) {
     const current = (DB.profile.accent || '').toLowerCase();
     el.innerHTML = `<p class="muted" style="margin-top:0">Culoarea se aplică pe tot site-ul: butoane, stele, tab-uri, grafice.</p>
-      <div class="swatches">${WL.COLORS.map(([name, hex]) => `<button class="swatch-row ${hex === current ? 'on' : ''}" data-hex="${hex}"><span class="swatch" style="background:${hex}"></span>${name}${hex === current ? '<span class="arrow">✓</span>' : ''}</button>`).join('')}</div>
+      <div class="swatches">${WL.COLORS.map(([name, hex]) => `<button class="swatch-row ${hex === current ? 'on' : ''}" data-hex="${hex}"><span class="swatch" style="background:${hex}"></span>${name}${hex === current ? `<span class="arrow">${WL.ic('check')}</span>` : ''}</button>`).join('')}</div>
       <div class="field" style="margin-top:18px;max-width:320px"><label>Sau orice culoare</label>
         <div style="display:flex;gap:10px;align-items:center"><input type="color" id="c-custom" value="${esc(current || '#d8d2c9')}" style="width:54px;height:40px;border:0;background:none;padding:0;cursor:pointer"><button class="btn" id="c-save">Folosește culoarea</button></div>
       </div>`;
@@ -1156,14 +1156,14 @@
         try {
           const res = await api(`/api/tmdb/search?type=${type}&q=${encodeURIComponent(q)}`);
           const hit = res.find((r) => !year || r.year === year) || res[0];
-          if (!hit) { write('err', `✕ ${esc(line)} — negăsit`); continue; }
-          if (DB.titles.some((t) => t.tmdbId === hit.tmdbId && t.type === hit.type)) { write('muted', `• ${esc(hit.title)} (${esc(hit.year)}) — exista deja`); continue; }
+          if (!hit) { write('err', `${WL.ic('x')} ${esc(line)} — negăsit`); continue; }
+          if (DB.titles.some((t) => t.tmdbId === hit.tmdbId && t.type === hit.type)) { write('muted', `${WL.ic('check')} ${esc(hit.title)} (${esc(hit.year)}) — exista deja`); continue; }
           const details = await api(`/api/tmdb/details?type=${hit.type}&id=${hit.tmdbId}`);
           const saved = await api('/api/titles', { method: 'POST', body: { ...details, status } });
           DB.titles.push(saved);
           added++;
-          write('ok', `✓ ${esc(saved.title)} (${esc(saved.year)})`);
-        } catch (err) { write('err', `✕ ${esc(line)} — ${esc(err.message)}`); }
+          write('ok', `${WL.ic('check')} ${esc(saved.title)} (${esc(saved.year)})`);
+        } catch (err) { write('err', `${WL.ic('x')} ${esc(line)} — ${esc(err.message)}`); }
       }
       write('muted', `Gata: ${added} adăugate din ${lines.length}.`);
       e.target.disabled = false;
@@ -1190,7 +1190,7 @@
         <div class="brand-grid">${FILES.map(([f, title, desc, ratio]) => `<div class="card brand-card">
             <div class="brand-prev ${f === 'logo-mare-deschis' ? 'light' : ''}" style="aspect-ratio:${ratio}"><img src="${dir}${f}.png" alt="" loading="lazy"></div>
             <b>${title}</b><span class="muted">${desc}</span>
-            <a class="btn small" href="${dir}${f}.png" download="editsel-${f}-${pick.slice(1)}.png">⇩ Descarcă</a>
+            <a class="btn small" href="${dir}${f}.png" download="editsel-${f}-${pick.slice(1)}.png">${WL.ic('download')}Descarcă</a>
           </div>`).join('')}</div>`;
       el.querySelector('#br-colors').addEventListener('click', (e) => {
         const b = e.target.closest('[data-hex]');
@@ -1203,7 +1203,7 @@
   // --- Prieteni: se gestioneaza pe pagina /friends a site-ului (cereri, acceptare) ---
   function setFriends(el) {
     el.innerHTML = `<p class="muted" style="margin-top:0">Prietenii se adaugă prin cereri de prietenie: trimiți o cerere, iar când celălalt o acceptă deveniți prieteni și vă vedeți activitatea.</p>
-      <a class="btn primary" href="friends">☺ Deschide pagina Prieteni</a>`;
+      <a class="btn primary" href="friends">${WL.ic('users')}Deschide pagina Prieteni</a>`;
   }
 
   // --- Backup ---
@@ -1212,12 +1212,12 @@
       <div class="card" style="margin-bottom:18px">
         <h3>Descarcă tot</h3>
         <p class="muted" style="margin-top:0;font-size:14px">Un fișier JSON cu profilul, titlurile, jurnalul și listele.</p>
-        <button class="btn primary" id="exp">⇩ Descarcă backup</button>
+        <button class="btn primary" id="exp">${WL.ic('download')}Descarcă backup</button>
       </div>
       <div class="card">
         <h3>Restaurează din backup</h3>
         <p class="muted" style="margin-top:0;font-size:14px">Înlocuiește toate datele actuale. Descarcă întâi un backup, dacă vrei să păstrezi datele actuale.</p>
-        <label class="btn">⇧ Alege fișierul<input type="file" accept="application/json,.json" id="imp" hidden></label>
+        <label class="btn">${WL.ic('upload')}Alege fișierul<input type="file" accept="application/json,.json" id="imp" hidden></label>
       </div>`;
     el.querySelector('#exp').addEventListener('click', async () => {
       const b = await WL.backend();

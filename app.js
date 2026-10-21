@@ -127,10 +127,10 @@
         <h3>Statistici</h3>
         ${histogram(ratings)}
         <div class="stat-rows">
-          <a href="${R('/shows?status=watched')}"><span class="ic">👁</span>Văzute<span class="val">${watched}</span></a>
-          <a href="${R('/shows?status=watchlist')}"><span class="ic">🕒</span>De văzut<span class="val">${watchlist}</span></a>
-          <a href="${R('/reviews')}"><span class="ic">★</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
-          <a href="${R('/stats')}"><span class="ic">▤</span>Toate statisticile<span class="val">›</span></a>
+          <a href="${R('/shows?status=watched')}"><span class="ic">${WL.ic('eye')}</span>Văzute<span class="val">${watched}</span></a>
+          <a href="${R('/shows?status=watchlist')}"><span class="ic">${WL.ic('clock')}</span>De văzut<span class="val">${watchlist}</span></a>
+          <a href="${R('/reviews')}"><span class="ic">${WL.ic('star')}</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
+          <a href="${R('/stats')}"><span class="ic">${WL.ic('chart')}</span>Toate statisticile<span class="val">›</span></a>
         </div>
       </div>`;
   }
@@ -144,7 +144,7 @@
         <div class="meta">
           ${stars(r.rating, 'accent')}${heart(r.liked)}
           ${r.scope ? `<span class="badge">${esc(r.scope)}</span>` : ''}
-          ${r.rewatch ? '<span class="badge">↻ revăzut</span>' : ''}
+          ${r.rewatch ? `<span class="badge">${WL.ic('refresh')} revăzut</span>` : ''}
           ${r.spoiler ? '<span class="badge">spoiler — click ca să vezi</span>' : ''}
           <span>${fmtDate(r.date)}</span>
         </div>
@@ -213,7 +213,7 @@
       ? `<div><b>${base.length}</b><span>seriale</span></div><div><b>${wt.seasons}</b><span>sezoane</span></div><div><b>${wt.episodes}</b><span>episoade</span></div>`
       : `<div><b>${base.length}</b><span>filme</span></div><div><b>${base.filter((t) => t.status === 'watched').length}</b><span>văzute</span></div><div><b>${splitMinutes(wt.movieMin).totalHours}</b><span>ore</span></div>`;
 
-    const filters = [['all', { short: 'Toate', icon: '▦' }], ...Object.entries(STATUS)]
+    const filters = [['all', { short: 'Toate', icon: WL.ic('grid') }], ...Object.entries(STATUS)]
       .filter(([k]) => k === 'all' || type === 'tv' || base.some((t) => t.status === k) || k === 'watched' || k === 'watchlist')
       .map(([k, s]) => {
         const n = k === 'all' ? base.length : base.filter((t) => t.status === k).length;
@@ -271,7 +271,7 @@
           <div class="diary-day"><b>${d.getDate()}</b><span>${DAYS[d.getDay()]}</span></div>
           <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
           <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div><div class="diary-sub">${esc(scopeLabel(e, t))}${t.year ? ' · ' + esc(t.year) : ''}</div></div>
-          <div class="diary-flags">${e.rewatch ? '<span title="Revăzut">↻</span>' : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+          <div class="diary-flags">${e.rewatch ? `<span title="Revăzut">${WL.ic('refresh')}</span>` : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
         </a>`;
       }).join('')}</div>`).join('');
     return shell('jurnal', head + (body || empty('Jurnalul e gol.')));
@@ -377,7 +377,7 @@
       <h3>Activitatea mea</h3>
       <div class="row"><span class="muted">Status</span><span class="badge accent">${st.icon} ${st.label}</span></div>
       ${t.rating ? `<div class="row"><span class="muted">Rating</span>${stars(t.rating, 'accent lg')}</div>` : ''}
-      ${t.liked || t.favorite ? `<div class="row"><span class="muted">Marcaje</span><span>${t.liked ? '<span class="heart">♥</span> Îmi place' : ''}${t.liked && t.favorite ? ' · ' : ''}${t.favorite ? '★ Favorit' : ''}</span></div>` : ''}
+      ${t.liked || t.favorite ? `<div class="row"><span class="muted">Marcaje</span><span>${t.liked ? `<span class="heart">${WL.ic('heart')}</span> Îmi place` : ''}${t.liked && t.favorite ? ' · ' : ''}${t.favorite ? `<span class="fav-ic">${WL.ic('star')}</span> Favorit` : ''}</span></div>` : ''}
       ${isTv && epsTotal ? `<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span class="muted">Episoade</span><span>${epsDone} / ${epsTotal}</span></div><div class="progress"><div style="width:${Math.min(100, (epsDone / epsTotal) * 100)}%"></div></div></div>` : ''}
       <div class="row"><span class="muted">Adăugat</span><span>${fmtDate(t.addedAt)}</span></div>
       ${t.note ? `<div class="row" style="display:block"><span class="muted">Notiță</span><div style="white-space:pre-line;margin-top:4px">${esc(t.note)}</div></div>` : ''}
@@ -398,7 +398,7 @@
           const d = parseDate(e.date);
           return `<div class="diary-row" style="grid-template-columns:54px minmax(0,1fr) auto">
             <div class="diary-day"><b>${d.getDate()}</b><span>${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}</span></div>
-            <div style="min-width:0"><div class="diary-title">${esc(scopeLabel(e, t))}${e.rewatch ? ' <span class="badge">↻ revăzut</span>' : ''}</div>${e.review ? `<div class="diary-sub ${e.spoiler ? 'spoiler' : ''}"><div class="text">${esc(e.review)}</div></div>` : ''}</div>
+            <div style="min-width:0"><div class="diary-title">${esc(scopeLabel(e, t))}${e.rewatch ? ` <span class="badge">${WL.ic('refresh')} revăzut</span>` : ''}</div>${e.review ? `<div class="diary-sub ${e.spoiler ? 'spoiler' : ''}"><div class="text">${esc(e.review)}</div></div>` : ''}</div>
             <div class="diary-flags">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
           </div>`;
         }).join('')}</div>`)
@@ -526,7 +526,7 @@
         <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
         <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div>
           <div class="diary-sub">${esc(d.profile.name)} · ${esc(scopeLabel(e, t))} · ${fmtDate(e.date)}</div></div>
-        <div class="diary-flags">${e.rewatch ? '<span title="Revăzut">↻</span>' : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+        <div class="diary-flags">${e.rewatch ? `<span title="Revăzut">${WL.ic('refresh')}</span>` : ''}${e.review ? '<span title="Are recenzie">≡</span>' : ''}${stars(e.rating, 'accent')}${heart(e.liked)}</div>
       </a>`).join('')}</div>`;
     box.innerHTML = title ? section(title, rows) : rows;
   }
@@ -560,7 +560,7 @@
     const slot = document.getElementById('follow-slot');
     if (!slot || !backend.user) return;
     if (backend.user.uid === DB.uid) {
-      slot.innerHTML = '<a class="btn small" href="settings">✎ Editează profilul</a>';
+      slot.innerHTML = `<a class="btn small" href="settings">${WL.ic('pen')}Editează profilul</a>`;
       return;
     }
     let me;
@@ -570,9 +570,9 @@
     const draw = () => {
       const rel = relation(me, target);
       const buttons = {
-        friends: '<button class="btn small" data-act="cancel" data-confirm="1">✓ Prieteni</button>',
+        friends: `<button class="btn small" data-act="cancel" data-confirm="1">${WL.ic('check')}Prieteni</button>`,
         sent: '<button class="btn small" data-act="cancel">Cerere trimisă · Anulează</button>',
-        received: '<button class="btn small primary" data-act="add">✓ Acceptă cererea</button><button class="btn small ghost" data-act="decline">Refuză</button>',
+        received: `<button class="btn small primary" data-act="add">${WL.ic('check')}Acceptă cererea</button><button class="btn small ghost" data-act="decline">Refuză</button>`,
         none: '<button class="btn small primary" data-act="add">+ Adaugă prieten</button>',
       };
       slot.innerHTML = `<div class="follow-btns">${buttons[rel]}</div>`;
@@ -641,7 +641,7 @@
         <div class="bell-text">
           ${n.type === 'request'
             ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ți-a trimis o cerere de prietenie.
-               <div class="follow-btns"><button class="btn small primary" data-act="add">✓ Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button></div>`
+               <div class="follow-btns"><button class="btn small primary" data-act="add">${WL.ic('check')}Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button></div>`
             : `Tu și <a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> sunteți acum prieteni.`}
         </div>
       </div>`).join('') : '<div class="hs-empty">Nu ai notificări.</div>'}
@@ -732,16 +732,16 @@
   // ---------- pagina principala ----------
 
   const FEATURES = [
-    ['▤', 'Jurnal', 'Notează fiecare episod și film văzut, cu dată, notă și ♥. Totul ordonat pe luni.'],
-    ['★', 'Note și recenzii', 'Stele cu jumătăți, recenzii cu spoilere ascunse și note pe fiecare sezon.'],
-    ['☰', 'Liste', 'Topuri, colecții, „de văzut în weekend” — liste numerotate sau simple.'],
-    ['☺', 'Prieteni', 'Adaugă-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.'],
+    [WL.ic('book'), 'Jurnal', 'Notează fiecare episod și film văzut, cu dată, notă și apreciere. Totul ordonat pe luni.'],
+    [WL.ic('star'), 'Note și recenzii', 'Stele cu jumătăți, recenzii cu spoilere ascunse și note pe fiecare sezon.'],
+    [WL.ic('list'), 'Liste', 'Topuri, colecții, „de văzut în weekend” — liste numerotate sau simple.'],
+    [WL.ic('users'), 'Prieteni', 'Adaugă-ți prietenii și vezi ce au văzut și cât de mult le-a plăcut.'],
   ];
 
   function pageHome() {
     const logged = backend.user;
     const cta = logged
-      ? '<a class="btn primary" href="settings">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
+      ? `<a class="btn primary" href="settings">${WL.ic('plus')}Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>`
       : '<a class="btn primary" href="signup">Creează cont gratuit</a><a class="btn" href="login">Am deja cont</a>';
     return `<section class="home-hero">
         <div class="mosaic" id="poster-wall" aria-hidden="true">
@@ -794,7 +794,7 @@
       if (!row) continue;
       if (!list.length) { document.getElementById(`trend-${type}-wrap`).remove(); continue; }
       row.innerHTML = list.map((t) => `<a class="poster trend-card" href="https://www.themoviedb.org/${t.type}/${t.id}" target="_blank" rel="noopener" title="${esc(t.title)}">
-          <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">${t.rating ? `<span class="tmdb-score">★ ${t.rating.toFixed(1)}</span>` : ''}</div>
+          <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">${t.rating ? `<span class="tmdb-score">${WL.ic('star')} ${t.rating.toFixed(1)}</span>` : ''}</div>
           <div class="trend-title">${esc(t.title)}</div><div class="trend-year">${esc(t.year || '')}</div>
         </a>`).join('');
     }
@@ -892,7 +892,7 @@
       const titlesHtml = titles.map((t) => `<a href="${esc(titleLink(t))}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
           ${t.poster ? `<img class="hs-poster" src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="hs-poster"></span>'}
           <span class="hs-text"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
-          ${backend.user ? `<span class="hs-action">${owned(t) ? 'Editează' : '＋ Adaugă'}</span>` : ''}</a>`).join('');
+          ${backend.user ? `<span class="hs-action">${owned(t) ? 'Editează' : WL.ic('plus') + ' Adaugă'}</span>` : ''}</a>`).join('');
 
       box.innerHTML = (peopleHtml ? `<div class="hs-group">Membri</div>${peopleHtml}` : '')
         + (titlesHtml ? `<div class="hs-group">Seriale și filme</div>${titlesHtml}` : '')
@@ -919,8 +919,8 @@
     const href = backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
       <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">
-        <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ★ ' + t.rating.toFixed(1) : ''}</span>
-          ${backend.user ? `<em>${owned ? '✓ În biblioteca ta' : '＋ Adaugă'}</em>` : ''}</div>
+        <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ' + WL.ic('star') + ' ' + t.rating.toFixed(1) : ''}</span>
+          ${backend.user ? `<em>${owned ? WL.ic('check') + ' În biblioteca ta' : WL.ic('plus') + ' Adaugă'}</em>` : ''}</div>
       </div></a>`;
   }
 
@@ -1114,8 +1114,8 @@
     members = members.filter((p) => p.username && p.uid !== backend.user.uid);
 
     const ACTIONS = {
-      received: '<button class="btn small primary" data-act="add">✓ Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button>',
-      friends: '<button class="btn small" data-act="cancel" data-confirm="1">✓ Prieteni</button>',
+      received: `<button class="btn small primary" data-act="add">${WL.ic('check')}Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button>`,
+      friends: `<button class="btn small" data-act="cancel" data-confirm="1">${WL.ic('check')}Prieteni</button>`,
       sent: '<button class="btn small" data-act="cancel">Anulează cererea</button>',
       none: '<button class="btn small primary" data-act="add">+ Adaugă prieten</button>',
     };
@@ -1183,7 +1183,7 @@
   // stele cu jumatati: click pe jumatatea stanga = x.5; click pe aceeasi valoare = sterge
   function starInput(container, value, onChange, small = false) {
     let v = value || 0;
-    container.innerHTML = `<span class="star-input ${small ? 'sm' : ''}">${'<span class="s">★</span>'.repeat(5)}<span class="val"></span></span>`;
+    container.innerHTML = `<span class="star-input ${small ? 'sm' : ''}">${`<span class="s">${WL.ic('star')}<span class="h">${WL.ic('star')}</span></span>`.repeat(5)}<span class="val"></span></span>`;
     const wrap = container.firstElementChild;
     const els = [...wrap.querySelectorAll('.s')];
     const val = wrap.querySelector('.val');
@@ -1237,7 +1237,7 @@
         </div>
         <div class="row-fields">
           <div class="field"><span class="lbl">Notă</span><div id="qa-rating"></div></div>
-          <div class="field"><span class="lbl">Îți place?</span><div><button type="button" class="toggle like ${d.liked ? 'on' : ''}" id="qa-like">♥ Îmi place</button></div></div>
+          <div class="field"><span class="lbl">Îți place?</span><div><button type="button" class="toggle like ${d.liked ? 'on' : ''}" id="qa-like">${WL.ic('heart')} Îmi place</button></div></div>
         </div>
         <div class="field"><label for="qa-review">Recenzie (opțional)</label>
           <textarea class="textarea" id="qa-review" style="min-height:80px" placeholder="Ce părere ai?">${esc(d.review)}</textarea>
@@ -1254,7 +1254,7 @@
       </div>
       <div class="qa-more hidden" id="qa-more">
         <div class="row-fields">
-          <div class="field"><span class="lbl">Favorit</span><div><button type="button" class="toggle fav ${d.favorite ? 'on' : ''}" id="qa-fav">★ Favorit</button></div></div>
+          <div class="field"><span class="lbl">Favorit</span><div><button type="button" class="toggle fav ${d.favorite ? 'on' : ''}" id="qa-fav">${WL.ic('star')} Favorit</button></div></div>
           ${isTv ? `<div class="field"><label>Episoade văzute</label><div style="display:flex;gap:8px;align-items:center">
             <input class="input" type="number" min="0" id="qa-eps" style="width:100px" value="${d.episodesWatched}">
             <span class="muted">${t.episodesCount ? 'din ' + t.episodesCount : ''}</span>
@@ -1267,7 +1267,7 @@
           <div class="qa-pick hidden" id="qa-pick"></div></div>` : ''}
       </div>
       <div class="modal-foot">
-        <button type="button" class="btn ghost" id="qa-more-btn">Mai multe opțiuni ▾</button>
+        <button type="button" class="btn ghost" id="qa-more-btn">Mai multe opțiuni ${WL.ic('down')}</button>
         <span class="grow"></span>
         <button class="btn ghost" id="qa-cancel">Anulează</button>
         <button class="btn primary" id="qa-save">${isExisting ? 'Salvează' : 'Adaugă'}</button>
@@ -1288,7 +1288,7 @@
     $('#qa-more-btn').addEventListener('click', (e) => {
       const more = $('#qa-more');
       more.classList.toggle('hidden');
-      e.currentTarget.textContent = more.classList.contains('hidden') ? 'Mai multe opțiuni ▾' : 'Mai puține opțiuni ▴';
+      e.currentTarget.innerHTML = more.classList.contains('hidden') ? `Mai multe opțiuni ${WL.ic('down')}` : `Mai puține opțiuni ${WL.ic('up')}`;
       if (!more.classList.contains('hidden')) more.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
     $('#qa-fav').addEventListener('click', (e) => { d.favorite = !d.favorite; e.currentTarget.classList.toggle('on', d.favorite); });
@@ -1347,7 +1347,7 @@
         toast(isExisting ? 'Salvat' : `„${saved.title}” a fost adăugat`);
         loadedUser = null; // profilul tau se reincarca data viitoare
         const mark = sourceEl && sourceEl.querySelector('.disc-over em, .hs-action');
-        if (mark) mark.textContent = '✓ În biblioteca ta';
+        if (mark) mark.innerHTML = `${WL.ic('check')} În biblioteca ta`;
       } catch (err) {
         e.target.disabled = false;
         toast(err.message, true);
@@ -1448,7 +1448,7 @@
       wrap.querySelector('#ms-clear').classList.add('hidden');
       const recent = getRecent();
       body.innerHTML = `${recent.length ? `<div class="ms-head"><h3>Căutări recente</h3><button type="button" data-clear-recent>Șterge</button></div>
-          <div class="ms-chips">${recent.map((q) => `<button type="button" data-recent="${esc(q)}">↺ ${esc(q)}</button>`).join('')}</div>` : ''}
+          <div class="ms-chips">${recent.map((q) => `<button type="button" data-recent="${esc(q)}">${WL.ic('history')} ${esc(q)}</button>`).join('')}</div>` : ''}
         <div class="ms-head"><h3>Populare acum</h3></div><div class="ms-grid" id="ms-pop">${'<div class="ms-tile skeleton"></div>'.repeat(6)}</div>`;
       const home = await loadHomeData();
       const pop = document.getElementById('ms-pop');
@@ -1486,7 +1486,7 @@
           <a class="ms-row" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.tmdbId}` : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
             ${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="ms-noimg"></span>'}
             <span class="ms-info"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
-            ${backend.user ? `<span class="ms-add">${owned(t) ? '✓' : '＋'}</span>` : '<span class="ms-add">›</span>'}
+            ${backend.user ? `<span class="ms-add">${WL.ic(owned(t) ? 'check' : 'plus')}</span>` : '<span class="ms-add">›</span>'}
           </a>`).join('')}</div>` : ''}
         ${!people.length && !uniq.length ? '<div class="ms-empty"><b>Nu am găsit nimic</b><span>Încearcă alt nume.</span></div>' : ''}
         ${!backend.user ? '<div class="ms-hint"><a href="signup">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : ''}
@@ -1645,7 +1645,7 @@
     if (DB.private) {
       app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">
         <h1 style="font-size:28px">@${esc(username)}</h1>
-        <p class="muted">🔒 Profilul ăsta este privat.</p><a class="btn" href="./">‹ Pagina principală</a></div>`;
+        <p class="muted private-note">${WL.ic('lock')} Profilul ăsta este privat.</p><a class="btn" href="./">‹ Pagina principală</a></div>`;
       document.title = 'EDITSEL';
       return;
     }
@@ -1754,7 +1754,7 @@
       <img src="${BASE}brand/app-192.png" alt="">
       <div class="install-txt">${ios ? `<b>Adaugă pe ecran</b><span><i class="install-ic">${share}</i> → „Adaugă pe ecranul principal”</span>` : '<b>Instalează aplicația EDITSEL</b>'}</div>
       ${ios ? '' : '<button class="btn small primary" id="install-go" type="button">Instalează</button>'}
-      <button class="install-x" id="install-x" type="button" aria-label="Închide">×</button>
+      <button class="install-x" id="install-x" type="button" aria-label="Închide">${WL.ic('x')}</button>
     </div>`);
     document.getElementById('install-x').addEventListener('click', () => hideInstall(true));
     const go = document.getElementById('install-go');
