@@ -758,17 +758,6 @@
           ${FEATURES.map(([ic, t, d]) => `<div class="feature"><span class="feature-ic">${ic}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}
         </section>
 
-        <div class="home-columns">
-          <section class="section">
-            <div class="section-head"><h2>Activitate recentă</h2></div>
-            <div id="home-feed"><div class="diary-box">${Array.from({ length: 4 }, () => '<div class="diary-row skeleton-row"></div>').join('')}</div></div>
-          </section>
-          <section class="section">
-            <div class="section-head"><h2>Membri</h2></div>
-            <div class="member-list" id="members">${Array.from({ length: 3 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div>
-          </section>
-        </div>
-
         ${logged ? '' : `<section class="home-final">
           <h2>Începe-ți jurnalul azi.</h2>
           <p>Gratuit, fără reclame. Durează un minut.</p>
@@ -779,14 +768,14 @@
 
   async function fillHome() {
     if (backend.user) backend.myUsername().then((u) => { const a = document.getElementById('home-my'); if (a && u) a.href = BASE + u; }).catch(() => {});
-    let data = { members: [], active: [] };
+    let members = [];
     let trending = { tv: [], movie: [] };
     const shuffle = (arr) => arr.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
     await Promise.all([
-      backend.loadCommunity(8).then((d) => { data = d; }).catch((e) => console.error(e)),
+      backend.listMembers().then((m) => { members = m.filter((p) => p.username); }).catch((e) => console.error(e)),
       backend.loadHome().then((h) => { trending = h; }).catch((e) => console.error(e)),
     ]);
-    if (!document.getElementById('members')) return;
+    if (!document.getElementById('poster-wall')) return;
 
     // randurile cu seriale si filme populare, in ordine aleatorie la fiecare vizita
     for (const type of ['tv', 'movie']) {
@@ -800,11 +789,8 @@
         </a>`).join('');
     }
     const allTrending = [...(trending.tv || []), ...(trending.movie || [])];
-    // peretele de postere: din bibliotecile membrilor activi
-    const posters = shuffle([...new Set([
-      ...allTrending.map((t) => t.poster),
-      ...data.active.flatMap((d) => d.titles.map((t) => t.poster)),
-    ].filter((p) => p && /^https?:/.test(p)))]).slice(0, 48);
+    // peretele de postere: seriale si filme populare
+    const posters = shuffle([...new Set(allTrending.map((t) => t.poster).filter((p) => p && /^https?:/.test(p)))]).slice(0, 48);
     const wall = document.getElementById('poster-wall');
     if (wall && posters.length) {
       wall.innerHTML = Array.from({ length: 48 }, (_, i) => {
@@ -814,42 +800,11 @@
     }
 
     const stats = document.getElementById('home-stats');
-    if (stats && data.members.length) {
-      stats.innerHTML = `<div><b>${data.members.length}</b><span>${data.members.length === 1 ? 'membru' : 'membri'}</span></div>`;
+    if (stats && members.length) {
+      stats.innerHTML = `<div><b>${members.length}</b><span>${members.length === 1 ? 'membru' : 'membri'}</span></div>`;
     }
-
-    // activitatea recenta din toate jurnalele
-    const feed = [];
-    for (const d of data.active) {
-      const titles = new Map(d.titles.map((t) => [t.id, t]));
-      for (const e of d.diary) { const t = titles.get(e.titleId); if (t) feed.push({ d, e, t }); }
-    }
-    feed.sort((a, b) => (b.e.date + (b.e.createdAt || '')).localeCompare(a.e.date + (a.e.createdAt || '')));
-    const feedBox = document.getElementById('home-feed');
-    if (feedBox) {
-      feedBox.innerHTML = feed.length ? `<div class="diary-box">${feed.slice(0, 10).map(({ d, e, t }) => `
-        <a class="diary-row" href="${esc(userTitleHref(d, t))}">
-          <div class="diary-day">${userAvatar(d, 'xs')}</div>
-          <div class="thumb">${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : ''}</div>
-          <div style="min-width:0"><div class="diary-title">${esc(t.title)}</div>
-            <div class="diary-sub">${esc(d.profile.name)} · ${esc(scopeLabel(e, t))} · ${fmtDate(e.date)}</div></div>
-          <div class="diary-flags">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
-        </a>`).join('')}</div>` : empty('Încă nu e nicio activitate. Fii primul care notează ce a văzut!');
-    }
-
-    const counts = new Map(data.active.map((d) => [d.uid, d]));
-    document.getElementById('members').innerHTML = data.members.filter((p) => p.username).map((p) => {
-      const d = counts.get(p.uid);
-      const sub = d ? `${d.titles.filter((t) => t.type === 'tv').length} seriale · ${d.titles.filter((t) => t.type === 'movie').length} filme` : (p.bio ? esc(p.bio.slice(0, 50)) : 'membru nou');
-      return `<a class="member-card" href="${BASE}${esc(p.username)}" style="--friend:${esc(p.accent || 'var(--accent)')}">
-        <div class="member-banner" style="${p.banner && /^https?:|^data:/.test(p.banner) ? `background-image:url('${esc(p.banner)}')` : ''}"></div>
-        <div class="member-body">
-          ${p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="avatar" style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</div>`}
-          <div style="min-width:0"><b>${esc(p.name || p.username)}</b><span class="muted">@${esc(p.username)} · ${sub}</span></div>
-        </div>
-      </a>`;
-    }).join('') || empty('Încă nu s-a înscris nimeni. Fii primul!');
   }
+
 
   // ---------- cautare in antet: seriale, filme si membri ----------
 
