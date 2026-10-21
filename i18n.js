@@ -219,11 +219,28 @@
   // nu traducem continutul membrilor
   const SKIP = 'textarea, input, script, style, .profile-bio, .review .text, .overview, .tagline, .poster-fallback, .diary-title, .hs-text b, .disc-over b, .trend-title, .member-body b, .friend-card b, .list-card h3, .list-card p, .cast, .profile-head h1, .title-head h1, .notranslate';
 
+  const doneText = new WeakMap(); // nod text -> textul pus de noi
+  const doneAttr = new WeakMap(); // element -> { atribut: valoarea pusa de noi }
+  function setText(n) {
+    if (doneText.get(n) === n.nodeValue) return;
+    const t = translateString(n.nodeValue);
+    if (t !== n.nodeValue) n.nodeValue = t;
+    doneText.set(n, t);
+  }
+  function setAttr(n, attr, v) {
+    const d = doneAttr.get(n) || {};
+    if (d[attr] === v) return;
+    const t = translateString(v);
+    if (t !== v) n.setAttribute(attr, t);
+    d[attr] = t;
+    doneAttr.set(n, d);
+  }
+
   function translateNode(root) {
     if (lang !== 'en' || !root) return;
     if (root.nodeType === 3) {
       const p = root.parentElement;
-      if (p && !p.closest(SKIP)) { const t = translateString(root.nodeValue); if (t !== root.nodeValue) root.nodeValue = t; }
+      if (p && !p.closest(SKIP)) setText(root);
       return;
     }
     if (root.nodeType !== 1) return;
@@ -234,11 +251,11 @@
       if (n.nodeType === 1) {
         for (const attr of ['placeholder', 'title', 'aria-label']) {
           const v = n.getAttribute && n.getAttribute(attr);
-          if (v) { const t = translateString(v); if (t !== v) n.setAttribute(attr, t); }
+          if (v) setAttr(n, attr, v);
         }
       } else if (n.nodeType === 3) {
         const p = n.parentElement;
-        if (p && !p.closest(SKIP)) { const t = translateString(n.nodeValue); if (t !== n.nodeValue) n.nodeValue = t; }
+        if (p && !p.closest(SKIP)) setText(n);
       }
       n = walker.nextNode();
     }
@@ -257,7 +274,8 @@
       }
     }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
     const titleEl = document.querySelector('title');
-    if (titleEl) new MutationObserver(() => { const t = translateString(document.title); if (t !== document.title) document.title = t; }).observe(titleEl, { childList: true, characterData: true, subtree: true });
+    let lastTitle = document.title;
+    if (titleEl) new MutationObserver(() => { if (document.title === lastTitle) return; const t = translateString(document.title); lastTitle = t; if (t !== document.title) document.title = t; }).observe(titleEl, { childList: true, characterData: true, subtree: true });
     // ferestrele native (confirmari, alerte)
     const wrap = (fn) => (msg, ...rest) => fn.call(window, translateString(String(msg)), ...rest);
     window.confirm = wrap(window.confirm);
