@@ -213,12 +213,16 @@
 
   // ---------- schelet ----------
 
+  // iconite SVG pentru meniu si setari
+  const ICONS = {"plus":"<path d=\"M12 5v14M5 12h14\"/>","grid":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>","book":"<path d=\"M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z\"/><path d=\"M8 8h6M8 12h6\"/>","list":"<path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/>","gear":"<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z\"/>","pen":"<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z\"/>","star":"<path d=\"m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z\"/>","palette":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 3a9 9 0 0 0 0 18z\" fill=\"currentColor\"/>","lock":"<rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>","users":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/>","image":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"9\" cy=\"10\" r=\"2\"/><path d=\"m21 16-5-5-9 9\"/>","chart":"<path d=\"M4 20V10M10 20V4M16 20v-7M22 20H2\"/>","poster":"<rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><path d=\"M9 7h6\"/>","layers":"<path d=\"m12 3 9 5-9 5-9-5z\"/><path d=\"m3 13 9 5 9-5\"/>","banner":"<rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><path d=\"M2 10h20\"/>","diamond":"<path d=\"M12 2 22 12 12 22 2 12z\"/>","upload":"<path d=\"M12 15V3\"/><path d=\"m7 8 5-5 5 5\"/><path d=\"M5 21h14\"/>","sync":"<path d=\"M3 12a9 9 0 0 1 15-6.7L21 8\"/><path d=\"M21 3v5h-5\"/><path d=\"M21 12a9 9 0 0 1-15 6.7L3 16\"/><path d=\"M3 21v-5h5\"/>","key":"<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m10.8 12.2 9.2-9.2\"/><path d=\"m17 6 3 3\"/>","pin":"<path d=\"M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z\"/><circle cx=\"12\" cy=\"9\" r=\"2.5\"/>","shield":"<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/>","chevron":"<path d=\"m9 6 6 6-6 6\"/>","external":"<path d=\"M14 4h6v6\"/><path d=\"M20 4 10 14\"/><path d=\"M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5\"/>"};
+  const svgIcon = (k) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k] || ''}</svg>`;
+
   const SECTIONS = [
-    ['add', '＋', 'Adaugă'],
-    ['library', '▦', 'Bibliotecă'],
-    ['diary', '▤', 'Jurnal'],
-    ['lists', '☰', 'Liste'],
-    ['settings', '⚙', 'Setări'],
+    ['add', svgIcon('plus'), 'Adaugă'],
+    ['library', svgIcon('grid'), 'Bibliotecă'],
+    ['diary', svgIcon('book'), 'Jurnal'],
+    ['lists', svgIcon('list'), 'Liste'],
+    ['settings', svgIcon('gear'), 'Setări'],
   ];
 
   function renderShell() {
@@ -845,28 +849,28 @@
 
   const SETTINGS_MENU = [
     ['Profil', [
-      ['bio', '✎', 'Nume, bio și poză'],
-      ['favorites', '★', 'Seriale favorite'],
-      ['color', '◐', 'Culoare'],
-      ['privacy', '🔒', 'Confidențialitate'],
-      ['friends', '☺', 'Prieteni'],
+      ['bio', 'pen', 'Nume, bio și poză', 'Cum te văd ceilalți'],
+      ['favorites', 'star', 'Seriale favorite', 'Până la 5, sus pe profil'],
+      ['color', 'palette', 'Culoare', 'Culoarea profilului tău'],
+      ['privacy', 'lock', 'Confidențialitate', 'Profil public sau privat'],
+      ['friends', 'users', 'Prieteni', 'Cereri și prieteni'],
     ]],
     ['Postere și bannere', [
-      ['banner', '▭', 'Banner profil'],
-      ['statsBanner', '▤', 'Banner statistici'],
-      ['posters', '▯', 'Postere personalizate'],
-      ['seasonPosters', '▯', 'Postere sezoane personalizate'],
-      ['showBanners', '▭', 'Bannere seriale personalizate'],
-      ['brand', '◆', 'Logo și iconițe'],
+      ['banner', 'image', 'Banner profil', 'Imaginea mare de sus'],
+      ['statsBanner', 'chart', 'Banner statistici', 'Fundalul paginii Statistici'],
+      ['posters', 'poster', 'Postere personalizate', 'Alt poster pentru un titlu'],
+      ['seasonPosters', 'layers', 'Postere sezoane personalizate', 'Poster pentru un sezon'],
+      ['showBanners', 'banner', 'Bannere seriale personalizate', 'Fundalul paginii unui titlu'],
+      ['brand', 'diamond', 'Logo și iconițe', 'Logo-ul în culoarea ta'],
     ]],
     ['Date', [
-      ['import', '⇪', 'Import din listă'],
-      ['backup', '⇅', 'Backup și restaurare'],
+      ['import', 'upload', 'Import din listă', 'Lipești o listă de titluri'],
+      ['backup', 'sync', 'Backup și restaurare', 'Descarcă sau pune înapoi tot'],
     ]],
     ['Cont', [
-      ['tmdb', '⚿', 'TMDB și limbă (administrator)'],
-      ['region', '⌖', 'Locație (unde poți viziona)'],
-      ['password', '⚙', 'Parolă'],
+      ['tmdb', 'key', 'TMDB și limbă (administrator)', 'Cheia TMDB a site-ului'],
+      ['region', 'pin', 'Locație (unde poți viziona)', 'Țara pentru platforme'],
+      ['password', 'shield', 'Parolă', 'Schimbă parola contului'],
     ]],
   ];
 
@@ -893,10 +897,23 @@
       pages[settingsPage](panel.querySelector('#set-body'));
       return;
     }
+    const p = DB.profile;
+    const initial = esc((p.name || p.username || '?').trim().charAt(0).toUpperCase());
     panel.innerHTML = `<div class="panel-title">Setări</div>
-      ${SETTINGS_MENU.map(([group, rows]) => [group, rows.filter(([k]) => k !== 'tmdb' || STATE.isSiteAdmin)]).map(([group, rows]) => `<div class="set-group"><h4>${group}</h4>
-        ${rows.map(([k, ic, label]) => `<button class="set-row" data-page="${k}"><span class="ic">${ic}</span>${label}<span class="arrow">→</span></button>`).join('')}
-      </div>`).join('')}`;
+      <div class="set-hero">
+        <div class="set-hero-bg"${p.banner && /^https?:|^data:/.test(p.banner) ? ` style="background-image:url('${esc(p.banner)}')"` : ''}></div>
+        ${p.avatar ? `<img class="set-hero-av" src="${esc(p.avatar)}" alt="">` : `<div class="set-hero-av">${initial}</div>`}
+        <div class="set-hero-text"><b>${esc(p.name || p.username || '')}</b>${p.username ? `<span>@${esc(p.username)}</span>` : ''}</div>
+        <div class="set-hero-btns">
+          <button class="btn small" data-page="bio">${svgIcon('pen')}Editează</button>
+          ${p.username ? `<a class="btn small ghost" href="${esc(p.username)}">${svgIcon('external')}Vezi profilul</a>` : ''}
+        </div>
+      </div>
+      <div class="set-grid">
+      ${SETTINGS_MENU.map(([group, rows]) => [group, rows.filter(([k]) => k !== 'tmdb' || STATE.isSiteAdmin)]).map(([group, rows]) => `<section class="set-group"><h4>${group}</h4><div class="set-card">
+        ${rows.map(([k, ic, label, desc]) => `<button class="set-row" data-page="${k}"><span class="ic">${svgIcon(ic)}</span><span class="set-txt"><b>${label}</b><small>${desc}</small></span><span class="arrow">${svgIcon('chevron')}</span></button>`).join('')}
+      </div></section>`).join('')}
+      </div>`;
     panel.onclick = (e) => {
       const b = e.target.closest('[data-page]');
       if (!b) return;
