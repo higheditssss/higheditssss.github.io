@@ -59,7 +59,7 @@ body.admin { padding-top: 64px; }
 .toolbar .input, .toolbar select { width: auto; min-width: 150px; }
 
 /* modal */
-.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 180; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
 .modal { width: 100%; max-width: 760px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
 .modal-head { display: flex; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--border); align-items: center; }
 .modal-head .poster { width: 70px; flex: none; }

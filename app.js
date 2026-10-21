@@ -1388,6 +1388,116 @@
     document.getElementById('mb-q').addEventListener('input', draw);
   }
 
+  // ---------- cautare pe telefon: ecran intreg care urca de jos ----------
+
+  const RECENT_KEY = 'editsel_recent_search';
+  const getRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } };
+  const setRecent = (list) => { try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 8))); } catch { /* fara memorie locala */ } };
+  const addRecent = (q) => setRecent([q, ...getRecent().filter((x) => x.toLowerCase() !== q.toLowerCase())]);
+
+  function openMobileSearch() {
+    if (document.getElementById('msearch')) return;
+    const norm = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const wrap = document.createElement('div');
+    wrap.id = 'msearch';
+    wrap.className = 'msearch';
+    wrap.innerHTML = `
+      <div class="ms-bar">
+        <div class="ms-field"><span>⌕</span><input type="search" id="ms-q" placeholder="Seriale, filme sau membri" autocomplete="off" enterkeyhint="search"><button type="button" class="ms-clear hidden" id="ms-clear" aria-label="Șterge">×</button></div>
+        <button type="button" class="ms-cancel" id="ms-cancel">Anulează</button>
+      </div>
+      <div class="ms-body" id="ms-body"></div>`;
+    document.body.appendChild(wrap);
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => wrap.classList.add('open'));
+    const input = wrap.querySelector('#ms-q');
+    const body = wrap.querySelector('#ms-body');
+    setTimeout(() => input.focus(), 60);
+
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => wrap.remove(), 250);
+    };
+    wrap.querySelector('#ms-cancel').addEventListener('click', close);
+    wrap.querySelector('#ms-clear').addEventListener('click', () => { input.value = ''; input.focus(); drawIdle(); });
+    // linkurile din rezultate inchid ecranul (cele de adaugare deschid pop-up-ul peste el)
+    body.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-recent]');
+      if (chip) { input.value = chip.dataset.recent; run(); return; }
+      if (e.target.closest('[data-clear-recent]')) { setRecent([]); drawIdle(); return; }
+      const a = e.target.closest('a');
+      if (a && !a.dataset.add) close();
+    });
+
+    const posterTile = (t) => `<a class="ms-tile" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>
+        <img src="${esc(t.poster)}" alt="" loading="lazy"><span>${esc(t.title)}</span></a>`;
+
+    async function drawIdle() {
+      wrap.querySelector('#ms-clear').classList.add('hidden');
+      const recent = getRecent();
+      body.innerHTML = `${recent.length ? `<div class="ms-head"><h3>Căutări recente</h3><button type="button" data-clear-recent>Șterge</button></div>
+          <div class="ms-chips">${recent.map((q) => `<button type="button" data-recent="${esc(q)}">↺ ${esc(q)}</button>`).join('')}</div>` : ''}
+        <div class="ms-head"><h3>Populare acum</h3></div><div class="ms-grid" id="ms-pop">${'<div class="ms-tile skeleton"></div>'.repeat(6)}</div>`;
+      const home = await loadHomeData();
+      const pop = document.getElementById('ms-pop');
+      if (!pop) return;
+      const list = [...(home.tv || []).slice(0, 6), ...(home.movie || []).slice(0, 6)].sort(() => Math.random() - 0.5).slice(0, 9);
+      pop.innerHTML = list.length ? list.map(posterTile).join('') : '<div class="muted">Nimic deocamdată.</div>';
+    }
+
+    let timer = 0;
+    let seq = 0;
+    async function run() {
+      const q = input.value.trim();
+      wrap.querySelector('#ms-clear').classList.toggle('hidden', !q);
+      if (!q) { drawIdle(); return; }
+      const my = ++seq;
+      body.innerHTML = '<div class="ms-loading"><span></span><span></span><span></span></div>';
+      const nq = norm(q);
+      const [members, titles, me] = await Promise.all([
+        backend.listMembers().catch(() => []),
+        backend.user
+          ? api(`/api/tmdb/search?type=multi&q=${encodeURIComponent(q)}`).catch(() => [])
+          : loadHomeData().then((h) => [...(h.tv || []), ...(h.movie || []), ...(h.popularTv || []), ...(h.popularMovie || [])]
+            .filter((t) => norm(t.title).includes(nq)).map((t) => ({ ...t, tmdbId: t.id }))),
+        backend.user ? api('/api/public').catch(() => null) : null,
+      ]);
+      if (my !== seq) return;
+      const people = members.filter((p) => p.username && (norm(p.username).includes(nq) || norm(p.name).includes(nq))).slice(0, 12);
+      const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.tmdbId && x.type === t.type);
+      const seen = new Set();
+      const uniq = titles.filter((t) => { const k = t.type + t.tmdbId; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
+      body.innerHTML = `
+        ${people.length ? `<div class="ms-head"><h3>Membri</h3></div><div class="ms-people">${people.map((p) => `
+          <a href="${BASE}${esc(p.username)}">${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<span style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`}<b>${esc(p.name || p.username)}</b></a>`).join('')}</div>` : ''}
+        ${uniq.length ? `<div class="ms-head"><h3>Seriale și filme</h3></div><div class="ms-list">${uniq.map((t) => `
+          <a class="ms-row" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.tmdbId}` : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
+            ${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="ms-noimg"></span>'}
+            <span class="ms-info"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
+            ${backend.user ? `<span class="ms-add">${owned(t) ? '✓' : '＋'}</span>` : '<span class="ms-add">›</span>'}
+          </a>`).join('')}</div>` : ''}
+        ${!people.length && !uniq.length ? '<div class="ms-empty"><b>Nu am găsit nimic</b><span>Încearcă alt nume.</span></div>' : ''}
+        ${!backend.user ? '<div class="ms-hint"><a href="admin.html#cont-nou">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : ''}
+        <a class="ms-all" href="${BASE}cauta?q=${encodeURIComponent(q)}">Toate rezultatele pentru „${esc(q)}” ›</a>`;
+    }
+
+    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 280); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        e.preventDefault();
+        const q = input.value.trim();
+        addRecent(q);
+        close();
+        navigate(`${BASE}cauta?q=${encodeURIComponent(q)}`);
+      }
+      if (e.key === 'Escape') close();
+    });
+    // cand deschizi un rezultat, cautarea ramane in „recente”
+    body.addEventListener('click', (e) => { if (e.target.closest('a') && input.value.trim()) addRecent(input.value.trim()); }, true);
+    drawIdle();
+  }
+
   // ---------- router ----------
 
   let backend = null;
@@ -1554,7 +1664,7 @@
 
   // popup unic despre API-ul TMDB (se tine minte in browser dupa „Am inteles”)
   document.getElementById('year').textContent = new Date().getFullYear();
-  document.getElementById('footer-search').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); window.scrollTo({ top: 0, behavior: 'smooth' }); document.querySelector('#hsearch .hs-toggle').click(); });
+  document.getElementById('footer-search').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (window.matchMedia('(max-width: 640px)').matches) { openMobileSearch(); return; } window.scrollTo({ top: 0, behavior: 'smooth' }); document.querySelector('#hsearch .hs-toggle').click(); });
   document.getElementById('to-top').addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   const NOTICE_KEY = 'editsel_api_notice_v1';
   const notice = document.getElementById('api-notice');
@@ -1593,7 +1703,7 @@
     if (location.hash.startsWith('#/')) history.replaceState(null, '', BASE);
     renderAuthSlot();
     setupSearch();
-    document.getElementById('bn-search').addEventListener('click', (e) => { e.stopPropagation(); window.scrollTo(0, 0); document.querySelector('#hsearch .hs-toggle').click(); });
+    document.getElementById('bn-search').addEventListener('click', (e) => { e.stopPropagation(); openMobileSearch(); });
     b.onAuth(() => { renderAuthSlot(); loadedUser = null; userCache.clear(); render(); });
     render();
   });
