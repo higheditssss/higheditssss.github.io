@@ -230,10 +230,11 @@ a.diary-row:hover { background: var(--surface-2); }
 
 /* ---------- liste ---------- */
 .list-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
-.list-card { display: block; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; transition: border-color .15s; }
+.list-card { display: block; min-width: 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; transition: border-color .15s; }
 .list-card:hover { border-color: var(--accent); }
 .stack { display: flex; height: 150px; margin-bottom: 12px; }
-.stack .s { width: 100px; flex: none; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; background: var(--surface-3); box-shadow: 6px 0 14px rgba(0,0,0,.6); margin-right: -50px; border: 1px solid rgba(255,255,255,.08); }
+.stack .s { width: 100px; flex: 0 1 auto; min-width: 0; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; background: var(--surface-3); box-shadow: 6px 0 14px rgba(0,0,0,.6); margin-right: -50px; border: 1px solid rgba(255,255,255,.08); }
+.stack .s:last-child { margin-right: 0; }
 .stack .s img { width: 100%; height: 100%; object-fit: cover; }
 .list-card:hover h3 { color: var(--accent-text); }
 .list-card h3 { font-size: 18px; }
