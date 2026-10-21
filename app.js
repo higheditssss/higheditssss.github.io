@@ -1733,6 +1733,42 @@
   });
   window.addEventListener('popstate', render);
 
+  // ---------- instalare pe telefon (ecranul principal) ----------
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; showInstall(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; hideInstall(true); });
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function hideInstall(forever) {
+    const el = document.getElementById('install-bar');
+    if (el) el.remove();
+    if (forever) try { localStorage.setItem('editsel_install_off', String(Date.now())); } catch { /* */ }
+  }
+  function showInstall() {
+    if (standalone() || document.getElementById('install-bar') || !window.matchMedia('(max-width: 760px)').matches) return;
+    try { const off = Number(localStorage.getItem('editsel_install_off')); if (off && Date.now() - off < 14 * 864e5) return; } catch { /* */ }
+    const ios = isIos();
+    if (!installEvt && !ios) return;
+    const share = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+    document.body.insertAdjacentHTML('beforeend', `<div class="install-bar" id="install-bar" role="dialog" aria-label="Instalează EDITSEL">
+      <img src="${BASE}brand/app-192.png" alt="">
+      <div class="install-txt"><b>Pune EDITSEL pe ecranul telefonului</b>
+        <span>${ios ? `Apasă <i class="install-ic">${share}</i> Partajează, apoi „Adaugă pe ecranul principal”.` : 'Se deschide ca o aplicație, fără bara browserului.'}</span></div>
+      ${ios ? '' : '<button class="btn small primary" id="install-go" type="button">Instalează</button>'}
+      <button class="install-x" id="install-x" type="button" aria-label="Închide">×</button>
+    </div>`);
+    document.getElementById('install-x').addEventListener('click', () => hideInstall(true));
+    const go = document.getElementById('install-go');
+    if (go) go.addEventListener('click', async () => {
+      if (!installEvt) return;
+      installEvt.prompt();
+      const r = await installEvt.userChoice.catch(() => null);
+      installEvt = null;
+      hideInstall(Boolean(r && r.outcome === 'dismissed'));
+    });
+  }
+  setTimeout(() => { if (isIos()) showInstall(); }, 2500);
+
   WL.backend().then((b) => {
     if (!b || !b.api) {
       done();

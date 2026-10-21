@@ -670,6 +670,23 @@ body.loading #app::after {
 
 @media (max-width: 640px) { .footer-logo .logo-text { display: inline; } }
 
+/* ---------- instalare pe telefon ---------- */
+.install-bar {
+  position: fixed; left: 10px; right: 10px; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 70;
+  display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 12px; border-radius: 18px;
+  background: rgba(22,22,27,.97); border: 1px solid var(--border); box-shadow: 0 14px 40px rgba(0,0,0,.6);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: install-in .35s ease;
+}
+@keyframes install-in { from { opacity: 0; transform: translateY(14px); } }
+.install-bar > img { width: 44px; height: 44px; border-radius: 12px; flex: none; }
+.install-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.install-txt b { color: var(--text); font-size: 14px; }
+.install-ic { display: inline-flex; vertical-align: -3px; }
+.install-ic .ico { width: 15px; height: 15px; }
+.install-x { flex: none; width: 30px; height: 30px; border: 0; border-radius: 999px; background: var(--surface-3); color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
+/* in aplicatia instalata: loc pentru bara de sus a telefonului */
+@media (display-mode: standalone) { .site-header { padding-top: env(safe-area-inset-top); } }
+
 /* ---------- comutator RO / EN ---------- */
 .lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(38,38,46,.7); flex: none; }
 .lang-switch button { border: 0; background: none; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); cursor: pointer; }

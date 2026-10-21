@@ -179,5 +179,10 @@
     link.href = 'data:image/svg+xml,' + encodeURIComponent(logoSvg(hex, { size: 64, id: 'f' }));
   }
 
+  // aplicatie pe ecranul telefonului (PWA)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+
   window.WL = { backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
 })();
