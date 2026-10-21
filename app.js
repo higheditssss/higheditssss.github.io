@@ -962,7 +962,6 @@
       </section>`).join('');
     const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero"></div>`;
     return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
-      ${one ? '' : `<section class="section" id="disc-friends-wrap"><div class="section-head"><h2>Activitatea prietenilor</h2></div><div id="disc-friends"></div></section>`}
     </div>`;
   }
 
@@ -984,13 +983,6 @@
       document.querySelector('.disc-page').insertAdjacentHTML('beforeend', empty('Listele se încarcă după ce administratorul site-ului intră o dată (are nevoie de cheia TMDB).'));
     }
 
-    // activitatea prietenilor (cereri acceptate)
-    const box = document.getElementById('disc-friends');
-    if (!box) return;
-    if (!me) { box.innerHTML = empty('Fă-ți cont ca să-ți adaugi prietenii.'); return; }
-    const friends = await friendsOf({ uid: backend.user.uid, profile: me.profile });
-    if (!friends.length) { box.innerHTML = empty('Nu ai prieteni încă. Trimite cereri de pe pagina <a href="friends" style="color:var(--accent-text)">Prieteni</a>.'); return; }
-    renderFeed(box, friends, 12);
   }
 
   // ---------- pagina de rezultate (/cauta?q=...) ----------

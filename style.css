@@ -282,9 +282,19 @@ a.diary-row:hover { background: var(--surface-2); }
 #to-top:hover { color: var(--accent-text); }
 @media (max-width: 900px) { .footer-top { grid-template-columns: 1fr 1fr; } .footer-brand, .footer-credits { grid-column: 1 / -1; } }
 @media (max-width: 640px) {
-  .site-footer { padding-top: 40px; }
-  .footer-top { gap: 28px; }
-  .footer-bottom { flex-wrap: wrap; gap: 8px 14px; }
+  .site-footer { padding-top: 40px; text-align: center; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 30px 16px; }
+  body.logged-out .footer-top { grid-template-columns: 1fr; }
+  .footer-brand { display: flex; flex-direction: column; align-items: center; }
+  .footer-brand p { font-size: 13.5px; max-width: 320px; }
+  .footer-col { align-items: center; gap: 9px; }
+  .footer-col a:hover { transform: none; }
+  body.logged-out .footer-col { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 22px; }
+  body.logged-out .footer-col h4 { flex-basis: 100%; }
+  .footer-credits { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .footer-credits h4 { grid-column: 1 / -1; }
+  .credit-row { flex-direction: column; justify-content: center; gap: 8px; padding: 12px 10px; font-size: 12px; line-height: 1.35; }
+  .footer-bottom { flex-wrap: wrap; justify-content: center; gap: 10px 16px; margin-top: 32px; }
   .footer-legal { order: 3; flex-basis: 100%; }
 }
 .tmdb-badge { grid-row: span 2; }
@@ -539,7 +549,7 @@ body.loading #app::after {
 .disc-slide.on { opacity: 1; transform: none; }
 
 .disc-page.has-banner { padding-top: 400px; }
-.disc-banner-title { font-size: clamp(30px, 5vw, 54px); margin-bottom: 26px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+.disc-title.disc-banner-title { font-size: clamp(30px, 5vw, 54px); margin-bottom: 44px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
 .disc-banner-title a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .disc-title { font-size: clamp(28px, 4vw, 40px); margin: 6px 0 4px; }
 .disc-sub { margin: 0 0 26px; }
@@ -562,6 +572,7 @@ body.loading #app::after {
   .disc-page { padding-top: 84px; }
   .disc-hero { height: 420px; }
   .disc-page.has-banner { padding-top: 230px; }
+  .disc-title.disc-banner-title { margin-bottom: 30px; }
   .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding-bottom: 6px; scrollbar-width: none; }
   .disc-row > :nth-child(n + 7) { display: block; }
 }
@@ -715,7 +726,8 @@ body.loading #app::after {
 /* ---------- fara cont: ascunde ce tine de cont si prieteni ---------- */
 body.logged-out .main-nav a[data-nav="prieteni"],
 body.logged-out .bottom-nav a[data-nav="prieteni"],
-body.logged-out .footer-account,
-body.logged-out #disc-friends-wrap { display: none; }
+body.logged-out .footer-account { display: none; }
+/* logat: fara „Creeaza cont” in subsol */
+body:not(.logged-out) #footer-join, #footer-join[hidden] { display: none; }
 .bottom-nav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 @media (max-width: 900px) { body.logged-out .footer-top { grid-template-columns: 1fr; } }
