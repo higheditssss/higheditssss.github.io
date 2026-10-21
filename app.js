@@ -980,7 +980,7 @@
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}discover/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
-    const hero = `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(DEXTER.backdrops[0])}')"></div></div>`;
+    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(DEXTER.backdrops[0])}')"></div></div>`;
     return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
     </div>`;
   }
