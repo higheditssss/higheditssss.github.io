@@ -12,6 +12,9 @@
   let U = 'profil';
   const R = (p = '') => BASE + U + (p === '/' ? '' : p);
   const titleHref = (t) => R(`/${t.type === 'movie' ? 'movie' : 'show'}/${slug(t.title) || 'titlu'}-${t.id}`);
+  // iconite SVG (in locul emoji-urilor)
+  const ICONS = {"search":"<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/>","bell":"<path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/>","home":"<path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/><path d=\"M10 21v-6h4v6\"/>","compass":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m15.5 8.5-2 5-5 2 2-5z\"/>","users":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/>","user":"<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","list":"<path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/>"};
+  const icon = (k) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   // ---------- date derivate ----------
@@ -686,7 +689,7 @@
       const bottom = a.closest('.bottom-nav');
       a.dataset.nav = logged ? 'membri' : 'descopera';
       a.setAttribute('href', logged ? 'members' : 'discover');
-      a.innerHTML = (bottom ? `<span>${logged ? '☷' : '◈'}</span>` : '') + (logged ? 'Membri' : 'Descoperă');
+      a.innerHTML = (bottom ? `<span>${icon(logged ? 'list' : 'compass')}</span>` : '') + (logged ? 'Membri' : 'Descoperă');
     });
   }
 
@@ -710,11 +713,10 @@
     const fp = document.getElementById('footer-profile');
     if (fp && username) fp.href = BASE + username;
     const bn = document.getElementById('bn-profile');
-    if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
-    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="settings">Setări</a>'}`;
+    if (bn && username) { bn.href = BASE + username; bn.innerHTML = `<span>${icon('user')}</span>Profil`; }
+    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">${icon('bell')}</button><div class="bell-panel hidden" id="bell-panel"></div></div>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="settings">Setări</a>'}`;
     setupBell();
     updateRequestBadge();
-    slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });
   }
 
   // ---------- pagina principala ----------
@@ -1072,7 +1074,7 @@
     return `<div class="container page disc-page">
       <h1 class="disc-title">Prieteni</h1>
       <p class="muted disc-sub">Trimite cereri de prietenie. Când celălalt acceptă, vă vedeți unul altuia activitatea.</p>
-      <div class="fh-search"><span>⌕</span><input id="fh-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
+      <div class="fh-search"><span>${icon('search')}</span><input id="fh-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
       <div id="fh-body"><div class="member-list">${Array.from({ length: 3 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div></div>
     </div>`;
   }
@@ -1345,7 +1347,7 @@
     return `<div class="container page disc-page">
       <h1 class="disc-title">Membri</h1>
       <p class="muted disc-sub">Toți cei care își țin jurnalul pe EDITSEL.</p>
-      <div class="fh-search"><span>⌕</span><input id="mb-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
+      <div class="fh-search"><span>${icon('search')}</span><input id="mb-q" type="search" placeholder="Caută după nume sau username…" autocomplete="off"></div>
       <div class="sr-people" id="mb-list">${Array.from({ length: 6 }, () => '<div class="card friend-card skeleton"></div>').join('')}</div>
     </div>`;
   }
@@ -1386,7 +1388,7 @@
     wrap.className = 'msearch';
     wrap.innerHTML = `
       <div class="ms-bar">
-        <div class="ms-field"><span>⌕</span><input type="search" id="ms-q" placeholder="Seriale, filme sau membri" autocomplete="off" enterkeyhint="search"><button type="button" class="ms-clear hidden" id="ms-clear" aria-label="Șterge">×</button></div>
+        <div class="ms-field"><span>${icon('search')}</span><input type="search" id="ms-q" placeholder="Seriale, filme sau membri" autocomplete="off" enterkeyhint="search"><button type="button" class="ms-clear hidden" id="ms-clear" aria-label="Șterge">×</button></div>
         <button type="button" class="ms-cancel" id="ms-cancel">Anulează</button>
       </div>
       <div class="ms-body" id="ms-body"></div>`;
