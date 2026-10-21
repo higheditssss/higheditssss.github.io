@@ -842,7 +842,7 @@
     });
 
     const titleLink = (t) => (backend.user
-      ? `admin.html?adauga=${t.type}:${t.tmdbId}`
+      ? `${BASE}add/${t.type}/${t.tmdbId}`
       : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`);
 
     async function run() {
@@ -904,7 +904,7 @@
   const loadHomeData = () => (homeData || (homeData = backend.loadHome().catch(() => ({}))));
 
   function discoverCard(t, owned) {
-    const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    const href = backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
       <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">
         <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ★ ' + t.rating.toFixed(1) : ''}</span>
@@ -928,7 +928,7 @@
   }
   let heroTimer = null;
   function bannerTitle(t) {
-    const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    const href = backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>${esc(t.title)}</a>`;
   }
 
@@ -1035,7 +1035,7 @@
       wrap.hidden = false;
       document.getElementById(id).innerHTML = list.map((t) => (t.poster
         ? card(t)
-        : `<a class="poster disc-card" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.tmdbId}` : '#')}"><div class="poster-img"><div class="poster-fallback"><span>${esc(t.title)}</span></div></div></a>`)).join('');
+        : `<a class="poster disc-card" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.tmdbId}` : '#')}"><div class="poster-img"><div class="poster-fallback"><span>${esc(t.title)}</span></div></div></a>`)).join('');
     };
     fill('sr-tv', tv);
     fill('sr-movie', movie);
@@ -1413,7 +1413,7 @@
       if (a && !a.dataset.add) close();
     });
 
-    const posterTile = (t) => `<a class="ms-tile" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>
+    const posterTile = (t) => `<a class="ms-tile" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>
         <img src="${esc(t.poster)}" alt="" loading="lazy"><span>${esc(t.title)}</span></a>`;
 
     async function drawIdle() {
@@ -1455,7 +1455,7 @@
         ${people.length ? `<div class="ms-head"><h3>Membri</h3></div><div class="ms-people">${people.map((p) => `
           <a href="${BASE}${esc(p.username)}">${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<span style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`}<b>${esc(p.name || p.username)}</b></a>`).join('')}</div>` : ''}
         ${uniq.length ? `<div class="ms-head"><h3>Seriale și filme</h3></div><div class="ms-list">${uniq.map((t) => `
-          <a class="ms-row" href="${esc(backend.user ? `admin.html?adauga=${t.type}:${t.tmdbId}` : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
+          <a class="ms-row" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.tmdbId}` : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
             ${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="ms-noimg"></span>'}
             <span class="ms-info"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
             ${backend.user ? `<span class="ms-add">${owned(t) ? '✓' : '＋'}</span>` : '<span class="ms-add">›</span>'}
@@ -1519,6 +1519,13 @@
     const token = ++renderToken;
     const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
     const parts = rel.split('/').filter(Boolean);
+    // /add/tv/1405: deschide pop-up-ul de adaugare peste Descopera
+    if (parts[0] === 'add' && parts[2]) {
+      history.replaceState(null, '', BASE + 'discover');
+      render();
+      if (backend.user) quickAdd(parts[1], parts[2]); else location.href = 'admin.html#cont-nou';
+      return;
+    }
     const old = oldRoute(parts);
     if (old) return navigate(BASE + old + location.search + location.hash, true);
 
