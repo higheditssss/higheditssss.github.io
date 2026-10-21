@@ -781,6 +781,9 @@ body.logged-out .bottom-nav a[data-nav="prieteni"],
 body.logged-out .footer-account { display: none; }
 /* logat: fara „Creeaza cont” in subsol */
 body:not(.logged-out) #footer-join, #footer-join[hidden] { display: none; }
+.footer-me { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+body.logged-out .footer-me { display: none; }
+@media (max-width: 640px) { .footer-me { justify-content: center; } }
 .bottom-nav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 @media (max-width: 900px) { body.logged-out .footer-top { grid-template-columns: 1fr; } }
 

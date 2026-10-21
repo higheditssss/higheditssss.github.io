@@ -722,6 +722,20 @@
     if (fj) fj.hidden = true;
     const fp = document.getElementById('footer-profile');
     if (fp && username) fp.href = BASE + username;
+    const fd = document.getElementById('footer-diary');
+    if (fd && username) fd.href = BASE + username + '/diary';
+    const fa = document.getElementById('footer-add');
+    if (fa && !fa.dataset.hooked) {
+      fa.dataset.hooked = '1';
+      fa.addEventListener('click', (e) => {
+        const t = document.querySelector('#hsearch .hs-toggle');
+        if (!t || !t.offsetParent) return; // pe telefon merge la Descopera
+        e.preventDefault();
+        e.stopPropagation();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        t.click();
+      });
+    }
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = `<span>${icon('user')}</span>Profil`; }
     slot.innerHTML = authSlotHtml(myP ? { username, name: myP.name, avatar: myP.avatar } : {});
