@@ -38,7 +38,7 @@
     // descopera / cautare / membri / prieteni
     'Ce se vede acum. Click pe un poster ca să-l adaugi în jurnal.': 'What people are watching. Click a poster to add it to your diary.',
     'Seriale populare': 'Popular shows', 'Seriale în trend': 'Trending shows', 'Filme populare': 'Popular movies', 'Filme în trend': 'Trending movies',
-    'Cele mai apreciate seriale': 'Top rated shows', 'Cele mai apreciate filme': 'Top rated movies', 'Vezi tot ›': 'See all ›', '‹ Descoperă': '‹ Discover',
+    'Cele mai apreciate seriale': 'Top rated shows', 'Cele mai apreciate filme': 'Top rated movies', 'Vezi tot ›': 'See all ›', '‹ Descoperă': '‹ Discover', 'Serialul zilei ·': 'Show of the day ·',
     'Activitatea prietenilor': "Friends' activity", '＋ Adaugă': '＋ Add', '✓ În biblioteca ta': '✓ In your library', 'În biblioteca ta': 'In your library', 'în biblioteca ta': 'in your library',
     'Listele se încarcă după ce administratorul site-ului intră o dată (are nevoie de cheia TMDB).': 'Lists load after the site admin logs in once (needs the TMDB key).',
     'Fă-ți cont ca să-ți adaugi prietenii.': 'Create an account to add your friends.', 'Prietenii tăi n-au notat nimic încă.': "Your friends haven't logged anything yet.",

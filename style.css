@@ -530,6 +530,11 @@ body.loading #app::after {
 .main-nav a:hover { background: var(--surface-3); color: var(--text); }
 .main-nav a.active { background: var(--surface-3); color: var(--text); }
 .disc-page { padding-top: 100px; }
+.disc-hero { height: 560px; background-position: center 20%; }
+.disc-page.has-banner { padding-top: 330px; }
+.disc-banner-name { min-height: 20px; margin-bottom: 6px; font-size: 13px; }
+.disc-banner-name a { color: #d6d8dd; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+.disc-banner-name a:hover b { text-decoration: underline; }
 .disc-title { font-size: clamp(28px, 4vw, 40px); margin: 6px 0 4px; }
 .disc-sub { margin: 0 0 26px; }
 .disc-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 16px; }
@@ -549,6 +554,8 @@ body.loading #app::after {
   .main-nav { margin-left: 4px; }
   .main-nav a { padding: 7px 11px; font-size: 13px; }
   .disc-page { padding-top: 84px; }
+  .disc-hero { height: 360px; }
+  .disc-page.has-banner { padding-top: 200px; }
   .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding-bottom: 6px; scrollbar-width: none; }
   .disc-row > :nth-child(n + 7) { display: block; }
 }

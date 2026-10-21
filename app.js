@@ -911,6 +911,23 @@
       </div></a>`;
   }
 
+  // bannerul zilei: azi (prima zi) The Mentalist, apoi in fiecare zi alt serial ales dupa data
+  const MENTALIST = { id: 5920, type: 'tv', title: 'The Mentalist', backdrop: 'https://image.tmdb.org/t/p/w1280/rJFqKcmMSttdNP58l0dVzY2NcTA.jpg' };
+  function bannerOfDay(home) {
+    const now = new Date();
+    const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 21)) / 864e5);
+    const seen = new Set();
+    const pool = [...(home.topTv || []), ...(home.popularTv || []), ...(home.tv || [])]
+      .filter((t) => t.backdrop && t.id !== MENTALIST.id && !seen.has(t.id) && seen.add(t.id))
+      .sort((a, b) => a.id - b.id);
+    if (day <= 0 || !pool.length) return MENTALIST;
+    return pool[(day * 7919) % pool.length];
+  }
+  function bannerCaption(t) {
+    const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>Serialul zilei · <b>${esc(t.title)}</b></a>`;
+  }
+
   function pageDiscover(listKey) {
     const one = DISCOVER.find((d) => d[0] === listKey);
     const head = one
@@ -920,7 +937,8 @@
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}descopera/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
-    return `<div class="container page disc-page">${head}${rows}
+    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero"></div>`;
+    return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}"><div class="disc-banner-name" id="disc-hero-name"></div>${head}${rows}
       ${one ? '' : `<section class="section" id="disc-friends-wrap"><div class="section-head"><h2>Activitatea prietenilor</h2></div><div id="disc-friends"></div></section>`}
     </div>`;
   }
@@ -931,6 +949,12 @@
       backend.user ? api('/api/public').catch(() => null) : null,
     ]);
     const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.id && x.type === t.type);
+    const heroBox = document.getElementById('disc-hero');
+    if (heroBox) {
+      const b = bannerOfDay(home || {});
+      heroBox.style.backgroundImage = `url('${b.backdrop}')`;
+      document.getElementById('disc-hero-name').innerHTML = bannerCaption(b);
+    }
     for (const [key, , field] of DISCOVER) {
       const box = document.getElementById('disc-' + key);
       if (!box) continue;
