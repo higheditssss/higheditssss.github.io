@@ -685,12 +685,24 @@
   // ---------- antet: cont ----------
 
   function swapNav(logged) {
-    document.querySelectorAll('.main-nav a[data-nav="descopera"], .main-nav a[data-nav="membri"], .bottom-nav a[data-nav="descopera"], .bottom-nav a[data-nav="membri"]').forEach((a) => {
-      const bottom = a.closest('.bottom-nav');
+    document.querySelectorAll('.main-nav a[data-nav="descopera"], .main-nav a[data-nav="membri"]').forEach((a) => {
       a.dataset.nav = logged ? 'membri' : 'descopera';
       a.setAttribute('href', logged ? 'members' : 'discover');
-      a.innerHTML = (bottom ? `<span>${icon(logged ? 'list' : 'compass')}</span>` : '') + (logged ? 'Membri' : 'Descoperă');
+      a.textContent = logged ? 'Membri' : 'Descoperă';
     });
+    const set = (a, nav, href, ic, label) => {
+      if (!a) return;
+      a.dataset.nav = nav;
+      a.setAttribute('href', href);
+      a.innerHTML = `<span>${icon(ic)}</span>${label}`;
+    };
+    if (logged) {
+      set(document.getElementById('bn-home'), 'descopera', 'discover', 'compass', 'Descoperă');
+      set(document.getElementById('bn-disc'), 'membri', 'members', 'list', 'Membri');
+    } else {
+      set(document.getElementById('bn-home'), 'acasa', './', 'home', 'Acasă');
+      set(document.getElementById('bn-disc'), 'descopera', 'discover', 'compass', 'Descoperă');
+    }
   }
 
   function authSlotHtml(p) {
@@ -1606,7 +1618,7 @@
       done();
       window.scrollTo(0, 0);
       if (discover) fillDiscover(parts[1]); else fillHome();
-      setNav(parts[0] === 'discover' ? 'descopera' : 'acasa');
+      setNav(discover ? 'descopera' : 'acasa');
       return;
     }
     if (parts[0] === 'members') {
