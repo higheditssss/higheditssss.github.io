@@ -1138,10 +1138,10 @@
     draw();
   }
 
-  // --- Prieteni: se gestioneaza pe pagina /prieteni a site-ului (cereri, acceptare) ---
+  // --- Prieteni: se gestioneaza pe pagina /friends a site-ului (cereri, acceptare) ---
   function setFriends(el) {
     el.innerHTML = `<p class="muted" style="margin-top:0">Prietenii se adaugă prin cereri de prietenie: trimiți o cerere, iar când celălalt o acceptă deveniți prieteni și vă vedeți activitatea.</p>
-      <a class="btn primary" href="prieteni">☺ Deschide pagina Prieteni</a>`;
+      <a class="btn primary" href="friends">☺ Deschide pagina Prieteni</a>`;
   }
 
   // --- Backup ---

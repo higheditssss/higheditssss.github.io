@@ -537,12 +537,10 @@ body.loading #app::after {
 }
 .disc-slide { position: absolute; inset: 0; background: center 22% / cover no-repeat; opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease, transform 8s ease-out; }
 .disc-slide.on { opacity: 1; transform: none; }
-.disc-banner-name { transition: opacity .5s; }
-.disc-banner-name.fading { opacity: 0; }
-.disc-page.has-banner { padding-top: 420px; }
-.disc-banner-name { min-height: 20px; margin-bottom: 6px; font-size: 13px; }
-.disc-banner-name a { color: #d6d8dd; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
-.disc-banner-name a:hover b { text-decoration: underline; }
+
+.disc-page.has-banner { padding-top: 400px; }
+.disc-banner-title { font-size: clamp(30px, 5vw, 54px); margin-bottom: 26px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+.disc-banner-title a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .disc-title { font-size: clamp(28px, 4vw, 40px); margin: 6px 0 4px; }
 .disc-sub { margin: 0 0 26px; }
 .disc-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 16px; }

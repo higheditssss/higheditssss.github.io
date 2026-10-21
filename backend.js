@@ -183,6 +183,20 @@ export async function createBackend(config) {
     return home;
   }
 
+  // bannerul de pe Descopera: mai multe fundaluri ale serialului zilei (vizitatorii nu au cheie TMDB,
+  // asa ca le cauta administratorul o data si le salveaza in site/home)
+  async function bannerImages(t) {
+    const home = await loadHome();
+    if (home.banner && home.banner.id === t.id && home.banner.images && home.banner.images.length) return home.banner.images;
+    const cfg = user ? await loadSiteConfig() : null;
+    if (!(cfg && cfg.tmdbKey && cfg.adminUid === user.uid)) return [t.backdrop];
+    const d = await tmdb(`/tv/${t.id}/images`, { include_image_language: 'null' });
+    const images = (d.backdrops || []).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 6).map((i) => IMG + 'w1280' + i.file_path);
+    if (!images.length) return [t.backdrop];
+    await setDoc(doc(fs, 'site', 'home'), { banner: { id: t.id, images } }, { merge: true }).catch(() => {});
+    return images;
+  }
+
   // pagina principala: membrii si datele celor mai activi (pentru postere si activitate)
   async function loadCommunity(n = 8) {
     const members = await listMembers();
@@ -577,7 +591,7 @@ export async function createBackend(config) {
     onAuth: (fn) => { authListeners.add(fn); return () => authListeners.delete(fn); },
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
-    loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, uidForUsername,
+    loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, bannerImages, uidForUsername,
     myUsername: async () => (user ? (await me()).profile.username : null),
     exportMine: async () => clean(await me()),
   };
