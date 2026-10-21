@@ -740,7 +740,6 @@
           <h1>Toate filmele și serialele tale.<br><span>Într-un singur loc.</span></h1>
           <p>Notează ce vezi, dă note, scrie recenzii, fă-ți liste și vezi ce urmăresc prietenii tăi. Gratuit, fără reclame.</p>
           <div class="home-cta">${cta}</div>
-          <div class="home-stats" id="home-stats"></div>
         </div>
       </section>
 
@@ -768,11 +767,9 @@
 
   async function fillHome() {
     if (backend.user) backend.myUsername().then((u) => { const a = document.getElementById('home-my'); if (a && u) a.href = BASE + u; }).catch(() => {});
-    let members = [];
     let trending = { tv: [], movie: [] };
     const shuffle = (arr) => arr.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
     await Promise.all([
-      backend.listMembers().then((m) => { members = m.filter((p) => p.username); }).catch((e) => console.error(e)),
       backend.loadHome().then((h) => { trending = h; }).catch((e) => console.error(e)),
     ]);
     if (!document.getElementById('poster-wall')) return;
@@ -799,10 +796,6 @@
       }).join('');
     }
 
-    const stats = document.getElementById('home-stats');
-    if (stats && members.length) {
-      stats.innerHTML = `<div><b>${members.length}</b><span>${members.length === 1 ? 'membru' : 'membri'}</span></div>`;
-    }
   }
 
 
