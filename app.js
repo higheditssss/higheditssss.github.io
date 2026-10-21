@@ -693,6 +693,11 @@
     });
   }
 
+  function authSlotHtml(p) {
+    const username = p.username || '';
+    return `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">${icon('bell')}</button><div class="bell-panel hidden" id="bell-panel"></div></div>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : esc((p.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="settings">Setări</a>'}`;
+  }
+
   async function renderAuthSlot() {
     // ce nu are sens fara cont se ascunde (vezi body.logged-out in style.css)
     document.body.classList.toggle('logged-out', !(backend && backend.user));
@@ -702,19 +707,24 @@
     if (!backend || !backend.user) {
       const fj = document.getElementById('footer-join');
       if (fj) fj.hidden = false;
+      try { localStorage.removeItem('editsel_me'); } catch { /* fara localStorage */ }
       slot.innerHTML = '<a class="btn small ghost" href="login">Intră</a><a class="btn small primary" href="signup">Creează cont</a>';
       return;
     }
     let username = '';
     let myP = null;
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem('editsel_me') || 'null'); } catch { /* fara localStorage */ }
+    if (cached && cached.uid === backend.user.uid) slot.innerHTML = authSlotHtml(cached);
     try { myP = await backend.myProfile(); username = myP.username || ''; } catch { /* profil inexistent */ }
+    try { localStorage.setItem('editsel_me', JSON.stringify(myP ? { uid: backend.user.uid, username, name: myP.name || '', avatar: myP.avatar || '' } : null)); } catch { /* fara localStorage */ }
     const fj = document.getElementById('footer-join');
     if (fj) fj.hidden = true;
     const fp = document.getElementById('footer-profile');
     if (fp && username) fp.href = BASE + username;
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = `<span>${icon('user')}</span>Profil`; }
-    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">${icon('bell')}</button><div class="bell-panel hidden" id="bell-panel"></div></div>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="settings">Setări</a>'}`;
+    slot.innerHTML = authSlotHtml(myP ? { username, name: myP.name, avatar: myP.avatar } : {});
     setupBell();
     updateRequestBadge();
   }
@@ -918,9 +928,22 @@
   const MENTALIST = { id: 5920, type: 'tv', title: 'The Mentalist',
     backdrops: ['rJFqKcmMSttdNP58l0dVzY2NcTA', 'jh9YpYaG1be7FOtBUxkLTIkhQHI', 'ov0WjAg0CclTDLBPy36nBiJ1fN5', 'xFzmU1h2aKPKobNGIgzZSRxCkwE', '1mOt9QtVJAAeFD4mF33Bpr2Msv7', 'kAgork03BAj6Q1NBrsWh4ppK0yi']
       .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
-  function bannerOfDay(home) {
+  const bannerDay = () => {
     const now = new Date();
-    const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 21)) / 864e5);
+    return Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 21)) / 864e5);
+  };
+  // ce se stie deja fara sa astepti baza de date: { t, slides } sau null
+  function bannerNow() {
+    const day = bannerDay();
+    if (day <= 0) return { t: MENTALIST, slides: MENTALIST.backdrops };
+    try {
+      const c = JSON.parse(localStorage.getItem('editsel_banner') || 'null');
+      if (c && c.day === day && c.slides && c.slides.length) return { t: c.t, slides: c.slides };
+    } catch { /* fara localStorage */ }
+    return null;
+  }
+  function bannerOfDay(home) {
+    const day = bannerDay();
     const seen = new Set();
     const pool = [...(home.topTv || []), ...(home.popularTv || []), ...(home.tv || [])]
       .filter((t) => t.backdrop && t.id !== MENTALIST.id && !seen.has(t.id) && seen.add(t.id))
@@ -942,6 +965,7 @@
     const b = bannerOfDay(home);
     const slides = b.backdrops || await backend.bannerImages(b).catch(() => [b.backdrop]);
     if (!heroBox.isConnected) return;
+    try { localStorage.setItem('editsel_banner', JSON.stringify({ day: bannerDay(), t: { id: b.id, type: b.type, title: b.title }, slides })); } catch { /* fara localStorage */ }
     heroBox.innerHTML = slides.map((src, i) => `<div class="disc-slide${i ? '' : ' on'}" style="background-image:url('${esc(src)}')"></div>`).join('');
     document.getElementById('disc-hero-name').innerHTML = bannerTitle(b);
     let cur = 0;
@@ -956,14 +980,16 @@
 
   function pageDiscover(listKey) {
     const one = DISCOVER.find((d) => d[0] === listKey);
+    const now0 = one ? null : bannerNow();
     const head = one
       ? `<a class="see-all" href="${BASE}discover">‹ Descoperă</a><h1 class="disc-title">${one[1]}</h1>`
-      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">&nbsp;</h1>`;
+      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${now0 ? bannerTitle(now0.t) : '&nbsp;'}</h1>`;
     const rows = (one ? [one] : DISCOVER).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}discover/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
-    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero"></div>`;
+    const now = one ? null : bannerNow();
+    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero">${now ? `<div class="disc-slide on" style="background-image:url('${esc(now.slides[0])}')"></div>` : ''}</div>`;
     return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
     </div>`;
   }
@@ -1504,6 +1530,7 @@
     document.body.classList.remove('loading');
   }
 
+  const ACCOUNT_PAGE = /^\/(login|signup|settings|admin)\/?$/;
   // adresele vechi in romana -> cele noi in engleza
   const OLD_TOP = { descopera: 'discover', membri: 'members', prieteni: 'friends', cauta: 'search' };
   const OLD_SUB = { seriale: 'shows', filme: 'movies', recenzii: 'reviews', aprecieri: 'likes', jurnal: 'diary', liste: 'lists', lista: 'list', statistici: 'stats', prieteni: 'friends', serial: 'show', film: 'movie' };
@@ -1528,6 +1555,12 @@
       if (backend.user) quickAdd(parts[1], parts[2]); else location.href = 'signup';
       return;
     }
+    if (ACCOUNT_PAGE.test(location.pathname) && !sessionStorage.getItem('editsel_acct')) {
+      sessionStorage.setItem('editsel_acct', '1');
+      location.reload();
+      return;
+    }
+    sessionStorage.removeItem('editsel_acct');
     const old = oldRoute(parts);
     if (old) return navigate(BASE + old + location.search + location.hash, true);
 
@@ -1693,6 +1726,8 @@
     if (!a || a.target || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
     const url = new URL(a.href, location.href);
     if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname)) return;
+    // pagina de cont e alta pagina (admin.html), nu o ruta a aplicatiei
+    if (ACCOUNT_PAGE.test(url.pathname)) return;
     ev.preventDefault();
     if (url.pathname + url.search !== location.pathname + location.search) navigate(url.pathname + url.search);
   });
