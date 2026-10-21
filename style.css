@@ -791,29 +791,49 @@ body.logged-out .footer-me { display: none; }
 .seg button { display: inline-flex; align-items: center; gap: 6px; }
 .seg button .ico { width: 14px; height: 14px; }
 
-/* ---------- subsol pe PC: panou rotunjit, coloane aerisite ---------- */
+/* ---------- subsol pe PC si tableta: panou rotunjit, se aranjeaza dupa latime ---------- */
 @media (min-width: 641px) {
   .site-footer { margin-top: 64px; padding: 0 0 28px; background: none; }
   .site-footer::before { display: none; }
-  .footer-top {
-    grid-template-columns: minmax(240px, 1.35fr) minmax(110px, .55fr) minmax(110px, .55fr) minmax(300px, 1.15fr);
-    gap: 36px 44px; padding: 36px 38px; border-radius: 24px; border: 1px solid var(--border);
+  .footer-top, body.logged-out .footer-top {
+    display: grid; gap: 30px 40px; padding: 34px 36px; border-radius: 24px; border: 1px solid var(--border);
     background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 7%, var(--surface)) 0%, var(--surface) 55%);
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, .55fr) minmax(0, .55fr) minmax(260px, 1.1fr);
+    grid-template-areas: "brand explore account credits";
   }
-  body.logged-out .footer-top { grid-template-columns: minmax(240px, 1.5fr) minmax(110px, .6fr) minmax(300px, 1.15fr); }
+  body.logged-out .footer-top { grid-template-columns: minmax(0, 1.5fr) minmax(0, .6fr) minmax(260px, 1.15fr); grid-template-areas: "brand explore credits"; }
+  .footer-brand { grid-area: brand; min-width: 0; }
+  .footer-col:not(.footer-account) { grid-area: explore; }
+  .footer-account { grid-area: account; }
+  .footer-credits { grid-area: credits; gap: 10px; min-width: 0; }
   .footer-brand p { font-size: 14px; color: var(--muted); }
-  .footer-col { gap: 11px; }
+  .footer-col { gap: 11px; min-width: 0; }
   .footer-col a { font-size: 14.5px; }
   .site-footer h4 { margin: 2px 0 8px; font-size: 11.5px; color: var(--faint, var(--muted)); }
-  .footer-credits { gap: 10px; }
-  .credit-row { gap: 16px; padding: 14px 16px; background: color-mix(in srgb, var(--bg) 55%, transparent); line-height: 1.4; }
+  .credit-row { gap: 16px; padding: 14px 16px; background: color-mix(in srgb, var(--bg) 55%, transparent); line-height: 1.4; min-width: 0; }
+  .credit-row > span:last-child { min-width: 0; }
   .credit-row .credit-logo, .credit-row .tmdb-badge, .credit-row .jw-badge { flex: none; }
   .credit-row > img.credit-logo { width: 104px; height: auto; max-height: 18px; object-fit: contain; object-position: left center; }
-  .footer-bottom { margin-top: 18px; padding: 0 8px; border-top: 0; gap: 16px; }
-  .footer-legal { color: var(--faint, var(--muted)); }
+  .footer-bottom { flex-wrap: wrap; margin-top: 18px; padding: 0 8px; border-top: 0; gap: 10px 16px; }
+  .footer-legal { color: var(--faint, var(--muted)); min-width: 0; }
   #to-top { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); }
   #to-top:hover { border-color: var(--accent); }
 }
-@media (min-width: 641px) and (max-width: 900px) {
-  .footer-top, body.logged-out .footer-top { grid-template-columns: 1fr 1fr; padding: 30px; }
+/* laptop mic: sursele trec pe randul lor, cu cardurile unul langa altul */
+@media (min-width: 641px) and (max-width: 1099px) {
+  .footer-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr) minmax(0, .6fr); grid-template-areas: "brand explore account" "credits credits credits"; }
+  body.logged-out .footer-top { grid-template-columns: minmax(0, 1.6fr) minmax(0, .7fr); grid-template-areas: "brand explore" "credits credits"; }
+  .footer-credits { display: grid; grid-template-columns: 1fr 1fr; }
+  .footer-credits h4 { grid-column: 1 / -1; }
+}
+/* tableta: brandul sus, coloanele dedesubt */
+@media (min-width: 641px) and (max-width: 819px) {
+  .footer-top { grid-template-columns: 1fr 1fr; grid-template-areas: "brand brand" "explore account" "credits credits"; padding: 28px; }
+  body.logged-out .footer-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr); grid-template-areas: "brand explore" "credits credits"; }
+  .footer-legal { order: 3; flex-basis: 100%; }
+}
+/* telefon: logo-urile nu ies din card */
+@media (max-width: 640px) {
+  .credit-row > img.credit-logo { max-width: 100%; height: auto; max-height: 18px; object-fit: contain; }
+  .credit-row { min-width: 0; }
 }
