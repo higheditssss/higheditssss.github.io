@@ -488,8 +488,7 @@
 
   function pageFriends() {
     if (!(DB.profile.following || []).length) return shell('prieteni', empty('Nu are prieteni încă.'));
-    return shell('prieteni', `<div class="friend-cards" id="friend-cards"><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div></div>
-      <div id="friend-feed"></div>`);
+    return shell('prieteni', `<div class="friend-cards" id="friend-cards"><div class="card friend-card skeleton"></div><div class="card friend-card skeleton"></div></div>`);
   }
 
   async function fillFriendsPage() {
@@ -506,7 +505,6 @@
           <span class="muted">@${esc(d.profile.username)} · ${tv} seriale · ${mv} filme · ${d.diary.length} în jurnal</span></div>
         <span class="arrow">›</span></a>`;
     }).join('') || empty('Nu are prieteni încă.');
-    renderFeed(document.getElementById('friend-feed'), list, 30, 'Activitatea prietenilor');
   }
 
   // activitatea recenta a unor profiluri, amestecata, cea mai noua prima
@@ -693,6 +691,8 @@
   }
 
   async function renderAuthSlot() {
+    // ce nu are sens fara cont se ascunde (vezi body.logged-out in style.css)
+    document.body.classList.toggle('logged-out', !(backend && backend.user));
     swapNav(Boolean(backend && backend.user));
     const slot = document.getElementById('auth-slot');
     if (!slot) return;

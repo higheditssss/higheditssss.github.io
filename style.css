@@ -698,3 +698,11 @@ body.loading #app::after {
 .ms-loading span:nth-child(2) { animation-delay: .15s; }
 .ms-loading span:nth-child(3) { animation-delay: .3s; }
 @keyframes msdot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
+
+/* ---------- fara cont: ascunde ce tine de cont si prieteni ---------- */
+body.logged-out .main-nav a[data-nav="prieteni"],
+body.logged-out .bottom-nav a[data-nav="prieteni"],
+body.logged-out .footer-account,
+body.logged-out #disc-friends-wrap { display: none; }
+.bottom-nav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+@media (max-width: 900px) { body.logged-out .footer-top { grid-template-columns: 1fr; } }
