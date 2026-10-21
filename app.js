@@ -1269,6 +1269,7 @@
       <div class="modal-foot">
         <button type="button" class="btn ghost" id="qa-more-btn">Mai multe opțiuni ${WL.ic('down')}</button>
         <span class="grow"></span>
+        ${isExisting ? `<button class="btn danger" id="qa-remove" title="Scoate titlul din bibliotecă">${WL.ic('trash')}Șterge</button>` : ''}
         <button class="btn ghost" id="qa-cancel">Anulează</button>
         <button class="btn primary" id="qa-save">${isExisting ? 'Salvează' : 'Adaugă'}</button>
       </div>`);
@@ -1326,6 +1327,22 @@
       } catch (err) { box.innerHTML = `<div class="muted">${esc(err.message)}</div>`; }
     }));
     $('#qa-cancel').addEventListener('click', close);
+    // adaugat din greseala: scoate titlul din biblioteca (cu intrarile lui din jurnal)
+    if ($('#qa-remove')) $('#qa-remove').addEventListener('click', async (e) => {
+      if (!confirm(`Ștergi „${t.title}” din bibliotecă? Se șterg și intrările din jurnal pentru el.`)) return;
+      e.currentTarget.disabled = true;
+      try {
+        await api(`/api/titles/${t.id}`, { method: 'DELETE' });
+        close();
+        toast(`„${t.title}” a fost scos din bibliotecă`);
+        loadedUser = null;
+        const mark = sourceEl && sourceEl.querySelector('.disc-over em, .hs-action');
+        if (mark) mark.innerHTML = `${WL.ic('plus')} Adaugă`;
+      } catch (err) {
+        e.currentTarget.disabled = false;
+        toast(err.message, true);
+      }
+    });
     $('#qa-save').addEventListener('click', async (e) => {
       e.target.disabled = true;
       const body = {
