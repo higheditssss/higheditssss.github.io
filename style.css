@@ -530,8 +530,16 @@ body.loading #app::after {
 .main-nav a:hover { background: var(--surface-3); color: var(--text); }
 .main-nav a.active { background: var(--surface-3); color: var(--text); }
 .disc-page { padding-top: 100px; }
-.disc-hero { height: 560px; background-position: center 20%; }
-.disc-page.has-banner { padding-top: 330px; }
+.disc-hero { height: 720px; background: var(--bg); }
+.disc-hero::after {
+  z-index: 1;
+  background: linear-gradient(to top, var(--bg) 0%, rgba(9,9,11,.7) 25%, rgba(9,9,11,.15) 60%, rgba(9,9,11,.35) 100%);
+}
+.disc-slide { position: absolute; inset: 0; background: center 22% / cover no-repeat; opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease, transform 8s ease-out; }
+.disc-slide.on { opacity: 1; transform: none; }
+.disc-banner-name { transition: opacity .5s; }
+.disc-banner-name.fading { opacity: 0; }
+.disc-page.has-banner { padding-top: 420px; }
 .disc-banner-name { min-height: 20px; margin-bottom: 6px; font-size: 13px; }
 .disc-banner-name a { color: #d6d8dd; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
 .disc-banner-name a:hover b { text-decoration: underline; }
@@ -554,8 +562,8 @@ body.loading #app::after {
   .main-nav { margin-left: 4px; }
   .main-nav a { padding: 7px 11px; font-size: 13px; }
   .disc-page { padding-top: 84px; }
-  .disc-hero { height: 360px; }
-  .disc-page.has-banner { padding-top: 200px; }
+  .disc-hero { height: 420px; }
+  .disc-page.has-banner { padding-top: 230px; }
   .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding-bottom: 6px; scrollbar-width: none; }
   .disc-row > :nth-child(n + 7) { display: block; }
 }

@@ -920,12 +920,15 @@
     const pool = [...(home.topTv || []), ...(home.popularTv || []), ...(home.tv || [])]
       .filter((t) => t.backdrop && t.id !== MENTALIST.id && !seen.has(t.id) && seen.add(t.id))
       .sort((a, b) => a.id - b.id);
-    if (day <= 0 || !pool.length) return MENTALIST;
-    return pool[(day * 7919) % pool.length];
+    if (!pool.length) return [MENTALIST];
+    const start = day <= 0 ? 0 : (day * 7919) % pool.length;
+    const next = Array.from({ length: Math.min(6, pool.length) }, (_, i) => pool[(start + i) % pool.length]);
+    return day <= 0 ? [MENTALIST, ...next] : next;
   }
-  function bannerCaption(t) {
+  let heroTimer = null;
+  function bannerCaption(t, first) {
     const href = backend.user ? `admin.html?adauga=${t.type}:${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
-    return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>Serialul zilei · <b>${esc(t.title)}</b></a>`;
+    return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>${first ? 'Serialul zilei · ' : ''}<b>${esc(t.title)}</b></a>`;
   }
 
   function pageDiscover(listKey) {
@@ -950,10 +953,22 @@
     ]);
     const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.id && x.type === t.type);
     const heroBox = document.getElementById('disc-hero');
+    clearInterval(heroTimer);
     if (heroBox) {
-      const b = bannerOfDay(home || {});
-      heroBox.style.backgroundImage = `url('${b.backdrop}')`;
-      document.getElementById('disc-hero-name').innerHTML = bannerCaption(b);
+      const slides = bannerOfDay(home || {});
+      heroBox.innerHTML = slides.map((b, i) => `<div class="disc-slide${i ? '' : ' on'}" style="background-image:url('${esc(b.backdrop)}')"></div>`).join('');
+      const name = document.getElementById('disc-hero-name');
+      name.innerHTML = bannerCaption(slides[0], true);
+      let cur = 0;
+      if (slides.length > 1) heroTimer = setInterval(() => {
+        if (!heroBox.isConnected) { clearInterval(heroTimer); return; }
+        const els = heroBox.children;
+        els[cur].classList.remove('on');
+        cur = (cur + 1) % slides.length;
+        els[cur].classList.add('on');
+        name.classList.add('fading');
+        setTimeout(() => { name.innerHTML = bannerCaption(slides[cur], cur === 0); name.classList.remove('fading'); }, 500);
+      }, 7000);
     }
     for (const [key, , field] of DISCOVER) {
       const box = document.getElementById('disc-' + key);
