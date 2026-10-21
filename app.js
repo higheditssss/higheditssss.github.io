@@ -1570,7 +1570,7 @@
     }
   }
 
-  // adaugare / editare direct din Descopera si cautare, fara sa parasesti pagina
+  // Descopera si cautarea deschid direct pagina titlului, cu actiunile lui
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[data-add]');
     if (!a || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
@@ -1581,7 +1581,7 @@
     if (box) box.classList.add('hidden');
     const ms = document.getElementById('msearch');
     if (ms) { ms.remove(); document.body.style.overflow = ''; }
-    quickAdd(type, id, a);
+    navigate(showHref(type, id, a.getAttribute('title') || ''));
   }, true);
 
   // ---------- pagina Membri ----------
