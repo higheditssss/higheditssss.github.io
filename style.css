@@ -573,7 +573,7 @@ body.loading #app::after {
   .disc-hero { height: 500px; }
   .disc-page.has-banner { padding-top: 300px; }
   .disc-title.disc-banner-title { margin-bottom: 30px; }
-  .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding-bottom: 6px; scrollbar-width: none; }
+  .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding: 8px 4px 10px; margin: -8px -4px -4px; scrollbar-width: none; }
   .disc-row > :nth-child(n + 7) { display: block; }
 }
 @media (max-width: 640px) {
