@@ -183,6 +183,7 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.15; font-family: var(--head); letter-
 .stat-rows .ic .ico { width: 16px; height: 16px; }
 .install-x { display: grid; place-items: center; }
 .install-x .ico { width: 14px; height: 14px; }
+#to-top { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 #to-top .ico { width: 13px; height: 13px; }
 .stars.lg { font-size: 20px; }
 .heart { color: var(--heart); font-size: 13px; line-height: 1; }
@@ -292,6 +293,10 @@ a.diary-row:hover { background: var(--surface-2); }
 .footer-col a { width: fit-content; color: var(--muted); transition: color .15s, transform .15s; }
 .footer-col a:hover { color: var(--text); transform: translateX(3px); }
 .credit-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 13px; transition: border-color .15s; }
+.credit-logo { display: block; flex: none; width: auto; }
+.tmdb-logo { height: 12px; }
+.jw-logo { height: 16px; }
+.notice-logo { display: block; height: 18px; width: auto; margin-bottom: 4px; }
 .credit-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); color: var(--text); }
 .jw-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 7px; font-weight: 700; font-size: 12px; color: #fff; background: #f5c518; background: linear-gradient(90deg, #fbd536, #f2a91e); color: #1b1b1b; flex: none; }
 .footer-bottom { display: flex; align-items: center; gap: 18px; margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--faint); }
