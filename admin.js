@@ -112,6 +112,7 @@
       root.innerHTML = `<div class="auth-box card"><h2>Site-ul nu e conectat încă</h2><p class="muted">${b && b.missingConfig ? 'Lipsește configurarea Firebase (firebase-config.js).' : 'Nu am putut porni conexiunea cu baza de date.'}</p></div>`;
       return;
     }
+    const early = b.user ? api('/api/public').catch(() => null) : null;
     STATE = await api('/api/admin/status');
     if (!STATE.authed) {
       logoutBtn.classList.add('hidden');
@@ -121,7 +122,7 @@
     logoutBtn.classList.remove('hidden');
     if (/\/(login|signup|admin(\.html)?)$/.test(location.pathname) || location.hash === '#cont-nou') history.replaceState(null, '', 'settings' + location.search);
     if (!root.innerHTML.trim()) root.innerHTML = '<p class="muted" style="text-align:center;padding:90px 0">Se încarcă…</p>';
-    try { await reload(); } catch (e) {
+    try { DB = (await early) || await api('/api/public'); } catch (e) {
       root.innerHTML = `<div class="auth-box card"><h2>Profilul nu a putut fi încărcat</h2><p class="muted">${esc(e.message)}</p></div>`;
       return;
     }
@@ -130,7 +131,16 @@
     WL.applyAccent(DB.profile.accent);
     renderShell();
     openFromLink();
+    if (!freshHooked) {
+      freshHooked = true;
+      b.onFresh(async () => {
+        if (document.querySelector('.modal-back') || (document.activeElement && document.activeElement.closest('#panel'))) return;
+        await reload();
+        renderPanel();
+      });
+    }
   }
+  let freshHooked = false;
 
   // settings?adauga=tv:1405 (din cautarea de pe site): deschide direct fereastra titlului
   async function openFromLink() {

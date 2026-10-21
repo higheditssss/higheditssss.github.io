@@ -207,9 +207,38 @@ export async function createBackend(config) {
   // ---------- datele contului logat (cache) ----------
 
   let mine = null;
+  let writes = 0; // cate modificari s-au facut (ca o citire veche sa nu le stearga)
+  let fresh = null;
+  const freshListeners = new Set();
+  const snapKey = () => 'editsel_mine_' + user.uid;
+  function saveSnap() {
+    try { if (user && mine) localStorage.setItem(snapKey(), JSON.stringify(mine)); else if (user) localStorage.removeItem(snapKey()); } catch { /* plin sau blocat */ }
+  }
+  function readSnap() {
+    try { return JSON.parse(localStorage.getItem(snapKey()) || 'null'); } catch { return null; }
+  }
+  // citeste din Firebase in fundal; daca intre timp s-a modificat ceva, mai citeste o data
+  function refreshMine() {
+    if (fresh) return fresh;
+    const uid = user.uid;
+    const w = writes;
+    fresh = readAll(uid).then((d) => {
+      fresh = null;
+      if (!user || user.uid !== uid) return;
+      if (w !== writes) { refreshMine(); return; }
+      if (!d) return;
+      mine = d;
+      saveSnap();
+      freshListeners.forEach((fn) => fn());
+    }).catch(() => { fresh = null; });
+    return fresh;
+  }
   async function me() {
     if (!user) throw err('Neautentificat.', 401);
-    if (!mine) mine = await readAll(user.uid);
+    if (!mine) {
+      const snap = readSnap();
+      if (snap && snap.profile) { mine = snap; refreshMine(); } else { mine = await readAll(user.uid); saveSnap(); }
+    }
     if (!mine) throw err('Profilul nu există.', 404);
     return mine;
   }
@@ -365,7 +394,14 @@ export async function createBackend(config) {
 
   // ---------- rutele vechiului server ----------
 
+  // dupa fiecare modificare, copia din browser se actualizeaza (sau se sterge, daca s-a golit cache-ul)
   async function api(path, opts = {}) {
+    const write = (opts.method || 'GET') !== 'GET';
+    if (write) writes++;
+    try { return await route(path, opts); } finally { if (write && user) saveSnap(); }
+  }
+
+  async function route(path, opts = {}) {
     const m = opts.method || 'GET';
     const b = opts.body || {};
     const url = new URL(path, location.origin);
@@ -376,7 +412,7 @@ export async function createBackend(config) {
       const cfg = await loadSiteConfig();
       return { authed: Boolean(user), hasPassword: true, hasTmdb: Boolean(cfg && cfg.tmdbKey), isSiteAdmin: Boolean(user && cfg && (cfg.adminUid === user.uid || !cfg.adminUid)), email: user ? user.email : '' };
     }
-    if (p === '/api/logout') { await signOut(auth); mine = null; return { ok: true }; }
+    if (p === '/api/logout') { try { localStorage.removeItem(snapKey()); } catch { /* */ } await signOut(auth); mine = null; return { ok: true }; }
     if (!user) throw err('Neautentificat.', 401);
 
     if (p === '/api/public') return clean(await me());
@@ -589,6 +625,7 @@ export async function createBackend(config) {
   return {
     get user() { return user; },
     onAuth: (fn) => { authListeners.add(fn); return () => authListeners.delete(fn); },
+    onFresh: (fn) => { freshListeners.add(fn); return () => freshListeners.delete(fn); },
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
     loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, bannerImages, uidForUsername,
