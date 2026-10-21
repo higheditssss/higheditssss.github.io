@@ -120,6 +120,7 @@
     }
     logoutBtn.classList.remove('hidden');
     if (/\/(login|signup|admin(\.html)?)$/.test(location.pathname) || location.hash === '#cont-nou') history.replaceState(null, '', 'settings' + location.search);
+    if (!root.innerHTML.trim()) root.innerHTML = '<p class="muted" style="text-align:center;padding:90px 0">Se încarcă…</p>';
     try { await reload(); } catch (e) {
       root.innerHTML = `<div class="auth-box card"><h2>Profilul nu a putut fi încărcat</h2><p class="muted">${esc(e.message)}</p></div>`;
       return;
