@@ -687,9 +687,14 @@
   // fara buton Membri in meniu (pagina /members ramane, cu link din subsol);
   // logat, prima pagina e Descopera: butoanele Acasa/Descopera nu mai au rost (se ajunge acolo din logo)
   function swapNav(logged) {
+    // pe telefon, logat, primul buton devine Descopera (pe PC se ajunge acolo din logo)
     const home = document.getElementById('bn-home');
     const disc = document.getElementById('bn-disc');
-    if (home) home.hidden = logged;
+    if (home) {
+      home.dataset.nav = logged ? 'descopera' : 'acasa';
+      home.setAttribute('href', logged ? 'discover' : './');
+      home.innerHTML = `<span>${icon(logged ? 'compass' : 'home')}</span>${logged ? 'Descoperă' : 'Acasă'}`;
+    }
     if (disc) disc.hidden = logged;
     document.querySelectorAll('.main-nav a[data-nav="descopera"]').forEach((a) => { a.hidden = logged; });
   }
