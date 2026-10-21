@@ -399,6 +399,12 @@ body.loading #app::after {
 
 /* ---------- conturi ---------- */
 .auth-slot { display: flex; gap: 8px; align-items: center; }
+.me-pfp {
+  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; overflow: hidden; flex: none;
+  background: var(--surface-3); border: 2px solid rgba(255,255,255,.14); font-weight: 700; color: var(--text); transition: border-color .15s;
+}
+.me-pfp img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.me-pfp:hover { border-color: var(--accent); }
 .follow-slot { margin-top: 10px; }
 .follow-slot:empty { display: none; }
 .page-loading { min-height: 100vh; }

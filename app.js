@@ -703,14 +703,15 @@
       return;
     }
     let username = '';
-    try { username = await backend.myUsername(); } catch { /* profil inexistent */ }
+    let myP = null;
+    try { myP = await backend.myProfile(); username = myP.username || ''; } catch { /* profil inexistent */ }
     const fj = document.getElementById('footer-join');
     if (fj) fj.hidden = true;
     const fp = document.getElementById('footer-profile');
     if (fp && username) fp.href = BASE + username;
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
-    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="btn small ghost" href="${BASE}${esc(username)}">Profilul meu</a>` : ''}<a class="btn small" href="admin.html" title="Setări">⚙</a>`;
+    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="admin.html">Setări</a>'}`;
     setupBell();
     updateRequestBadge();
     slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });

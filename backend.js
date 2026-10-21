@@ -593,6 +593,7 @@ export async function createBackend(config) {
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
     loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, bannerImages, uidForUsername,
     myUsername: async () => (user ? (await me()).profile.username : null),
+    myProfile: async () => (user ? (await me()).profile : null),
     exportMine: async () => clean(await me()),
   };
 }
