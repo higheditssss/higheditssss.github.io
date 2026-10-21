@@ -545,8 +545,8 @@ body.loading #app::after {
   z-index: 1;
   background: linear-gradient(to top, var(--bg) 0%, rgba(9,9,11,.7) 25%, rgba(9,9,11,.15) 60%, rgba(9,9,11,.35) 100%);
 }
-.disc-slide { position: absolute; inset: 0; background: center 22% / cover no-repeat; opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease, transform 8s ease-out; }
-.disc-slide.on { opacity: 1; transform: none; }
+.disc-slide { position: absolute; inset: 0; background: center 22% / cover no-repeat; opacity: 0; transition: opacity 1.4s ease; }
+.disc-slide.on { opacity: 1; }
 
 .disc-page.has-banner { padding-top: 500px; }
 .disc-title.disc-banner-title { font-size: clamp(30px, 5vw, 54px); margin-bottom: 44px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
