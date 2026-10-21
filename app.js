@@ -948,6 +948,9 @@
   const MENTALIST = { id: 5920, type: 'tv', title: 'The Mentalist',
     backdrops: ['rJFqKcmMSttdNP58l0dVzY2NcTA', 'jh9YpYaG1be7FOtBUxkLTIkhQHI', 'ov0WjAg0CclTDLBPy36nBiJ1fN5', 'xFzmU1h2aKPKobNGIgzZSRxCkwE', '1mOt9QtVJAAeFD4mF33Bpr2Msv7', 'kAgork03BAj6Q1NBrsWh4ppK0yi']
       .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
+  const DEXTER = { id: 1405, type: 'tv', title: 'Dexter',
+    backdrops: ['aSGSxGMTP893DPMCvMl9AdnEICE', 'iprMfJ9VHS4wMhBXyHtN7l9d2hP', 'a7fRjgWc37Ml6bSlWoNaG7wbaqP', 'l4pb3wCBGKYc1RaDOyXmJ1oWH9t', '90j5n0K8vxf5l3ACrKaWYBgQpst', 'sGh3WTqPaGJB3T9YNFJDNkELio5']
+      .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
   const bannerDay = () => {
     const now = new Date();
     return Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 21)) / 864e5);
@@ -955,6 +958,7 @@
   // ce se stie deja fara sa astepti baza de date: { t, slides } sau null
   function bannerNow() {
     const day = bannerDay();
+    if (day === 1) return { t: DEXTER, slides: DEXTER.backdrops };
     if (day <= 0) return { t: MENTALIST, slides: MENTALIST.backdrops };
     try {
       const c = JSON.parse(localStorage.getItem('editsel_banner') || 'null');
@@ -964,6 +968,7 @@
   }
   function bannerOfDay(home) {
     const day = bannerDay();
+    if (day === 1) return DEXTER;
     const seen = new Set();
     const pool = [...(home.topTv || []), ...(home.popularTv || []), ...(home.tv || [])]
       .filter((t) => t.backdrop && t.id !== MENTALIST.id && !seen.has(t.id) && seen.add(t.id))
