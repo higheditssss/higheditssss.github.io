@@ -1752,8 +1752,7 @@
     const share = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
     document.body.insertAdjacentHTML('beforeend', `<div class="install-bar" id="install-bar" role="dialog" aria-label="Instalează EDITSEL">
       <img src="${BASE}brand/app-192.png" alt="">
-      <div class="install-txt"><b>Pune EDITSEL pe ecranul telefonului</b>
-        <span>${ios ? `Apasă <i class="install-ic">${share}</i> Partajează, apoi „Adaugă pe ecranul principal”.` : 'Se deschide ca o aplicație, fără bara browserului.'}</span></div>
+      <div class="install-txt">${ios ? `<b>Adaugă pe ecran</b><span><i class="install-ic">${share}</i> → „Adaugă pe ecranul principal”</span>` : '<b>Instalează aplicația EDITSEL</b>'}</div>
       ${ios ? '' : '<button class="btn small primary" id="install-go" type="button">Instalează</button>'}
       <button class="install-x" id="install-x" type="button" aria-label="Închide">×</button>
     </div>`);
