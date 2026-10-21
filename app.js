@@ -944,55 +944,23 @@
       </div></a>`;
   }
 
-  // bannerul zilei: azi (prima zi) The Mentalist, apoi in fiecare zi alt serial ales dupa data
-  const MENTALIST = { id: 5920, type: 'tv', title: 'The Mentalist',
-    backdrops: ['rJFqKcmMSttdNP58l0dVzY2NcTA', 'jh9YpYaG1be7FOtBUxkLTIkhQHI', 'ov0WjAg0CclTDLBPy36nBiJ1fN5', 'xFzmU1h2aKPKobNGIgzZSRxCkwE', '1mOt9QtVJAAeFD4mF33Bpr2Msv7', 'kAgork03BAj6Q1NBrsWh4ppK0yi']
-      .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
+  // banner comun pentru toti vizitatorii, independent de data si de cache-ul browserului
   const DEXTER = { id: 1405, type: 'tv', title: 'Dexter',
     backdrops: ['aSGSxGMTP893DPMCvMl9AdnEICE', 'iprMfJ9VHS4wMhBXyHtN7l9d2hP', 'a7fRjgWc37Ml6bSlWoNaG7wbaqP', 'l4pb3wCBGKYc1RaDOyXmJ1oWH9t', '90j5n0K8vxf5l3ACrKaWYBgQpst', 'sGh3WTqPaGJB3T9YNFJDNkELio5']
       .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
-  const bannerDay = () => {
-    const now = new Date();
-    return Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 21)) / 864e5);
-  };
-  // ce se stie deja fara sa astepti baza de date: { t, slides } sau null
-  function bannerNow() {
-    const day = bannerDay();
-    if (day === 1) return { t: DEXTER, slides: DEXTER.backdrops };
-    if (day <= 0) return { t: MENTALIST, slides: MENTALIST.backdrops };
-    try {
-      const c = JSON.parse(localStorage.getItem('editsel_banner') || 'null');
-      if (c && c.day === day && c.slides && c.slides.length) return { t: c.t, slides: c.slides };
-    } catch { /* fara localStorage */ }
-    return null;
-  }
-  function bannerOfDay(home) {
-    const day = bannerDay();
-    if (day === 1) return DEXTER;
-    const seen = new Set();
-    const pool = [...(home.topTv || []), ...(home.popularTv || []), ...(home.tv || [])]
-      .filter((t) => t.backdrop && t.id !== MENTALIST.id && !seen.has(t.id) && seen.add(t.id))
-      .sort((a, b) => a.id - b.id);
-    if (day <= 0 || !pool.length) return MENTALIST;
-    return pool[(day * 7919) % pool.length];
-  }
   let heroTimer = null;
   function bannerTitle(t) {
     const href = backend.user ? showHref(t.type, t.id, t.title) : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>${esc(t.title)}</a>`;
   }
 
-  // caruselul cu fade: fundalurile serialului zilei, schimbate la 6 secunde
-  async function fillBanner(home) {
+  // fundalurile Dexter, cu tranzitie la fiecare 6 secunde
+  function fillBanner() {
     const heroBox = document.getElementById('disc-hero');
     clearInterval(heroTimer);
     if (!heroBox) return;
-    const b = bannerOfDay(home);
-    const slides = b.backdrops || await backend.bannerImages(b).catch(() => [b.backdrop]);
-    if (!heroBox.isConnected) return;
-    try { localStorage.setItem('editsel_banner', JSON.stringify({ day: bannerDay(), t: { id: b.id, type: b.type, title: b.title }, slides })); } catch { /* fara localStorage */ }
+    const slides = DEXTER.backdrops;
     heroBox.innerHTML = slides.map((src, i) => `<div class="disc-slide${i ? '' : ' on'}" style="background-image:url('${esc(src)}')"></div>`).join('');
-    document.getElementById('disc-hero-name').innerHTML = bannerTitle(b);
     let cur = 0;
     if (slides.length > 1) heroTimer = setInterval(() => {
       if (!heroBox.isConnected) { clearInterval(heroTimer); return; }
@@ -1005,27 +973,25 @@
 
   function pageDiscover(listKey) {
     const one = DISCOVER.find((d) => d[0] === listKey);
-    const now0 = one ? null : bannerNow();
     const head = one
       ? `<a class="see-all" href="${BASE}discover">‹ Descoperă</a><h1 class="disc-title">${one[1]}</h1>`
-      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${now0 ? bannerTitle(now0.t) : '&nbsp;'}</h1>`;
+      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${bannerTitle(DEXTER)}</h1>`;
     const rows = (one ? [one] : DISCOVER).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}discover/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
-    const now = one ? null : bannerNow();
-    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero">${now ? `<div class="disc-slide on" style="background-image:url('${esc(now.slides[0])}')"></div>` : ''}</div>`;
+    const hero = `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(DEXTER.backdrops[0])}')"></div></div>`;
     return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
     </div>`;
   }
 
   async function fillDiscover(listKey) {
+    fillBanner();
     const [home, me] = await Promise.all([
       loadHomeData(),
       backend.user ? api('/api/public').catch(() => null) : null,
     ]);
     const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.id && x.type === t.type);
-    fillBanner(home || {});
     for (const [key, , field] of DISCOVER) {
       const box = document.getElementById('disc-' + key);
       if (!box) continue;

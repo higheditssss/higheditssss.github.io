@@ -569,10 +569,10 @@ body.loading #app::after {
 .main-nav a:hover { background: var(--surface-3); color: var(--text); }
 .main-nav a.active { background: var(--surface-3); color: var(--text); }
 .disc-page { padding-top: 100px; }
-.disc-hero { height: 780px; background: var(--bg); }
+.disc-hero { position: fixed; inset: 0; height: 100vh; height: 100dvh; background: var(--bg); pointer-events: none; }
 .disc-hero::after {
   z-index: 1;
-  background: linear-gradient(to top, var(--bg) 0%, rgba(9,9,11,.7) 25%, rgba(9,9,11,.15) 60%, rgba(9,9,11,.35) 100%);
+  background: linear-gradient(to top, rgba(9,9,11,.9) 0%, rgba(9,9,11,.75) 25%, rgba(9,9,11,.25) 65%, rgba(9,9,11,.4) 100%);
 }
 .disc-slide { position: absolute; inset: 0; background: center 22% / cover no-repeat; opacity: 0; transition: opacity 1.4s ease; }
 .disc-slide.on { opacity: 1; }
@@ -599,7 +599,6 @@ body.loading #app::after {
   .main-nav { margin-left: 4px; }
   .main-nav a { padding: 7px 11px; font-size: 13px; }
   .disc-page { padding-top: 84px; }
-  .disc-hero { height: 500px; }
   .disc-page.has-banner { padding-top: 300px; }
   .disc-title.disc-banner-title { margin-bottom: 30px; }
   .disc-row { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 112px; overflow-x: auto; gap: 10px; padding: 8px 4px 10px; margin: -8px -4px -4px; scrollbar-width: none; }
