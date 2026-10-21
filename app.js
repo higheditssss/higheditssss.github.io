@@ -684,19 +684,14 @@
 
   // ---------- antet: cont ----------
 
-  // fara buton Membri in meniu (pagina /members ramane, cu link din subsol)
+  // fara buton Membri in meniu (pagina /members ramane, cu link din subsol);
+  // logat, prima pagina e Descopera: butoanele Acasa/Descopera nu mai au rost (se ajunge acolo din logo)
   function swapNav(logged) {
-    const set = (a, nav, href, ic, label) => {
-      if (!a) return;
-      a.dataset.nav = nav;
-      a.setAttribute('href', href);
-      a.innerHTML = `<span>${icon(ic)}</span>${label}`;
-    };
-    // pe telefon, logat: Acasa devine Descopera (prima pagina e oricum Descopera), iar al doilea buton dispare
+    const home = document.getElementById('bn-home');
     const disc = document.getElementById('bn-disc');
-    if (logged) set(document.getElementById('bn-home'), 'descopera', 'discover', 'compass', 'Descoperă');
-    else set(document.getElementById('bn-home'), 'acasa', './', 'home', 'Acasă');
+    if (home) home.hidden = logged;
     if (disc) disc.hidden = logged;
+    document.querySelectorAll('.main-nav a[data-nav="descopera"]').forEach((a) => { a.hidden = logged; });
   }
 
   function authSlotHtml(p) {
