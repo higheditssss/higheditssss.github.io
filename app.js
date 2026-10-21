@@ -355,7 +355,7 @@
     `);
   }
 
-  function pageTitle(id) {
+  function pageTitle(id, actions = '') {
     const t = byId.get(id);
     if (!t) return shell('profil', empty('Titlul nu există.'));
     const isTv = t.type === 'tv';
@@ -437,7 +437,7 @@
             ${review}${diary}${seasons}${cast}
             ${!review && !diary && !seasons && !cast ? empty('Nimic în plus de afișat.') : ''}
           </div>
-          <aside class="sidebar">${myCard}<div id="providers"></div>${creators}${listsCard}</aside>
+          <aside class="sidebar">${actions || myCard}<div id="providers"></div>${creators}${listsCard}</aside>
         </div>
       </div>`;
   }
@@ -1234,9 +1234,11 @@
       me = await api('/api/public');
       const existing = me.titles.find((t) => t.type === type && t.tmdbId === Number(tmdbId));
       details = existing || await api(`/api/tmdb/details?type=${type}&id=${tmdbId}`);
+      if (!loading.el.isConnected) return;
       loading.close();
       showQuickAdd(details, Boolean(existing), sourceEl, onDone);
     } catch (e) {
+      if (!loading.el.isConnected) return;
       loading.close();
       toast(e.message, true);
     }
@@ -1254,6 +1256,7 @@
           <h2 class="notranslate">${esc(t.title)}</h2>
           <div class="muted" style="font-size:14px">${[t.year, isTv ? 'Serial' : 'Film', (t.genres || []).slice(0, 3).join(', ')].filter(Boolean).map(esc).join(' · ')}</div>
           ${isExisting ? '<span class="badge accent" style="margin-top:6px">În biblioteca ta</span>' : ''}
+          ${t.tmdbId ? '<div style="margin-top:8px"><button type="button" class="btn small ghost" id="qa-details">Detalii ›</button></div>' : ''}
         </div>
       </div>
       <div class="modal-body">
@@ -1352,6 +1355,10 @@
       } catch (err) { box.innerHTML = `<div class="muted">${esc(err.message)}</div>`; }
     }));
     $('#qa-cancel').addEventListener('click', close);
+    if ($('#qa-details')) $('#qa-details').addEventListener('click', () => {
+      close();
+      navigate(showHref(t.type, t.tmdbId, t.title));
+    });
     // adaugat din greseala: scoate titlul din biblioteca (cu intrarile lui din jurnal)
     if ($('#qa-remove')) $('#qa-remove').addEventListener('click', async (e) => {
       if (!confirm(`Ștergi „${t.title}” din bibliotecă? Se șterg și intrările din jurnal pentru el.`)) return;
@@ -1427,7 +1434,7 @@
   }
 
   function drawShowPage(state) {
-    const { t, owned } = state;
+    const { t, owned, profilePage } = state;
     const isTv = t.type === 'tv';
     const meta = [t.year, isTv && t.seasonsCount ? plural(t.seasonsCount, 'sezon', 'sezoane') : '', t.runtime ? `${t.runtime}m` : '', (t.genres || []).join(', ')].filter(Boolean).map(esc).join(' • ');
     const total = t.episodesCount || 0;
@@ -1471,7 +1478,7 @@
     const review = owned && t.review ? section('Recenzia ta', `<div class="card"><div class="${t.spoiler ? 'spoiler' : ''}"><div class="text" style="white-space:pre-line">${esc(t.review)}</div></div></div>`) : '';
     const creators = (t.creators || []).length ? `<div class="card"><h3>${isTv ? 'Creat de' : 'Regia'}</h3>${t.creators.map(esc).join(', ')}${(t.networks || []).length ? `<div class="muted" style="margin-top:8px;font-size:13px">${t.networks.map(esc).join(', ')}</div>` : ''}</div>` : '';
 
-    app.innerHTML = `
+    app.innerHTML = profilePage ? pageTitle(t.id, actions + rating + epsCard) : `
       <div class="hero title-hero" style="${t.backdrop ? `background-image:url('${esc(t.backdrop)}')` : ''}"></div>
       <div class="container">
         <div class="title-head">
@@ -1503,10 +1510,15 @@
         state.t = saved;
         state.owned = true;
         loadedUser = null;
+        if (profilePage) {
+          DB.titles = DB.titles.map((x) => x.id === saved.id ? saved : x);
+          byId.set(saved.id, saved);
+        }
         drawShowPage(state);
+        if (profilePage) loadProviders(saved);
       } catch (err) { toast(err.message, true); }
     };
-    const reload = () => fillShowPage(t.type, t.tmdbId, renderToken);
+    const reload = () => profilePage ? render() : fillShowPage(t.type, t.tmdbId, renderToken);
 
     starInput(document.getElementById('sp-rating'), owned ? t.rating : 0, (v) => save({ rating: v }, 'Nota salvată'));
 
@@ -1521,14 +1533,14 @@
       }
       if (act === 'like') return save({ liked: !(state.owned && state.t.liked) });
       if (act === 'fav') return save({ favorite: !(state.owned && state.t.favorite) });
-      if (act === 'log') return quickAdd(t.type, t.tmdbId, null, reload);
+      if (act === 'log') return showQuickAdd(state.t, state.owned, null, reload);
       if (act === 'remove') {
         if (!confirm(`Ștergi „${t.title}” din bibliotecă? Se șterg și intrările din jurnal pentru el.`)) return;
         try {
           await api(`/api/titles/${state.t.id}`, { method: 'DELETE' });
           toast(`„${t.title}” a fost scos din bibliotecă`);
           loadedUser = null;
-          reload();
+          if (profilePage) navigate(R(isTv ? '/shows' : '/movies')); else reload();
         } catch (err) { toast(err.message, true); }
       }
     });
@@ -1558,7 +1570,7 @@
     }
   }
 
-  // orice link „adauga” de pe site deschide pagina titlului (cu actiunile lui)
+  // adaugare / editare direct din Descopera si cautare, fara sa parasesti pagina
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[data-add]');
     if (!a || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
@@ -1569,7 +1581,7 @@
     if (box) box.classList.add('hidden');
     const ms = document.getElementById('msearch');
     if (ms) { ms.remove(); document.body.style.overflow = ''; }
-    navigate(showHref(type, id, a.getAttribute('title') || ''));
+    quickAdd(type, id, a);
   }, true);
 
   // ---------- pagina Membri ----------
@@ -1879,8 +1891,15 @@
       case 'show':
       case 'movie': {
         parts[1] = titleId(parts[1]);
-        html = pageTitle(parts[1]);
         const t = byId.get(parts[1]);
+        if (t && backend.user && DB.uid === backend.user.uid) {
+          drawShowPage({ t, owned: true, profilePage: true });
+          document.title = `${t.title} · ${DB.profile.name}`;
+          loadProviders(t);
+          window.scrollTo(0, 0);
+          return;
+        }
+        html = pageTitle(parts[1]);
         if (t) title = `${t.title} · ${DB.profile.name}`;
         parts[0] = 't';
         break;

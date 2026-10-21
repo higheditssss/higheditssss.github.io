@@ -682,6 +682,7 @@ body.loading #app::after {
 
 /* ---------- pop-up adaugare: optiuni extra ---------- */
 .qa-more { padding: 0 20px 6px; border-top: 1px solid var(--border); padding-top: 18px; }
+.star-input .s .h { position: absolute; inset: 0; width: 50%; height: 100%; overflow: hidden; }
 .qa-pick { display: grid; gap: 8px; margin-top: 10px; max-height: 280px; overflow-y: auto; }
 .qa-pick.posters { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
 .qa-pick.backdrops { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
