@@ -837,3 +837,5 @@ body.logged-out .footer-me { display: none; }
   .credit-row > img.credit-logo { max-width: 100%; height: auto; max-height: 18px; object-fit: contain; }
   .credit-row { min-width: 0; }
 }
+
+.bottom-nav a[hidden] { display: none; }
