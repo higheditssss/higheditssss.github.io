@@ -163,6 +163,10 @@
     // culori, tari, zile
     'Alb crem': 'Cream white', 'Mov': 'Purple', 'Albastru regal': 'Royal blue', 'Auriu': 'Gold', 'Portocaliu apus': 'Sunset orange', 'Coral': 'Coral', 'Roșu cinema': 'Cinema red',
     'Vișiniu': 'Maroon', 'Roz': 'Pink', 'Prună': 'Plum', 'Turcoaz': 'Turquoise', 'Verde neon': 'Neon green', 'Verde vânător': 'Hunter green',
+    'Alb perlat': 'Pearl white', 'Argintiu': 'Silver', 'Gri ardezie': 'Slate gray', 'Negru onix': 'Onyx black', 'Bej nisip': 'Sand beige',
+    'Cafeniu': 'Brown', 'Cupru': 'Copper', 'Piersică': 'Peach', 'Galben lămâie': 'Lemon yellow', 'Roșu rubin': 'Ruby red',
+    'Zmeură': 'Raspberry', 'Roz pudrat': 'Powder pink', 'Lavandă': 'Lavender', 'Indigo': 'Indigo', 'Albastru petrol': 'Petrol blue',
+    'Albastru gheață': 'Ice blue', 'Verde mentă': 'Mint green', 'Verde smarald': 'Emerald green', 'Verde salvie': 'Sage green',
     'România': 'Romania', 'SUA': 'USA', 'Marea Britanie': 'United Kingdom', 'Germania': 'Germany', 'Italia': 'Italy', 'Spania': 'Spain', 'Franța': 'France', 'Olanda': 'Netherlands', 'Ungaria': 'Hungary', 'Română': 'Romanian',
     'DUM': 'SUN', 'LUN': 'MON', 'MAR': 'TUE', 'MIE': 'WED', 'JOI': 'THU', 'VIN': 'FRI', 'SÂM': 'SAT',
   };
