@@ -869,7 +869,7 @@
     });
 
     const titleLink = (t) => (backend.user
-      ? `${BASE}add/${t.type}/${t.tmdbId}`
+      ? showHref(t.type, t.tmdbId, t.title)
       : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`);
 
     async function run() {
@@ -931,7 +931,7 @@
   const loadHomeData = () => (homeData || (homeData = backend.loadHome().catch(() => ({}))));
 
   function discoverCard(t, owned) {
-    const href = backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    const href = backend.user ? showHref(t.type, t.id, t.title) : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a class="poster disc-card" href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'} title="${esc(t.title)}${t.year ? ' (' + esc(t.year) + ')' : ''}">
       <div class="poster-img"><img src="${esc(t.poster)}" alt="${esc(t.title)}" loading="lazy">
         <div class="disc-over"><b>${esc(t.title)}</b><span>${esc(t.year || '')}${t.rating ? ' · ' + WL.ic('star') + ' ' + t.rating.toFixed(1) : ''}</span>
@@ -968,7 +968,7 @@
   }
   let heroTimer = null;
   function bannerTitle(t) {
-    const href = backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`;
+    const href = backend.user ? showHref(t.type, t.id, t.title) : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>${esc(t.title)}</a>`;
   }
 
@@ -1078,7 +1078,7 @@
       wrap.hidden = false;
       document.getElementById(id).innerHTML = list.map((t) => (t.poster
         ? card(t)
-        : `<a class="poster disc-card" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.tmdbId}` : '#')}"><div class="poster-img"><div class="poster-fallback"><span>${esc(t.title)}</span></div></div></a>`)).join('');
+        : `<a class="poster disc-card" href="${esc(backend.user ? showHref(t.type, t.tmdbId, t.title) : '#')}"><div class="poster-img"><div class="poster-fallback"><span>${esc(t.title)}</span></div></div></a>`)).join('');
     };
     fill('sr-tv', tv);
     fill('sr-movie', movie);
@@ -1215,7 +1215,7 @@
     paint(v);
   }
 
-  async function quickAdd(type, tmdbId, sourceEl) {
+  async function quickAdd(type, tmdbId, sourceEl, onDone) {
     if (!backend || !backend.user) { location.href = 'signup'; return; }
     const loading = openModal('<div class="modal-body"><div class="muted">Se încarcă…</div></div>');
     let me;
@@ -1225,14 +1225,14 @@
       const existing = me.titles.find((t) => t.type === type && t.tmdbId === Number(tmdbId));
       details = existing || await api(`/api/tmdb/details?type=${type}&id=${tmdbId}`);
       loading.close();
-      showQuickAdd(details, Boolean(existing), sourceEl);
+      showQuickAdd(details, Boolean(existing), sourceEl, onDone);
     } catch (e) {
       loading.close();
       toast(e.message, true);
     }
   }
 
-  function showQuickAdd(t, isExisting, sourceEl) {
+  function showQuickAdd(t, isExisting, sourceEl, onDone) {
     const now = new Date();
     const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     const d = { favorite: Boolean(t.favorite), episodesWatched: t.episodesWatched || 0, seasonRatings: { ...(t.seasonRatings || {}) }, note: t.note || '', poster: t.poster || '', backdrop: t.backdrop || '', status: t.status || 'watched', rating: t.rating || 0, liked: Boolean(t.liked), review: t.review || '', spoiler: Boolean(t.spoiler) };
@@ -1351,6 +1351,7 @@
         close();
         toast(`„${t.title}” a fost scos din bibliotecă`);
         loadedUser = null;
+        if (onDone) onDone();
         const mark = sourceEl && sourceEl.querySelector('.disc-over em, .hs-action');
         if (mark) mark.innerHTML = `${WL.ic('plus')} Adaugă`;
       } catch (err) {
@@ -1378,6 +1379,7 @@
         close();
         toast(isExisting ? 'Salvat' : `„${saved.title}” a fost adăugat`);
         loadedUser = null; // profilul tau se reincarca data viitoare
+        if (onDone) onDone();
         const mark = sourceEl && sourceEl.querySelector('.disc-over em, .hs-action');
         if (mark) mark.innerHTML = `${WL.ic('check')} În biblioteca ta`;
       } catch (err) {
@@ -1387,7 +1389,166 @@
     });
   }
 
-  // orice link „adauga” de pe site deschide pop-up-ul in loc sa schimbe pagina
+  // ---------- pagina unui serial / film (/show/5920-the-mentalist): detalii + actiuni, ca pe Serializd ----------
+
+  const showHref = (type, id, title = '') => `${BASE}${type === 'movie' ? 'movie' : 'show'}/${id}${slug(title) ? '-' + slug(title) : ''}`;
+
+  async function fillShowPage(type, tmdbId, token) {
+    app.innerHTML = '<div class="page-loading"></div>';
+    if (!backend.user) {
+      app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">${empty('<a href="signup" style="color:var(--accent-text)">Fă-ți cont</a> ca să-ți notezi serialele și filmele.')}</div>`;
+      return;
+    }
+    let me;
+    let t;
+    try {
+      me = await api('/api/public');
+      t = me.titles.find((x) => x.type === type && x.tmdbId === tmdbId) || null;
+      if (!t) t = await api(`/api/tmdb/details?type=${type}&id=${tmdbId}`);
+    } catch (e) {
+      if (token !== renderToken) return;
+      app.innerHTML = `<div class="container page" style="padding-top:140px;text-align:center">${empty(esc(e.message))}</div>`;
+      return;
+    }
+    if (token !== renderToken) return;
+    const state = { t, owned: Boolean(t.id) };
+    document.title = `${t.title} · EDITSEL`;
+    drawShowPage(state);
+  }
+
+  function drawShowPage(state) {
+    const { t, owned } = state;
+    const isTv = t.type === 'tv';
+    const meta = [t.year, isTv && t.seasonsCount ? plural(t.seasonsCount, 'sezon', 'sezoane') : '', t.runtime ? `${t.runtime}m` : '', (t.genres || []).join(', ')].filter(Boolean).map(esc).join(' • ');
+    const total = t.episodesCount || 0;
+    const eps = owned ? (t.status === 'watched' && !t.episodesWatched ? total : (t.episodesWatched || 0)) : 0;
+    const row = (act, ic, label, on = false, extra = '') => `<button type="button" class="act-row${on ? ' on' : ''}" data-act="${act}">${ic}<span>${label}</span>${on ? `<span class="act-on">${WL.ic('check')}</span>` : extra}</button>`;
+    const st = owned ? t.status : '';
+    const actions = `<div class="card act-card">
+        ${row('watching', WL.ic('play'), 'Mă uit acum', st === 'watching')}
+        ${row('watched', WL.ic('eye'), st === 'watched' ? 'Văzut' : 'Marchează ca văzut', st === 'watched')}
+        ${row('watchlist', WL.ic('clock'), st === 'watchlist' ? 'În lista de văzut' : 'Adaugă la de văzut', st === 'watchlist')}
+        ${row('paused', WL.ic('pause'), st === 'paused' ? 'Pe pauză' : 'Pune pe pauză', st === 'paused')}
+        ${row('dropped', WL.ic('trash'), st === 'dropped' ? 'Abandonat' : 'Abandonează', st === 'dropped')}
+        ${row('like', WL.ic('heart'), 'Îmi place', owned && t.liked)}
+        ${row('fav', WL.ic('star'), 'Favorit', owned && t.favorite)}
+        ${row('log', WL.ic('pen'), 'Notă, recenzie, jurnal')}
+        ${owned ? row('remove', WL.ic('x'), 'Scoate din bibliotecă') : ''}
+      </div>`;
+    const rating = `<div class="card"><h3>Nota ta</h3><div id="sp-rating"></div></div>`;
+    const epsCard = isTv ? `<div class="card eps-card"><h3>Episoade văzute</h3>
+        <div class="eps-step">
+          <button type="button" class="icon-btn" data-eps="-1" aria-label="Minus un episod">${WL.ic('arrowDown')}</button>
+          <input class="eps-input" id="sp-eps" type="number" min="0" ${total ? `max="${total}"` : ''} value="${eps}" inputmode="numeric">
+          <button type="button" class="icon-btn" data-eps="1" aria-label="Plus un episod">${WL.ic('arrowUp')}</button>
+          ${total ? `<span class="muted">din ${total}</span><button type="button" class="btn small" data-eps="all">Toate</button>` : ''}
+        </div>
+        ${total ? `<div class="progress"><div style="width:${Math.min(100, (eps / total) * 100)}%"></div></div>` : ''}
+      </div>` : '';
+    const seasons = isTv && (t.seasons || []).length
+      ? section(`Sezoane (${t.seasons.filter((s) => s.number > 0).length})`, `<div class="card" style="padding:0">${t.seasons.map((s) => {
+          const r = (t.seasonRatings || {})[String(s.number)];
+          return `<div class="season-row">
+            <div class="thumb">${s.poster ? `<img src="${esc(s.poster)}" alt="" loading="lazy">` : ''}</div>
+            <div><b>${esc(s.name || 'Sezonul ' + s.number)}</b><div class="diary-sub">${s.airDate ? fmtDate(s.airDate) + ' · ' : ''}${plural(s.episodes, 'episod', 'episoade')}</div></div>
+            <div>${r ? stars(r, 'accent') : ''}</div>
+          </div>`;
+        }).join('')}</div>`)
+      : '';
+    const cast = (t.cast || []).length
+      ? section('Distribuție', `<div class="cast">${t.cast.map((c) => `<div><div class="face">${c.photo ? `<img src="${esc(c.photo)}" alt="" loading="lazy">` : ''}</div><b>${esc(c.name)}</b><span>${esc(c.character)}</span></div>`).join('')}</div>`)
+      : '';
+    const review = owned && t.review ? section('Recenzia ta', `<div class="card"><div class="${t.spoiler ? 'spoiler' : ''}"><div class="text" style="white-space:pre-line">${esc(t.review)}</div></div></div>`) : '';
+    const creators = (t.creators || []).length ? `<div class="card"><h3>${isTv ? 'Creat de' : 'Regia'}</h3>${t.creators.map(esc).join(', ')}${(t.networks || []).length ? `<div class="muted" style="margin-top:8px;font-size:13px">${t.networks.map(esc).join(', ')}</div>` : ''}</div>` : '';
+
+    app.innerHTML = `
+      <div class="hero title-hero" style="${t.backdrop ? `background-image:url('${esc(t.backdrop)}')` : ''}"></div>
+      <div class="container">
+        <div class="title-head">
+          ${poster(t, { showMeta: false })}
+          <div>
+            <h1 class="notranslate">${esc(t.title)}</h1>
+            <div class="title-meta">${meta}${owned ? ` <span class="badge accent">${(STATUS[t.status] || STATUS.watched).icon} ${(STATUS[t.status] || STATUS.watched).label}</span>` : ''}</div>
+            ${t.tagline ? `<div class="tagline">${esc(t.tagline)}</div>` : ''}
+            ${t.overview ? `<p class="overview">${esc(t.overview)}</p>` : ''}
+          </div>
+        </div>
+        <div class="title-body page">
+          <div>
+            ${t.overview ? `<p class="overview mobile">${esc(t.overview)}</p>` : ''}
+            ${review}${seasons}${cast}
+            ${!review && !seasons && !cast ? empty('Nimic în plus de afișat.') : ''}
+          </div>
+          <aside class="sidebar">${actions}${rating}${epsCard}${creators}</aside>
+        </div>
+      </div>`;
+
+    // salveaza o schimbare: adauga titlul in biblioteca daca nu e deja, altfel il actualizeaza
+    const save = async (patch, msg) => {
+      try {
+        const saved = state.owned
+          ? await api(`/api/titles/${state.t.id}`, { method: 'PUT', body: patch })
+          : await api('/api/titles', { method: 'POST', body: { ...state.t, status: 'watching', ...patch } });
+        if (!state.owned) toast(`„${saved.title}” a fost adăugat`); else if (msg) toast(msg);
+        state.t = saved;
+        state.owned = true;
+        loadedUser = null;
+        drawShowPage(state);
+      } catch (err) { toast(err.message, true); }
+    };
+    const reload = () => fillShowPage(t.type, t.tmdbId, renderToken);
+
+    starInput(document.getElementById('sp-rating'), owned ? t.rating : 0, (v) => save({ rating: v }, 'Nota salvată'));
+
+    app.querySelector('.act-card').addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      const act = b.dataset.act;
+      if (STATUS[act]) {
+        const patch = { status: act };
+        if (act === 'watched' && isTv && total) patch.episodesWatched = total;
+        return save(patch, 'Status: ' + STATUS[act].label);
+      }
+      if (act === 'like') return save({ liked: !(state.owned && state.t.liked) });
+      if (act === 'fav') return save({ favorite: !(state.owned && state.t.favorite) });
+      if (act === 'log') return quickAdd(t.type, t.tmdbId, null, reload);
+      if (act === 'remove') {
+        if (!confirm(`Ștergi „${t.title}” din bibliotecă? Se șterg și intrările din jurnal pentru el.`)) return;
+        try {
+          await api(`/api/titles/${state.t.id}`, { method: 'DELETE' });
+          toast(`„${t.title}” a fost scos din bibliotecă`);
+          loadedUser = null;
+          reload();
+        } catch (err) { toast(err.message, true); }
+      }
+    });
+
+    const epsInput = document.getElementById('sp-eps');
+    if (epsInput) {
+      let timer;
+      const setEps = (n) => {
+        n = Math.max(0, total ? Math.min(total, n) : n);
+        epsInput.value = n;
+        const bar = app.querySelector('.eps-card .progress > div');
+        if (bar && total) bar.style.width = Math.min(100, (n / total) * 100) + '%';
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const patch = { episodesWatched: n };
+          if (total && n >= total) patch.status = 'watched';
+          else if (n > 0 && (!state.owned || ['watchlist', 'watched'].includes(state.t.status))) patch.status = 'watching';
+          save(patch, `${n} episoade văzute`);
+        }, 700);
+      };
+      app.querySelector('.eps-card').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-eps]');
+        if (!b) return;
+        setEps(b.dataset.eps === 'all' ? total : (Number(epsInput.value) || 0) + Number(b.dataset.eps));
+      });
+      epsInput.addEventListener('change', () => setEps(Number(epsInput.value) || 0));
+    }
+  }
+
+  // orice link „adauga” de pe site deschide pagina titlului (cu actiunile lui)
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[data-add]');
     if (!a || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
@@ -1396,7 +1557,9 @@
     const [type, id] = a.dataset.add.split(':');
     const box = document.getElementById('hs-results');
     if (box) box.classList.add('hidden');
-    quickAdd(type, id, a);
+    const ms = document.getElementById('msearch');
+    if (ms) { ms.remove(); document.body.style.overflow = ''; }
+    navigate(showHref(type, id, a.getAttribute('title') || ''));
   }, true);
 
   // ---------- pagina Membri ----------
@@ -1473,7 +1636,7 @@
       if (a && !a.dataset.add) close();
     });
 
-    const posterTile = (t) => `<a class="ms-tile" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.id}` : `https://www.themoviedb.org/${t.type}/${t.id}`)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>
+    const posterTile = (t) => `<a class="ms-tile" href="${esc(backend.user ? showHref(t.type, t.id, t.title) : `https://www.themoviedb.org/${t.type}/${t.id}`)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>
         <img src="${esc(t.poster)}" alt="" loading="lazy"><span>${esc(t.title)}</span></a>`;
 
     async function drawIdle() {
@@ -1515,7 +1678,7 @@
         ${people.length ? `<div class="ms-head"><h3>Membri</h3></div><div class="ms-people">${people.map((p) => `
           <a href="${BASE}${esc(p.username)}">${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<span style="color:${esc(p.accent || 'var(--accent)')}">${esc((p.name || p.username).charAt(0).toUpperCase())}</span>`}<b>${esc(p.name || p.username)}</b></a>`).join('')}</div>` : ''}
         ${uniq.length ? `<div class="ms-head"><h3>Seriale și filme</h3></div><div class="ms-list">${uniq.map((t) => `
-          <a class="ms-row" href="${esc(backend.user ? `${BASE}add/${t.type}/${t.tmdbId}` : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
+          <a class="ms-row" href="${esc(backend.user ? showHref(t.type, t.tmdbId, t.title) : `https://www.themoviedb.org/${t.type}/${t.tmdbId}`)}" ${backend.user ? `data-add="${t.type}:${t.tmdbId}"` : 'target="_blank" rel="noopener"'}>
             ${t.poster ? `<img src="${esc(t.poster)}" alt="" loading="lazy">` : '<span class="ms-noimg"></span>'}
             <span class="ms-info"><b>${esc(t.title)}</b><small>${esc(t.year || '—')} · ${t.type === 'tv' ? 'Serial' : 'Film'}${owned(t) ? ' · <em>în biblioteca ta</em>' : ''}</small></span>
             ${backend.user ? `<span class="ms-add">${WL.ic(owned(t) ? 'check' : 'plus')}</span>` : '<span class="ms-add">›</span>'}
@@ -1581,10 +1744,15 @@
     const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
     const parts = rel.split('/').filter(Boolean);
     // /add/tv/1405: deschide pop-up-ul de adaugare peste Descopera
-    if (parts[0] === 'add' && parts[2]) {
-      history.replaceState(null, '', BASE + 'discover');
-      render();
-      if (backend.user) quickAdd(parts[1], parts[2]); else location.href = 'signup';
+    if (parts[0] === 'add' && parts[2]) return navigate(showHref(parts[1], parts[2]), true);
+    if ((parts[0] === 'show' || parts[0] === 'movie') && parseInt(parts[1], 10)) {
+      applyAccent(WL.COLORS[0][1]);
+      loadedUser = null;
+      document.body.classList.remove('on-discover');
+      setNav('');
+      window.scrollTo(0, 0);
+      done();
+      fillShowPage(parts[0] === 'movie' ? 'movie' : 'tv', parseInt(parts[1], 10), token);
       return;
     }
     if (ACCOUNT_PAGE.test(location.pathname) && !sessionStorage.getItem('editsel_acct')) {

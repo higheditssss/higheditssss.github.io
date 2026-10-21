@@ -100,7 +100,10 @@
     'Profil': 'Profile', 'Nume, bio și poză': 'Name, bio & picture', 'Seriale favorite': 'Favorite shows', 'Culoare': 'Color', 'Confidențialitate': 'Privacy',
     'Postere și bannere': 'Posters & banners', 'Banner profil': 'Profile banner', 'Banner statistici': 'Stats banner', 'Postere personalizate': 'Custom posters',
     'Postere sezoane personalizate': 'Custom season posters', 'Bannere seriale personalizate': 'Custom show banners', 'Logo și iconițe': 'Logo & icons',
-    'Date': 'Data', 'Seriale, filme sau membri': 'Shows, movies or members', 'Adaugă un serial': 'Add a show', 'Jurnalul meu': 'My diary', 'Scoate titlul din bibliotecă': 'Remove the title from your library', 'Adaugă seriale': 'Add shows', 'Pune EDITSEL pe ecranul telefonului': 'Put EDITSEL on your home screen', 'Instalează aplicația EDITSEL': 'Install the EDITSEL app', 'Adaugă pe ecran': 'Add to Home Screen', '→ „Adaugă pe ecranul principal”': '→ “Add to Home Screen”', 'Se deschide ca o aplicație, fără bara browserului.': 'Opens like an app, without the browser bar.',
+    'Date': 'Data', 'Marchează ca văzut': 'Mark watched', 'Adaugă la de văzut': 'Add to watchlist', 'În lista de văzut': 'In your watchlist', 'Pune pe pauză': 'Pause',
+    'Abandonează': 'Drop', 'Notă, recenzie, jurnal': 'Rating, review, log', 'Scoate din bibliotecă': 'Remove from library',
+    'Nota ta': 'Your rating', 'Episoade văzute': 'Episodes watched', 'Toate': 'All', 'Recenzia ta': 'Your review', 'Nota salvată': 'Rating saved',
+    'Fă-ți cont': 'Sign up', 'Minus un episod': 'One episode less', 'Plus un episod': 'One more episode', 'Seriale, filme sau membri': 'Shows, movies or members', 'Adaugă un serial': 'Add a show', 'Jurnalul meu': 'My diary', 'Scoate titlul din bibliotecă': 'Remove the title from your library', 'Adaugă seriale': 'Add shows', 'Pune EDITSEL pe ecranul telefonului': 'Put EDITSEL on your home screen', 'Instalează aplicația EDITSEL': 'Install the EDITSEL app', 'Adaugă pe ecran': 'Add to Home Screen', '→ „Adaugă pe ecranul principal”': '→ “Add to Home Screen”', 'Se deschide ca o aplicație, fără bara browserului.': 'Opens like an app, without the browser bar.',
     'Instalează': 'Install', 'Închide': 'Close', 'Partajează, apoi „Adaugă pe ecranul principal”.': 'Share, then “Add to Home Screen”.', 'Apasă': 'Tap', 'Caută orice serial sau film': 'Search any show or movie', 'Scrie un titlu mai sus și alege-l din rezultate.': 'Type a title above and pick it from the results.',
     'Adaugă din secțiunea „Adaugă”.': 'Add some from the “Add” section.', 'Nimic aici.': 'Nothing here.', 'Adaugă o intrare cu butonul de sus.': 'Add an entry with the button above.',
     'apreciate': 'liked', 'recenzii': 'reviews', 'intrări': 'entries', 'titluri': 'titles', 'seriale': 'shows', 'filme': 'movies', 'favorite': 'favorites', '↻ Revăzut': '↻ Rewatch', 'Intrare nouă': 'New entry', 'Cum te văd ceilalți': 'How others see you', 'Până la 5, sus pe profil': 'Up to 5, top of your profile', 'Culoarea profilului tău': 'Your profile color',
@@ -172,6 +175,8 @@
 
   // tipare pentru texte cu nume si numere (doar potriviri pe tot textul)
   const P = [
+    [/^Status: (.+)$/, (m, x) => `Status: ${translateString(x)}`],
+    [/^(\d+) episoade văzute$/, (m, n) => `${n} episodes watched`],
     [/^Ștergi „(.+)” din bibliotecă\? Se șterg și intrările din jurnal pentru el\.$/, (m, x) => `Remove “${x}” from your library? Its diary entries are deleted too.`],
     [/^„(.+)” a fost scos din bibliotecă$/, (m, x) => `“${x}” was removed from your library`],
     [/^(Ianuarie|Februarie|Martie|Aprilie|Mai|Iunie|Iulie|August|Septembrie|Octombrie|Noiembrie|Decembrie) (\d{4})$/, (m, mo, y) => `${MONTHS[mo]} ${y}`],

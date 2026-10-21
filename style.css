@@ -791,6 +791,27 @@ body.logged-out .footer-me { display: none; }
 .seg button { display: inline-flex; align-items: center; gap: 6px; }
 .seg button .ico { width: 14px; height: 14px; }
 
+/* ---------- pagina unui serial: actiuni ca pe Serializd ---------- */
+.act-card { padding: 6px; }
+.act-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: none; color: var(--text); font-size: 15px; text-align: left; cursor: pointer; transition: background .15s; }
+.act-row + .act-row { border-top: 1px solid var(--border); border-radius: 0; }
+.act-row:hover { background: var(--surface-2); border-radius: 12px; }
+.act-row > .ico { width: 18px; height: 18px; color: var(--muted); }
+.act-row span:first-of-type { flex: 1; }
+.act-row.on { color: var(--accent-text); }
+.act-row.on > .ico { color: var(--accent-text); }
+.act-row[data-act="like"].on, .act-row[data-act="like"].on > .ico { color: #ff7a85; }
+.act-row[data-act="fav"].on, .act-row[data-act="fav"].on > .ico { color: #f0cf6c; }
+.act-row[data-act="remove"], .act-row[data-act="remove"] > .ico { color: #ff8d98; }
+.act-on .ico { width: 16px; height: 16px; }
+.eps-step { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.eps-input { width: 74px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); text-align: center; font: inherit; font-size: 16px; font-weight: 600; }
+.eps-input:focus { outline: none; border-color: var(--accent); }
+.eps-card .progress { margin-top: 12px; }
+.icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); display: grid; place-items: center; cursor: pointer; flex: none; }
+.icon-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+.icon-btn .ico { width: 16px; height: 16px; }
+
 /* ---------- subsol pe PC si tableta: panou rotunjit, se aranjeaza dupa latime ---------- */
 @media (min-width: 641px) {
   .site-footer { margin-top: 64px; padding: 0 0 28px; background: none; }
