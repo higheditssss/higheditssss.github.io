@@ -18,7 +18,8 @@
   --star: #d8d2c9;
   --star-accent: #d8d2c9;
   --radius: 12px;
-  --max: 1240px;
+  --max: 100%;
+  --gutter: clamp(16px, 2vw, 40px);
   --head: 'Space Grotesk', 'Inter', system-ui, sans-serif;
 }
 
@@ -39,7 +40,7 @@ a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
 button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, h3, h4 { margin: 0; line-height: 1.15; font-family: var(--head); letter-spacing: -.01em; }
-.container { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+.container { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 .muted { color: var(--muted); }
 .hidden { display: none !important; }
 ::selection { background: var(--accent); color: var(--accent-ink); }
@@ -647,7 +648,7 @@ body.loading #app::after {
 }
 
 /* paginile care sunt si .container si .page isi pastreaza marginile laterale */
-.container.page { padding-left: 16px; padding-right: 16px; }
+.container.page { padding-left: var(--gutter); padding-right: var(--gutter); }
 @media (max-width: 640px) { .container.page { padding-left: 14px; padding-right: 14px; } }
 
 /* ---------- cereri de prietenie + clopotel ---------- */
