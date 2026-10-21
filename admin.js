@@ -696,7 +696,7 @@
       $('#l-items').innerHTML = l.items.length ? l.items.map((id, i) => {
         const t = byId.get(id);
         return `<div class="list-item"><span class="muted" style="text-align:center">${i + 1}</span>${thumb(t)}<span>${esc(t ? t.title : '?')}</span>
-          <span style="white-space:nowrap"><button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn small ghost" data-down="${i}" ${i === l.items.length - 1 ? 'disabled' : ''}>↓</button><button class="btn small ghost" data-rm="${i}">✕</button></span></div>`;
+          <span style="white-space:nowrap"><button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn small ghost" data-down="${i}" ${i === l.items.length - 1 ? 'disabled' : ''}>↓</button><button class="btn small ghost" data-rm="${i}"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span></div>`;
       }).join('') : '<div class="muted" style="font-size:14px">Lista e goală.</div>';
     };
     const drawPick = () => {
@@ -745,7 +745,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <button class="btn small ghost hidden" id="ip-back">‹ Alt titlu</button>
           <h2 id="ip-head" style="flex:1">${esc(heading)}</h2>
-          <button class="btn small ghost" id="ip-close">✕</button>
+          <button class="btn small ghost" id="ip-close" aria-label="Închide"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
         <input class="input" id="ip-q" placeholder="Caută un serial sau film…" ${STATE.hasTmdb ? '' : 'disabled'}>
       </div>
@@ -933,7 +933,7 @@
         const t = byId.get(favs[i]);
         return t
           ? `<div class="fav-slot">${poster(t, { showMeta: false })}
-              <div class="fav-actions"><button class="btn small ghost" data-left="${i}" ${i === 0 ? 'disabled' : ''}>‹</button><button class="btn small ghost" data-rm="${i}">✕</button><button class="btn small ghost" data-right="${i}" ${i === favs.length - 1 ? 'disabled' : ''}>›</button></div></div>`
+              <div class="fav-actions"><button class="btn small ghost" data-left="${i}" ${i === 0 ? 'disabled' : ''}>‹</button><button class="btn small ghost" data-rm="${i}"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn small ghost" data-right="${i}" ${i === favs.length - 1 ? 'disabled' : ''}>›</button></div></div>`
           : `<button class="fav-slot empty" data-add="${i}">+</button>`;
       }).join('')}</div>`;
     const save = async (list) => { await saveProfile({ favorites: list }, 'Favorite salvate'); await reload(); setFavorites(el); };
@@ -951,7 +951,7 @@
   function pickFromLibrary(onPick, exclude = []) {
     const { el, close } = openModal(`
       <div class="modal-head" style="flex-direction:column;align-items:stretch;gap:12px">
-        <div style="display:flex;align-items:center"><h2 style="flex:1">Alege din bibliotecă</h2><button class="btn small ghost" id="pk-close">✕</button></div>
+        <div style="display:flex;align-items:center"><h2 style="flex:1">Alege din bibliotecă</h2><button class="btn small ghost" id="pk-close" aria-label="Închide"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
         <input class="input" id="pk-q" placeholder="Caută…">
       </div>
       <div class="modal-body"><div class="results" id="pk-res" style="margin:0"></div></div>`);
@@ -1058,7 +1058,7 @@
   }
 
   function pickSeason(t, onPick) {
-    const { el, close } = openModal(`<div class="modal-head"><h2 style="flex:1">${esc(t.title)} — alege sezonul</h2><button class="btn small ghost" id="ps-close">✕</button></div>
+    const { el, close } = openModal(`<div class="modal-head"><h2 style="flex:1">${esc(t.title)} — alege sezonul</h2><button class="btn small ghost" id="ps-close" aria-label="Închide"><svg class="ic-x" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
       <div class="modal-body"><div class="results" style="margin:0">${t.seasons.map((s, i) => `<button class="result" data-i="${i}"><div class="poster-img">${s.poster ? `<img src="${esc(s.poster)}" alt="" loading="lazy">` : `<div class="poster-fallback"><span>${esc(s.name)}</span></div>`}</div><div class="t">${esc(s.name)}</div><div class="y">${s.episodes} ep.</div></button>`).join('')}</div></div>`);
     el.querySelector('#ps-close').addEventListener('click', close);
     el.querySelector('.modal-body').addEventListener('click', (e) => {
