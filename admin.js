@@ -215,6 +215,12 @@
 
   // iconite SVG pentru meniu si setari
   const ICONS = {"plus":"<path d=\"M12 5v14M5 12h14\"/>","grid":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>","book":"<path d=\"M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z\"/><path d=\"M8 8h6M8 12h6\"/>","list":"<path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/>","gear":"<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z\"/>","pen":"<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z\"/>","star":"<path d=\"m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z\"/>","palette":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 3a9 9 0 0 0 0 18z\" fill=\"currentColor\"/>","lock":"<rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>","users":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/>","image":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"9\" cy=\"10\" r=\"2\"/><path d=\"m21 16-5-5-9 9\"/>","chart":"<path d=\"M4 20V10M10 20V4M16 20v-7M22 20H2\"/>","poster":"<rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><path d=\"M9 7h6\"/>","layers":"<path d=\"m12 3 9 5-9 5-9-5z\"/><path d=\"m3 13 9 5 9-5\"/>","banner":"<rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><path d=\"M2 10h20\"/>","diamond":"<path d=\"M12 2 22 12 12 22 2 12z\"/>","upload":"<path d=\"M12 15V3\"/><path d=\"m7 8 5-5 5 5\"/><path d=\"M5 21h14\"/>","sync":"<path d=\"M3 12a9 9 0 0 1 15-6.7L21 8\"/><path d=\"M21 3v5h-5\"/><path d=\"M21 12a9 9 0 0 1-15 6.7L3 16\"/><path d=\"M3 21v-5h5\"/>","key":"<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m10.8 12.2 9.2-9.2\"/><path d=\"m17 6 3 3\"/>","pin":"<path d=\"M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z\"/><circle cx=\"12\" cy=\"9\" r=\"2.5\"/>","shield":"<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/>","chevron":"<path d=\"m9 6 6 6-6 6\"/>","external":"<path d=\"M14 4h6v6\"/><path d=\"M20 4 10 14\"/><path d=\"M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5\"/>"};
+  Object.assign(ICONS, {
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    tv: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="m17 2-5 5-5-5"/>',
+    film: '<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5M2 12h20"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  });
   const svgIcon = (k) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k] || ''}</svg>`;
 
   const SECTIONS = [
@@ -255,28 +261,29 @@
 
   function panelAdd(panel) {
     panel.innerHTML = `
-      <div class="panel-title">Adaugă serial sau film<span class="grow"></span><button class="btn small" id="manual">Adaugă manual</button></div>
+      <div class="panel-title">Adaugă serial sau film<span class="grow"></span><button class="btn small btn-ic" id="manual">${svgIcon('pen')}Adaugă manual</button></div>
       ${STATE.hasTmdb ? '' : STATE.isSiteAdmin ? `<div class="box">Pentru căutare automată (postere, descrieri, sezoane, actori) site-ul are nevoie de o cheie TMDB gratuită. Pune-o în <a href="#" id="go-settings" style="color:var(--accent-text)">Setări → TMDB</a>. Până atunci poți adăuga manual.</div>` : `<div class="box">Căutarea automată nu e pornită încă pe site (administratorul trebuie să pună cheia TMDB). Până atunci poți adăuga manual.</div>`}
-      <div class="toolbar">
-        <div class="seg" id="stype">
+      <div class="ui-card add-search">
+        <label class="search-big">${svgIcon('search')}<input id="q" placeholder="Caută un titlu… (ex: Dexter)" value="${esc(lastQuery)}" autocomplete="off" ${STATE.hasTmdb ? '' : 'disabled'}></label>
+        <div class="pills" id="stype">
           <button data-t="multi" class="${searchType === 'multi' ? 'on' : ''}">Toate</button>
-          <button data-t="tv" class="${searchType === 'tv' ? 'on' : ''}">Seriale</button>
-          <button data-t="movie" class="${searchType === 'movie' ? 'on' : ''}">Filme</button>
+          <button data-t="tv" class="${searchType === 'tv' ? 'on' : ''}">${svgIcon('tv')}Seriale</button>
+          <button data-t="movie" class="${searchType === 'movie' ? 'on' : ''}">${svgIcon('film')}Filme</button>
         </div>
-        <input class="input" id="q" style="flex:1" placeholder="Caută un titlu… (ex: Dexter)" value="${esc(lastQuery)}" ${STATE.hasTmdb ? '' : 'disabled'}>
       </div>
       <div id="results" class="results"></div>`;
+    const emptyAdd = `<div class="ui-empty">${svgIcon('search')}<b>Caută orice serial sau film</b><span>Scrie un titlu mai sus și alege-l din rezultate.</span></div>`;
 
     const q = panel.querySelector('#q');
     const results = panel.querySelector('#results');
     let timer;
     const doSearch = async () => {
       lastQuery = q.value.trim();
-      if (!lastQuery) { results.innerHTML = ''; return; }
+      if (!lastQuery) { results.innerHTML = emptyAdd; return; }
       results.innerHTML = '<div class="muted">Caut…</div>';
       try {
         const list = await api(`/api/tmdb/search?type=${searchType}&q=${encodeURIComponent(lastQuery)}`);
-        if (!list.length) { results.innerHTML = '<div class="muted">Nimic găsit.</div>'; return; }
+        if (!list.length) { results.innerHTML = `<div class="ui-empty">${svgIcon('search')}<b>Nimic găsit.</b></div>`; return; }
         results.innerHTML = list.map((r, i) => {
           const existing = DB.titles.find((t) => t.tmdbId === r.tmdbId && t.type === r.type);
           return `<button class="result" data-i="${i}">
@@ -307,12 +314,12 @@
       if (!b) return;
       searchType = b.dataset.t;
       panel.querySelectorAll('#stype button').forEach((x) => x.classList.toggle('on', x === b));
-      doSearch();
+      if (q.value.trim()) doSearch();
     });
     panel.querySelector('#manual').addEventListener('click', () => openTitleEditor(null, { type: searchType === 'movie' ? 'movie' : 'tv', title: '' }));
     const gs = panel.querySelector('#go-settings');
     if (gs) gs.addEventListener('click', (e) => { e.preventDefault(); settingsPage = 'tmdb'; root.querySelector('[data-s="settings"]').click(); });
-    if (lastQuery && STATE.hasTmdb) doSearch();
+    if (lastQuery && STATE.hasTmdb) doSearch(); else results.innerHTML = emptyAdd;
     if (STATE.hasTmdb) q.focus();
   }
 
@@ -535,15 +542,25 @@
   let libFilter = { q: '', type: 'all', status: 'all' };
 
   function panelLibrary(panel) {
+    const nTv = DB.titles.filter((t) => t.type === 'tv').length;
     panel.innerHTML = `
-      <div class="panel-title">Bibliotecă <span class="muted" style="font-size:15px;font-weight:400">${DB.titles.length} titluri</span></div>
-      <div class="toolbar">
-        <input class="input" id="lq" placeholder="Filtrează…" value="${esc(libFilter.q)}" style="flex:1">
-        <select id="lt"><option value="all">Toate tipurile</option><option value="tv">Seriale</option><option value="movie">Filme</option></select>
+      <div class="panel-title">Bibliotecă</div>
+      <div class="stat-chips">
+        <div class="stat-chip"><b>${DB.titles.length}</b><span>titluri</span></div>
+        <div class="stat-chip"><b>${nTv}</b><span>seriale</span></div>
+        <div class="stat-chip"><b>${DB.titles.length - nTv}</b><span>filme</span></div>
+        <div class="stat-chip"><b>${DB.titles.filter((t) => t.favorite).length}</b><span>favorite</span></div>
+      </div>
+      <div class="ui-card ui-toolbar">
+        <label class="search-sm">${svgIcon('search')}<input id="lq" placeholder="Filtrează…" value="${esc(libFilter.q)}" autocomplete="off"></label>
+        <div class="pills" id="lt">
+          <button data-v="all">Toate</button><button data-v="tv">${svgIcon('tv')}Seriale</button><button data-v="movie">${svgIcon('film')}Filme</button>
+        </div>
         <select id="ls"><option value="all">Toate statusurile</option>${Object.entries(STATUS).map(([k, s]) => `<option value="${k}">${s.label}</option>`).join('')}</select>
       </div>
-      <div class="table-wrap"><table class="table"><thead><tr><th></th><th>Titlu</th><th class="hide-sm">Tip</th><th>Status</th><th>Rating</th><th class="hide-sm"></th><th></th></tr></thead><tbody id="lbody"></tbody></table></div>`;
-    panel.querySelector('#lt').value = libFilter.type;
+      <div class="ui-list" id="lbody"></div>`;
+    const syncType = () => panel.querySelectorAll('#lt button').forEach((x) => x.classList.toggle('on', x.dataset.v === libFilter.type));
+    syncType();
     panel.querySelector('#ls').value = libFilter.status;
     const body = panel.querySelector('#lbody');
     const draw = () => {
@@ -552,19 +569,18 @@
           && (libFilter.status === 'all' || t.status === libFilter.status)
           && norm(t.title).includes(norm(libFilter.q)))
         .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
-      body.innerHTML = rows.length ? rows.map((t) => `<tr>
-        <td style="width:52px">${thumb(t)}</td>
-        <td><b>${esc(t.title)}</b> <span class="muted">${esc(t.year || '')}</span></td>
-        <td class="hide-sm muted">${t.type === 'tv' ? 'Serial' : 'Film'}</td>
-        <td><select data-status="${t.id}" style="min-width:130px">${Object.entries(STATUS).map(([k, s]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${s.label}</option>`).join('')}</select></td>
-        <td style="white-space:nowrap">${stars(t.rating, 'accent') || '<span class="muted">—</span>'}</td>
-        <td class="hide-sm">${heart(t.liked)} ${t.favorite ? '<span style="color:#f0cf6c">★</span>' : ''}</td>
-        <td class="actions"><button class="btn small" data-edit="${t.id}">Editează</button></td>
-      </tr>`).join('') : `<tr><td colspan="7" class="muted" style="padding:20px;text-align:center">Nimic aici. Adaugă din secțiunea „Adaugă”.</td></tr>`;
+      body.innerHTML = rows.length ? rows.map((t) => `<div class="ui-row">
+        ${thumb(t)}
+        <div class="ui-row-main"><b class="notranslate">${esc(t.title)}</b>
+          <span class="ui-row-meta"><span class="badge">${svgIcon(t.type === 'tv' ? 'tv' : 'film')}${t.type === 'tv' ? 'Serial' : 'Film'}</span>${t.year ? `<span>${esc(t.year)}</span>` : ''}${heart(t.liked)}${t.favorite ? '<span class="fav-star">★</span>' : ''}</span></div>
+        <div class="ui-row-rating">${stars(t.rating, 'accent') || '<span class="muted">—</span>'}</div>
+        <select data-status="${t.id}">${Object.entries(STATUS).map(([k, s]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${s.label}</option>`).join('')}</select>
+        <button class="icon-btn" data-edit="${t.id}" title="Editează" aria-label="Editează">${svgIcon('pen')}</button>
+      </div>`).join('') : `<div class="ui-empty">${svgIcon('grid')}<b>Nimic aici.</b><span>Adaugă din secțiunea „Adaugă”.</span></div>`;
     };
     draw();
     panel.querySelector('#lq').addEventListener('input', (e) => { libFilter.q = e.target.value; draw(); });
-    panel.querySelector('#lt').addEventListener('change', (e) => { libFilter.type = e.target.value; draw(); });
+    panel.querySelector('#lt').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; libFilter.type = b.dataset.v; syncType(); draw(); });
     panel.querySelector('#ls').addEventListener('change', (e) => { libFilter.status = e.target.value; draw(); });
     body.addEventListener('click', (e) => {
       const b = e.target.closest('[data-edit]');
@@ -585,25 +601,41 @@
     const byId = new Map(DB.titles.map((t) => [t.id, t]));
     const entries = [...DB.diary].filter((e) => byId.has(e.titleId))
       .sort((a, b) => (b.date + (b.createdAt || '')).localeCompare(a.date + (a.createdAt || '')));
+    // pe luni, ca pe profil
+    const groups = [];
+    for (const e of entries) {
+      const d = WL.parseDate(e.date);
+      const key = d.getFullYear() + '-' + d.getMonth();
+      if (!groups.length || groups[groups.length - 1].key !== key) groups.push({ key, label: `${WL.MONTHS[d.getMonth()]} ${d.getFullYear()}`, items: [] });
+      groups[groups.length - 1].items.push(e);
+    }
+    const liked = entries.filter((e) => e.liked).length;
+    const reviews = entries.filter((e) => e.review).length;
     panel.innerHTML = `
-      <div class="panel-title">Jurnal <span class="muted" style="font-size:15px;font-weight:400">${entries.length} intrări</span><span class="grow"></span>
-        <button class="btn primary small" id="d-new" ${DB.titles.length ? '' : 'disabled'}>＋ Intrare nouă</button></div>
-      <div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th></th><th>Titlu</th><th>Rating</th><th class="hide-sm">Recenzie</th><th></th></tr></thead><tbody>
-      ${entries.length ? entries.map((e) => {
-        const t = byId.get(e.titleId);
-        const scope = e.season != null && e.episode != null ? `S${e.season} E${e.episode}` : e.season != null ? `Sezonul ${e.season}` : '';
-        return `<tr>
-          <td style="white-space:nowrap">${fmtDate(e.date)}</td>
-          <td style="width:52px">${thumb(t)}</td>
-          <td><b>${esc(t.title)}</b> ${scope ? `<span class="badge">${scope}</span>` : ''} ${e.rewatch ? '<span class="badge">↻</span>' : ''}</td>
-          <td style="white-space:nowrap">${stars(e.rating, 'accent')}${heart(e.liked)}</td>
-          <td class="hide-sm muted" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.review || '')}</td>
-          <td class="actions"><button class="btn small" data-edit="${e.id}">Editează</button></td>
-        </tr>`;
-      }).join('') : '<tr><td colspan="6" class="muted" style="padding:20px;text-align:center">Jurnalul e gol.</td></tr>'}
-      </tbody></table></div>`;
+      <div class="panel-title">Jurnal<span class="grow"></span>
+        <button class="btn primary small btn-ic" id="d-new" ${DB.titles.length ? '' : 'disabled'}>${svgIcon('plus')}Intrare nouă</button></div>
+      <div class="stat-chips">
+        <div class="stat-chip"><b>${entries.length}</b><span>intrări</span></div>
+        <div class="stat-chip"><b>${liked}</b><span>apreciate</span></div>
+        <div class="stat-chip"><b>${reviews}</b><span>recenzii</span></div>
+      </div>
+      <div id="dbody">${groups.length ? groups.map((g) => `<section class="ui-month"><h4>${g.label}<span>${g.items.length}</span></h4><div class="ui-list">
+        ${g.items.map((e) => {
+          const t = byId.get(e.titleId);
+          const d = WL.parseDate(e.date);
+          const scope = e.season != null && e.episode != null ? `S${e.season} E${e.episode}` : e.season != null ? `Sezonul ${e.season}` : '';
+          return `<div class="ui-row">
+            <div class="day-box"><b>${d.getDate()}</b><span>${WL.DAYS[d.getDay()]}</span></div>
+            ${thumb(t)}
+            <div class="ui-row-main"><b class="notranslate">${esc(t.title)}</b>
+              <span class="ui-row-meta">${scope ? `<span class="badge">${scope}</span>` : ''}${e.rewatch ? '<span class="badge">↻ Revăzut</span>' : ''}${e.review ? `<span class="ui-review notranslate">${esc(e.review)}</span>` : ''}</span></div>
+            <div class="ui-row-rating">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
+            <button class="icon-btn" data-edit="${e.id}" title="Editează" aria-label="Editează">${svgIcon('pen')}</button>
+          </div>`;
+        }).join('')}
+      </div></section>`).join('') : `<div class="ui-empty">${svgIcon('book')}<b>Jurnalul e gol.</b><span>Adaugă o intrare cu butonul de sus.</span></div>`}</div>`;
     panel.querySelector('#d-new').addEventListener('click', () => openDiaryEditor(null));
-    panel.querySelector('tbody').addEventListener('click', (ev) => {
+    panel.querySelector('#dbody').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-edit]');
       if (b) openDiaryEditor(DB.diary.find((x) => x.id === b.dataset.edit));
     });
