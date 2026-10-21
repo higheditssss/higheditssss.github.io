@@ -1811,6 +1811,19 @@
   }
   setTimeout(() => { if (isIos()) showInstall(); }, 2500);
 
+  // inainte sa raspunda Firebase: bara de jos, meniul si butoanele contului ca la ultima vizita (nu mai sar la reincarcare)
+  (function earlyAuthUi() {
+    let me = null;
+    try { me = JSON.parse(localStorage.getItem('editsel_me') || 'null'); } catch { /* fara localStorage */ }
+    document.body.classList.toggle('logged-out', !me);
+    swapNav(Boolean(me));
+    if (!me) return;
+    const bn = document.getElementById('bn-profile');
+    if (bn && me.username) { bn.href = BASE + me.username; bn.innerHTML = `<span>${icon('user')}</span>Profil`; }
+    const slot = document.getElementById('auth-slot');
+    if (slot && !slot.innerHTML.trim()) slot.innerHTML = authSlotHtml(me);
+  })();
+
   WL.backend().then((b) => {
     if (!b || !b.api) {
       done();
