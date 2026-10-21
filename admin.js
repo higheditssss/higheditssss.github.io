@@ -116,9 +116,10 @@
     if (!STATE.authed) {
       logoutBtn.classList.add('hidden');
       profileLink.classList.add('hidden');
-      return renderAuth(location.hash === '#cont-nou' ? 'register' : 'login');
+      return renderAuth(location.hash === '#cont-nou' || /\/signup$/.test(location.pathname) ? 'register' : 'login');
     }
     logoutBtn.classList.remove('hidden');
+    if (/\/(login|signup|admin(\.html)?)$/.test(location.pathname) || location.hash === '#cont-nou') history.replaceState(null, '', 'settings' + location.search);
     try { await reload(); } catch (e) {
       root.innerHTML = `<div class="auth-box card"><h2>Profilul nu a putut fi încărcat</h2><p class="muted">${esc(e.message)}</p></div>`;
       return;
@@ -130,7 +131,7 @@
     openFromLink();
   }
 
-  // admin.html?adauga=tv:1405 (din cautarea de pe site): deschide direct fereastra titlului
+  // settings?adauga=tv:1405 (din cautarea de pe site): deschide direct fereastra titlului
   async function openFromLink() {
     const params = new URLSearchParams(location.search);
     const m = /^(tv|movie):(\d+)$/.exec(params.get('adauga') || '');
@@ -146,6 +147,7 @@
 
   function renderAuth(mode) {
     const reg = mode === 'register';
+    document.title = (reg ? 'Creează cont' : 'Intră în cont') + ' · EDITSEL';
     root.innerHTML = `<div class="auth-box card">
       <div style="display:flex;justify-content:center;margin-bottom:14px">${WL.logoSvg(null, { size: 54, id: 'al' })}</div>
       <h2 style="margin-bottom:6px;text-align:center">${reg ? 'Creează cont' : 'Intră în cont'}</h2>
@@ -166,7 +168,7 @@
     (reg ? f.name : f.email).focus();
     root.querySelector('#auth-switch').addEventListener('click', (e) => {
       e.preventDefault();
-      history.replaceState(null, '', reg ? location.pathname : '#cont-nou');
+      history.replaceState(null, '', reg ? 'login' : 'signup');
       renderAuth(reg ? 'login' : 'register');
     });
     const reset = root.querySelector('#auth-reset');

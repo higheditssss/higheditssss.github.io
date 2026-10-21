@@ -1,4 +1,4 @@
-// Pagina publica: profilurile membrilor (citire). Fiecare isi editeaza profilul din admin.html, dupa logare.
+// Pagina publica: profilurile membrilor (citire). Fiecare isi editeaza profilul din /settings (admin.html), dupa logare.
 (function () {
   const { applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api } = WL;
   const app = document.getElementById('app');
@@ -557,7 +557,7 @@
     const slot = document.getElementById('follow-slot');
     if (!slot || !backend.user) return;
     if (backend.user.uid === DB.uid) {
-      slot.innerHTML = '<a class="btn small" href="admin.html">✎ Editează profilul</a>';
+      slot.innerHTML = '<a class="btn small" href="settings">✎ Editează profilul</a>';
       return;
     }
     let me;
@@ -699,7 +699,7 @@
     if (!backend || !backend.user) {
       const fj = document.getElementById('footer-join');
       if (fj) fj.hidden = false;
-      slot.innerHTML = '<a class="btn small ghost" href="admin.html">Intră</a><a class="btn small primary" href="admin.html#cont-nou">Creează cont</a>';
+      slot.innerHTML = '<a class="btn small ghost" href="login">Intră</a><a class="btn small primary" href="signup">Creează cont</a>';
       return;
     }
     let username = '';
@@ -711,7 +711,7 @@
     if (fp && username) fp.href = BASE + username;
     const bn = document.getElementById('bn-profile');
     if (bn && username) { bn.href = BASE + username; bn.innerHTML = '<span>◉</span>Profil'; }
-    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="admin.html">Setări</a>'}`;
+    slot.innerHTML = `<div class="bell-wrap"><button class="bell" id="bell" type="button" aria-label="Notificări">🔔</button><div class="bell-panel hidden" id="bell-panel"></div></div><button class="btn small primary" id="quick-log" type="button">＋ Jurnal</button>${username ? `<a class="me-pfp" href="${BASE}${esc(username)}" title="Profilul meu" aria-label="Profilul meu">${myP.avatar ? `<img src="${esc(myP.avatar)}" alt="">` : esc((myP.name || username).trim().charAt(0).toUpperCase())}</a>` : '<a class="btn small ghost" href="settings">Setări</a>'}`;
     setupBell();
     updateRequestBadge();
     slot.querySelector('#quick-log').addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('#hsearch .hs-toggle').click(); });
@@ -729,8 +729,8 @@
   function pageHome() {
     const logged = backend.user;
     const cta = logged
-      ? '<a class="btn primary" href="admin.html">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
-      : '<a class="btn primary" href="admin.html#cont-nou">Creează cont gratuit</a><a class="btn" href="admin.html">Am deja cont</a>';
+      ? '<a class="btn primary" href="settings">＋ Adaugă seriale</a><a class="btn" id="home-my" href="./">Profilul meu</a>'
+      : '<a class="btn primary" href="signup">Creează cont gratuit</a><a class="btn" href="login">Am deja cont</a>';
     return `<section class="home-hero">
         <div class="mosaic" id="poster-wall" aria-hidden="true">
           ${Array.from({ length: 48 }, (_, i) => `<div class="pw-card" style="--i:${i}"></div>`).join('')}
@@ -761,7 +761,7 @@
         ${logged ? '' : `<section class="home-final">
           <h2>Începe-ți jurnalul azi.</h2>
           <p>Gratuit, fără reclame. Durează un minut.</p>
-          <a class="btn primary" href="admin.html#cont-nou">Creează cont</a>
+          <a class="btn primary" href="signup">Creează cont</a>
         </section>`}
       </div>`;
   }
@@ -885,7 +885,7 @@
       box.innerHTML = (peopleHtml ? `<div class="hs-group">Membri</div>${peopleHtml}` : '')
         + (titlesHtml ? `<div class="hs-group">Seriale și filme</div>${titlesHtml}` : '')
         + `<a class="hs-all" href="${BASE}search?q=${encodeURIComponent(q)}">Vezi toate rezultatele pentru „${esc(q)}” <kbd>Enter</kbd></a>`
-        + (!backend.user ? '<div class="hs-hint"><a href="admin.html#cont-nou">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : '');
+        + (!backend.user ? '<div class="hs-hint"><a href="signup">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : '');
       if (!peopleHtml && !titlesHtml) box.insertAdjacentHTML('afterbegin', '<div class="hs-empty">Nu am găsit nimic.</div>');
     }
   }
@@ -1057,7 +1057,7 @@
     count.innerHTML = total
       ? `${tv.length} seriale · ${movie.length} filme${people.length ? ` · ${people.length} membri` : ''}${backend.user ? '. Click pe un poster ca să-l adaugi în jurnal.' : ''}`
       : 'Nu am găsit nimic.';
-    if (!backend.user) count.insertAdjacentHTML('beforeend', ' <a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> ca să cauți în toate serialele și filmele.');
+    if (!backend.user) count.insertAdjacentHTML('beforeend', ' <a href="signup" style="color:var(--accent-text)">Fă-ți cont</a> ca să cauți în toate serialele și filmele.');
   }
 
   // ---------- pagina Prieteni (/prieteni): cereri, prieteni, sugestii ----------
@@ -1066,7 +1066,7 @@
     if (!backend.user) {
       return `<div class="container page disc-page">
         <h1 class="disc-title">Prieteni</h1>
-        ${empty('<a href="admin.html#cont-nou" style="color:var(--accent-text)">Fă-ți cont</a> sau <a href="admin.html" style="color:var(--accent-text)">intră în cont</a> ca să-ți adaugi prietenii și să vezi ce au văzut.')}
+        ${empty('<a href="signup" style="color:var(--accent-text)">Fă-ți cont</a> sau <a href="login" style="color:var(--accent-text)">intră în cont</a> ca să-ți adaugi prietenii și să vezi ce au văzut.')}
       </div>`;
     }
     return `<div class="container page disc-page">
@@ -1173,7 +1173,7 @@
   }
 
   async function quickAdd(type, tmdbId, sourceEl) {
-    if (!backend || !backend.user) { location.href = 'admin.html#cont-nou'; return; }
+    if (!backend || !backend.user) { location.href = 'signup'; return; }
     const loading = openModal('<div class="modal-body"><div class="muted">Se încarcă…</div></div>');
     let me;
     let details;
@@ -1461,7 +1461,7 @@
             ${backend.user ? `<span class="ms-add">${owned(t) ? '✓' : '＋'}</span>` : '<span class="ms-add">›</span>'}
           </a>`).join('')}</div>` : ''}
         ${!people.length && !uniq.length ? '<div class="ms-empty"><b>Nu am găsit nimic</b><span>Încearcă alt nume.</span></div>' : ''}
-        ${!backend.user ? '<div class="ms-hint"><a href="admin.html#cont-nou">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : ''}
+        ${!backend.user ? '<div class="ms-hint"><a href="signup">Fă-ți cont</a> ca să cauți orice serial sau film și să-l adaugi în jurnal.</div>' : ''}
         <a class="ms-all" href="${BASE}search?q=${encodeURIComponent(q)}">Toate rezultatele pentru „${esc(q)}” ›</a>`;
     }
 
@@ -1523,7 +1523,7 @@
     if (parts[0] === 'add' && parts[2]) {
       history.replaceState(null, '', BASE + 'discover');
       render();
-      if (backend.user) quickAdd(parts[1], parts[2]); else location.href = 'admin.html#cont-nou';
+      if (backend.user) quickAdd(parts[1], parts[2]); else location.href = 'signup';
       return;
     }
     const old = oldRoute(parts);
