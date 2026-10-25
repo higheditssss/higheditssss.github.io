@@ -196,6 +196,11 @@
     'Like-urile nu sunt pornite încă pe site.': "Likes aren't enabled on the site yet.", 'Recenzia nu mai există.': 'This review no longer exists.',
     'Conține spoilere — deschide ca să citești.': 'Contains spoilers — open to read.', 'ți-a apreciat recenzia pentru': 'liked your review of', '(poză)': '(photo)',
 
+    // Halloween
+    'Tema de Halloween': 'Halloween theme', 'Tema de Halloween e pornită': 'Halloween theme is on', 'Tema de Halloween e oprită': 'Halloween theme is off',
+    'Serialul zilei de Halloween': 'Halloween show of the day', 'Filme de groază pentru Halloween': 'Horror movies for Halloween',
+    'Halloween fericit de la EDITSEL!': 'Happy Halloween from EDITSEL!',
+
     // episoade
     'Nota medie pe EDITSEL': 'Average rating on EDITSEL', 'Notează': 'Rate','Editează': 'Edit', 'Nu a apărut': 'Not out yet', 'Fără dată': 'No date', 'Văzut pe': 'Watched on',
     'Marchează văzut': 'Mark watched', 'Ce părere ai despre episodul ăsta?': 'What did you think of this episode?', 'cu recenzie': 'with review',

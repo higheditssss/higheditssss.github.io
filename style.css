@@ -1263,3 +1263,53 @@ body.logged-out .wr-hbtn { display: none; }
 .ep-whole { padding: 10px 16px 0; }
 .ep-avg { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-size: 12px; font-weight: 700; }
 .ep-avg .ico { width: 12px; height: 12px; }
+
+/* ---------- tema de Halloween (20 octombrie - 2 noiembrie) ---------- */
+.hw-toggle { display: none; width: 40px; height: 40px; flex: none; place-items: center; margin-right: 6px; padding: 0; border: 0; border-radius: 50%; background: rgba(38, 38, 46, .6); cursor: pointer; transition: transform .2s, filter .2s, opacity .2s; }
+html.hw-season .hw-toggle { display: grid; }
+.hw-toggle:hover { transform: rotate(-10deg) scale(1.08); }
+html.hw-season:not(.halloween) .hw-toggle { filter: grayscale(1); opacity: .55; }
+html.halloween .hw-toggle { background: rgba(255, 122, 26, .14); box-shadow: 0 0 18px rgba(255, 122, 26, .35); }
+html.halloween .hw-toggle .hw-face { fill: #ffd27a; filter: drop-shadow(0 0 3px #ffb43a); }
+
+/* noapte de Halloween: lumina de dovleac sus, ceata mov pe margini */
+html.halloween body {
+  background:
+    radial-gradient(1100px 520px at 50% -8%, rgba(255, 122, 26, .13), transparent 62%),
+    radial-gradient(800px 520px at 100% 0%, rgba(120, 50, 190, .16), transparent 60%),
+    radial-gradient(760px 520px at 0% 100%, rgba(120, 50, 190, .1), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+html.halloween .site-header.solid { box-shadow: 0 1px 0 rgba(255, 122, 26, .22); }
+
+/* decor: panze in colturi si lilieci care trec din cand in cand */
+.hw-deco, .hw-foot { display: none; }
+html.halloween .hw-deco { display: block; position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.hw-web { position: absolute; top: 0; width: 190px; color: rgba(255, 255, 255, .11); }
+.hw-web-l { left: 0; }
+.hw-web-r { right: 0; transform: scaleX(-1); }
+.hw-bat { position: absolute; left: -70px; width: 46px; opacity: 0; filter: drop-shadow(0 0 6px rgba(255, 122, 26, .5)); animation: hw-fly 18s linear infinite; }
+.hw-bat svg { display: block; animation: hw-flap .32s ease-in-out infinite alternate; transform-origin: center; }
+.hw-bat-1 { top: 18%; animation-delay: 2s; }
+.hw-bat-2 { top: 36%; width: 32px; animation-duration: 24s; animation-delay: 9s; }
+.hw-bat-3 { top: 11%; width: 38px; animation-duration: 21s; animation-delay: 15s; }
+@keyframes hw-fly {
+  0% { transform: translate(0, 0); opacity: 0; }
+  4% { opacity: .9; }
+  50% { transform: translate(55vw, -40px); }
+  96% { opacity: .9; }
+  100% { transform: translate(115vw, 30px); opacity: 0; }
+}
+@keyframes hw-flap { from { transform: scaleY(1); } to { transform: scaleY(.45); } }
+@media (prefers-reduced-motion: reduce) { .hw-bat { display: none; } }
+
+/* dovleci: in subsol si langa serialul zilei de pe Descopera */
+.hw-pumpkin { width: 28px; height: 28px; flex: none; }
+html.halloween .hw-foot { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 18px 0 4px; color: #ffb066; font: 700 15px var(--head); letter-spacing: .04em; }
+.hw-kicker { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 5px 13px 5px 6px; border-radius: 999px; background: rgba(20, 10, 30, .65); color: #ffb066; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+.hw-kicker .hw-pumpkin { width: 22px; height: 22px; }
+@media (max-width: 640px) {
+  .hw-web { width: 110px; }
+  .hw-toggle { width: 36px; height: 36px; margin-right: 4px; }
+}

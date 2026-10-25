@@ -14,6 +14,10 @@
   const titleHref = (t) => R(`/${t.type === 'movie' ? 'movie' : 'show'}/${slug(t.title) || 'titlu'}-${t.id}`);
   // iconite SVG (in locul emoji-urilor)
   const ICONS = {"search":"<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/>","bell":"<path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/>","home":"<path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/><path d=\"M10 21v-6h4v6\"/>","compass":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m15.5 8.5-2 5-5 2 2-5z\"/>","users":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/>","user":"<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","list":"<path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/>"};
+  // desenele temei de Halloween
+  const HW_PUMPKIN = '<svg class="hw-pumpkin" viewBox="0 0 64 64" aria-hidden="true"><path d="M33 16c0-6 3-10 9-11" fill="none" stroke="#5b8a2e" stroke-width="5" stroke-linecap="round"/><ellipse cx="32" cy="38" rx="27" ry="21" fill="#ff7a1a"/><ellipse cx="32" cy="38" rx="13" ry="21" fill="#ff9440"/><path d="M5 38c0-8 6-15 15-18M59 38c0-8-6-15-15-18" fill="none" stroke="#e0600e" stroke-width="2"/><path d="M18 31l8 6h-10zM46 31l-8 6h10zM17 44q15 10 30 0l-5 2-4-3-4 3-4-3-4 3-4-3z" fill="#3a1600"/></svg>';
+  const HW_BAT = '<svg viewBox="0 0 64 30"><path d="M32 9c1.6-3 4.4-3 5 0 5-6 13-9 25-5-5 2-7.5 6-7 10-4-3-8-3-11 1-2-3-5-3-7.5 0h-9C25 12 22 12 20 15c-3-4-7-4-11-1 .5-4-2-8-7-10 12-4 20-1 25 5 .6-3 3.4-3 5 0z" fill="#1a1024"/></svg>';
+  const HW_WEB = '<svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M0 0l200 200M0 0l200 90M0 0l90 200M0 0l200 30M0 0l30 200"/><path d="M0 40q22 3 35 13 7-16 28-22 1-22 9-31"/><path d="M0 80q40 6 65 26 13-30 50-40 2-40 17-66"/><path d="M0 125q60 9 98 40 20-46 77-62 4-60 25-103"/><path d="M0 170q80 12 130 30 26-60 70-85"/></svg>';
   const icon = (k) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -1666,6 +1670,9 @@
     ['top-shows', 'Cele mai apreciate seriale', 'topTv'],
     ['top-movies', 'Cele mai apreciate filme', 'topMovie'],
   ];
+  // de Halloween, primul rand e cu filme de groaza
+  const HALLOWEEN_ROW = ['halloween-movies', 'Filme de groază pentru Halloween', 'halloween'];
+  const discoverRows = () => (WL.halloween() ? [HALLOWEEN_ROW, ...DISCOVER] : DISCOVER);
   let homeData = null;
   const loadHomeData = () => (homeData || (homeData = backend.loadHome().catch(() => ({}))));
 
@@ -1701,12 +1708,27 @@
     [1400, 'Seinfeld', 'tMRdEsMg9MyXAkcufK9YJEeIaNW jqgO8AqwgQelXhmJn6cebWjjMcY mlAzs3tyl5253roHi6eIRbeuONN lyTCCuymqg8egIaQXZAY5vE4MB0 m23XIVqQoT9CKuaN5WiCvRai9gD 2qna37NBAeUClwaqHTplNLWcqhl'],
     [1405, 'Dexter', 'aSGSxGMTP893DPMCvMl9AdnEICE iprMfJ9VHS4wMhBXyHtN7l9d2hP a7fRjgWc37Ml6bSlWoNaG7wbaqP l4pb3wCBGKYc1RaDOyXmJ1oWH9t 90j5n0K8vxf5l3ACrKaWYBgQpst sGh3WTqPaGJB3T9YNFJDNkELio5'],
   ].map(([id, title, paths]) => ({ id, type: 'tv', title, backdrops: paths.split(' ').map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') }));
+  // de Halloween, bannerul trece pe seriale horror
+  const HALLOWEEN_SHOWS = [
+    [119051, 'Wednesday', 'iHSwvRVsRyxpX7FE7GbviaDvgGZ sNLP0dLZcVBqYa3MchCXJqgDtFb nPWRN9MDIjO2gDB7nYOPje1pBLu l56gka4kw2R4K7M4hSJRt12M6R6 xnCDJZR2j4PSfscuwDfCkiCZ4h4 cMqf3gXP4Yk3NMqUENxoBXTD96K'],
+    [1402, 'The Walking Dead', 'rAOjnEFTuNysY7bot8zonhImGMh 5kosg4zhYIuzTxbPcrJVFylgOYk eRrmxUMK6P5ZQ0GiH6TcazHmryE 3ynZzFOTXVKgN9zaIXLehZCKKfY x4salpjB11umlUOltfNvSSrjSXm wY3KAlS1VgyOc5rJ6kBierv1iKW'],
+    [1413, 'American Horror Story', '5G4Bnc4Q0YUK1bwLEUYmIsmm2Ib 8kBhAP03JpPcTklJp5idCNJhRqE a4doyPOabvQor0RGkWdhVENAR3G 1gGRY9bnIc0Jaohgc6jNFidjgLK cjD0ggNg1b6rc1Tu5woZJzKH6aV 6fQSEUfV3eDUS5AGhwJK8CAWt0b'],
+    [72844, 'The Haunting of Hill House', 'dQF17lG4OZ3pC4QD9iNjaMS96gO pEbSErM8UXpDiMg0tJRlV0RpLfF n6m2giTaV5nX8LXstoq7o0d5XUq mIDP9ZhMjLzKk9ZOHRQ5IwDcF59 hISmjgM4Xh94j4gSBqJWll7IBOX d3rIDVycBLjbfw6SFhzrWyxUPu3'],
+    [1622, 'Supernatural', 'lirPqYLTtd6XZqGn4cS1wiesTq0 ro0tlgnsco4SwbdAgmscLkSlMSL nVRyd8hlg0ZLxBn9RaI7mUMQLnz 2AdujY4WepoE40VE7cMAchKlTZJ udkWFh3GZ9ozioVzlxP0RPsQwQQ vFqSwpEYSxFFw3moNotgGfHntv'],
+    [66732, 'Stranger Things', '9P4IIMYY3HifqeruZq0ZZ9g7YUi 8zbAoryWbtH0DKdev8abFAjdufy 56v2KjBlU4XaOv9rVYEQypROD7P kiFJZHRyTV207BhLRtUu3sAsJKh 2MaumbgBlW1NoPo3ZJO38A6v7OS ekLmP9wccC47PC83eJuklEy0twf'],
+    [97400, 'Midnight Mass', 'YauN3gyvgqktYhze4gXPWuoZBY 4XbQb5YoWK9oMrlQdKwtZ1ccpC8 i0eDItNUglxKLk67dzPHF9dp8KD lLNmJZmpUSTp5ypk0Kkly3jzJNr 5fX9kcbilRFeghP85C7oYautrxT otGYbga5ZshdttV1BW4TnWbO7KO'],
+    [54671, 'Penny Dreadful', '32iacqVElB91YZKl9Ky3QEEkXtH 3bViM60LioKQJwsExm5oyLRYagC 97ngHA11iPd5Z6rw9pwKUAKB4OS ewfECuuoRk5GJh77dxDIOlX6Vsv ep5wWN6Dd4Kor263VCai0xFpfP2 naZGPh8JJIHrqxoYDOo33lD56lA'],
+    [124364, 'FROM', 'm7eiSGHFzr584zFmetGqkqaU6BN xLdw1xdHocKYFFvx7w41NchXMfJ auyEi4Xho43HFvVQnd42LzqBdiV 6gN8DYnIEln8v7OhRy61c57w0Xy cTUWXPze3Px9HFhbKszc4ejMhuO q3UGWifvIpdey1T2efX4dSmbZpU'],
+    [79242, 'Chilling Adventures of Sabrina', '3UZ43UxVAFmtbQGFdZQ8KxiwJO5 VYo9j4vMFVGkAHu6SU4vOpyGzl aPsyg7Q9xSUy3AshffqwWPc69Ir 8AdmUPTyidDebwIuakqkSt6u1II 8AqPuvo0r89khk01yEFT321jiDn d1yRoro7YBFdbP5mww1Wz95bH3V'],
+    [4087, 'The X-Files', 'w00lfexrsOeR25dO4hsWhbcUnmD vE4o5pe7VczUxVNyof7XNgnv3ZW ucyQMoSTH5FkCcQl4G4rLMtRSsJ 1vpmGGDaW4aUGKCfQTV0ygAPtBu i6TgUqlafJi9MBzUHE7NdOIzdPj q80k4uyGrHDXRCh3Z0D1pNvTIhI'],
+  ].map(([id, title, paths]) => ({ id, type: 'tv', title, backdrops: paths.split(' ').map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') }));
   // ziua dupa ora locala a vizitatorului (se schimba la miezul noptii)
   function bannerShow() {
     const now = new Date();
     const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 25)) / 864e5);
-    const n = BANNER_SHOWS.length;
-    return BANNER_SHOWS[((day % n) + n) % n];
+    const list = WL.halloween() ? HALLOWEEN_SHOWS : BANNER_SHOWS;
+    const n = list.length;
+    return list[((day % n) + n) % n];
   }
   let heroTimer = null;
   function bannerTitle(t) {
@@ -1732,12 +1754,12 @@
   }
 
   function pageDiscover(listKey) {
-    const one = DISCOVER.find((d) => d[0] === listKey);
+    const one = discoverRows().find((d) => d[0] === listKey);
     const show = bannerShow();
     const head = one
       ? `<a class="see-all" href="${BASE}discover">‹ Descoperă</a><h1 class="disc-title">${one[1]}</h1>`
-      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${bannerTitle(show)}</h1>`;
-    const rows = (one ? [one] : DISCOVER).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
+      : `${WL.halloween() ? `<span class="hw-kicker">${HW_PUMPKIN}Serialul zilei de Halloween</span>` : ''}<h1 class="disc-title disc-banner-title" id="disc-hero-name">${bannerTitle(show)}</h1>`;
+    const rows = (one ? [one] : discoverRows()).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}discover/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
@@ -1756,7 +1778,7 @@
       backend.user ? api('/api/public').catch(() => null) : null,
     ]);
     const owned = (t) => me && me.titles.some((x) => x.tmdbId === t.id && x.type === t.type);
-    for (const [key, , field] of DISCOVER) {
+    for (const [key, , field] of discoverRows()) {
       const box = document.getElementById('disc-' + key);
       if (!box) continue;
       const list = (home[field] || []).slice(0, listKey ? 40 : 8);
@@ -2668,7 +2690,7 @@
     // /add/tv/1405: deschide pop-up-ul de adaugare peste Descopera
     if (parts[0] === 'add' && parts[2]) return navigate(showHref(parts[1], parts[2]), true);
     if ((parts[0] === 'show' || parts[0] === 'movie') && parseInt(parts[1], 10)) {
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       document.body.classList.remove('on-discover');
       setNav('');
@@ -2688,7 +2710,7 @@
 
     // fara cont: pagina de prezentare; cu cont (sau /descopera): pagina Descopera
     if (!parts.length || parts[0] === 'discover') {
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       const discover = parts[0] === 'discover' || backend.user;
       app.innerHTML = discover ? pageDiscover(parts[1]) : pageHome();
@@ -2701,7 +2723,7 @@
       return;
     }
     if (parts[0] === 'members') {
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       document.body.classList.add('on-discover');
       app.innerHTML = pageMembers();
@@ -2713,7 +2735,7 @@
       return;
     }
     if (parts[0] === 'friends') {
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       document.body.classList.add('on-discover');
       app.innerHTML = pageFriendsHub();
@@ -2725,7 +2747,7 @@
       return;
     }
     if (parts[0] === 'calendar') {
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       document.body.classList.add('on-discover');
       app.innerHTML = pageCalendar();
@@ -2745,7 +2767,7 @@
     }
     if (parts[0] === 'search') {
       const q = new URLSearchParams(location.search).get('q') || '';
-      applyAccent(WL.COLORS[0][1]);
+      applyAccent(WL.siteAccent());
       loadedUser = null;
       app.innerHTML = pageSearch(q);
       document.title = `„${q}” · Căutare · EDITSEL`;
@@ -2942,6 +2964,29 @@
     const slot = document.getElementById('auth-slot');
     if (slot && !slot.innerHTML.trim()) slot.innerHTML = authSlotHtml(me);
   })();
+
+  // ---------- tema de Halloween: panze de paianjen, lilieci, dovleci si butonul din antet ----------
+
+  function setupHalloween() {
+    const toggle = document.getElementById('hw-toggle');
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', WL.halloween() ? 'true' : 'false');
+      toggle.addEventListener('click', () => {
+        const on = !document.documentElement.classList.contains('halloween');
+        WL.setHalloween(on);
+        toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+        toast(on ? 'Tema de Halloween e pornită' : 'Tema de Halloween e oprită');
+        if (backend) render(); // culorile site-ului, bannerul si randurile de pe Descopera
+      });
+    }
+    document.body.insertAdjacentHTML('beforeend', `<div class="hw-deco" aria-hidden="true">
+        <div class="hw-web hw-web-l">${HW_WEB}</div><div class="hw-web hw-web-r">${HW_WEB}</div>
+        ${[1, 2, 3].map((i) => `<div class="hw-bat hw-bat-${i}">${HW_BAT}</div>`).join('')}
+      </div>`);
+    const foot = document.querySelector('.footer-bottom');
+    if (foot) foot.insertAdjacentHTML('beforebegin', `<div class="hw-foot">${HW_PUMPKIN}<span>Halloween fericit de la EDITSEL!</span>${HW_PUMPKIN}</div>`);
+  }
+  setupHalloween();
 
   WL.backend().then((b) => {
     if (!b || !b.api) {

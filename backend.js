@@ -161,7 +161,7 @@ export async function createBackend(config) {
   async function loadHome() {
     let home = null;
     try { const s = await getDoc(doc(fs, 'site', 'home')); home = s.exists() ? s.data() : null; } catch { /* regula lipsa sau offline */ }
-    const stale = !home || !home.updatedAt || !home.popularTv || Date.now() - Date.parse(home.updatedAt) > 12 * 3600 * 1000;
+    const stale = !home || !home.updatedAt || !home.popularTv || !home.halloween || Date.now() - Date.parse(home.updatedAt) > 12 * 3600 * 1000;
     if (stale && user) {
       const cfg = await loadSiteConfig();
       if (cfg && cfg.tmdbKey && cfg.adminUid === user.uid) {
@@ -179,16 +179,18 @@ export async function createBackend(config) {
       rating: Math.round((r.vote_average || 0) * 10) / 10,
     });
     // o lista TMDB (2 pagini = 40 de titluri) -> elemente mici pentru prima pagina
-    const get = async (path, type) => {
-      const pages = await Promise.all([1, 2].map((page) => tmdb(path, { language: l, page, region: 'RO' })));
+    const get = async (path, type, extra = {}) => {
+      const pages = await Promise.all([1, 2].map((page) => tmdb(path, { language: l, page, region: 'RO', ...extra })));
       return pages.flatMap((p) => p.results || []).filter((r) => r.poster_path).slice(0, 40).map((r) => pick(r, type));
     };
-    const [tv, movie, popularTv, popularMovie, topTv, topMovie] = await Promise.all([
+    const [tv, movie, popularTv, popularMovie, topTv, topMovie, halloween] = await Promise.all([
       get('/trending/tv/week', 'tv'), get('/trending/movie/week', 'movie'),
       get('/tv/popular', 'tv'), get('/movie/popular', 'movie'),
       get('/tv/top_rated', 'tv'), get('/movie/top_rated', 'movie'),
+      // filme de groaza populare si bine votate (randul de Halloween de pe Descopera)
+      get('/discover/movie', 'movie', { with_genres: 27, sort_by: 'popularity.desc', 'vote_count.gte': 500 }),
     ]);
-    const home = { updatedAt: new Date().toISOString(), tv, movie, popularTv, popularMovie, topTv, topMovie };
+    const home = { updatedAt: new Date().toISOString(), tv, movie, popularTv, popularMovie, topTv, topMovie, halloween };
     await setDoc(doc(fs, 'site', 'home'), home);
     return home;
   }

@@ -246,5 +246,19 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 
-  window.WL = { ic, backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api };
+  // tema de Halloween: singura intre 20 octombrie si 2 noiembrie; fiecare vizitator o poate opri din dovleacul din antet
+  const HW_KEY = 'editsel_halloween';
+  const halloweenSeason = () => { const d = new Date(); return (d.getMonth() === 9 && d.getDate() >= 20) || (d.getMonth() === 10 && d.getDate() <= 2); };
+  function halloween() {
+    if (!halloweenSeason()) return false;
+    try { return localStorage.getItem(HW_KEY) !== 'off'; } catch { return true; }
+  }
+  function setHalloween(on) {
+    try { localStorage.setItem(HW_KEY, on ? 'on' : 'off'); } catch { /* fara memorie locala */ }
+    document.documentElement.classList.toggle('halloween', on);
+  }
+  // culoarea paginilor site-ului (profilurile isi pastreaza culoarea lor)
+  const siteAccent = () => (halloween() ? '#ff7a1a' : COLORS[0][1]);
+
+  window.WL = { ic, backend, COLORS, logoSvg, setFavicon, mix, applyAccent, esc, STATUS, MONTHS, DAYS, parseDate, fmtDate, stars, heart, poster, watchTime, splitMinutes, histogram, api, halloween, halloweenSeason, setHalloween, siteAccent };
 })();
