@@ -183,7 +183,14 @@
     'Datele sunt de pe TMDB, pentru serialele din biblioteca ta (fără cele abandonate). Se actualizează la câteva ore.': 'Data from TMDB, for the shows in your library (except dropped ones). Refreshed every few hours.',
     'ca să vezi când apar episoadele noi din serialele tale.': 'to see when new episodes of your shows come out.',
 
+    // recenzie
+    'Scrie o recenzie': 'Write a review', 'Editează recenzia': 'Edit review', 'Recenzia': 'Review', 'Publică recenzia': 'Publish review',
+    'Șterge recenzia': 'Delete review', 'Ștergi recenzia?': 'Delete your review?', 'Recenzia a fost publicată': 'Review published',
+    'Recenzia a fost ștearsă': 'Review deleted', 'Scrie ceva în recenzie.': 'Write something in your review.',
+
     // comentarii
+    'Comentarii': 'Comments', 'Niciun comentariu încă.': 'No comments yet.', 'Scrie ceva pe profilul tău…': 'Write something on your profile…',
+    'ți-a scris pe': 'wrote on your', 'profil': 'profile',
     'Comentează': 'Comment', 'Trimite': 'Send', 'Scrie un comentariu…': 'Write a comment…', 'Ștergi comentariul?': 'Delete this comment?', 'Șterge comentariul': 'Delete comment',
     'Intră în cont': 'Log in', 'ca să comentezi.': 'to comment.', 'Membru': 'Member', 'a comentat la recenzia ta pentru': 'commented on your review of',
     'Comentariile nu sunt pornite încă pe site.': "Comments aren't enabled on the site yet.", 'Scrie ceva înainte să trimiți.': 'Write something before sending.',
@@ -256,6 +263,8 @@
     }],
     [/^(Ianuarie|Februarie|Martie|Aprilie|Mai|Iunie|Iulie|August|Septembrie|Octombrie|Noiembrie|Decembrie)$/, (m) => MONTHS[m]],
     [/^(Anul tău în seriale|Anul în seriale) · (\d{4})$/, (m, a, y) => `${D[a]} · ${y}`],
+    [/^Ce părere ai despre (.+)\?$/, (m, t) => `What did you think of ${t}?`],
+    [/^Scrie-i ceva lui (.+)…$/, (m, n) => `Write something to ${n}…`],
     [/^Descoperă anul( tău)? (\d{4})$/, (m, you, y) => `Explore ${you ? 'your ' : ''}${y}`],
     [/^Hai să vedem anul lui (.+)$/, (m, n) => `Let's look at ${n}'s year`],
     [/^(\d+) (vizionare|vizionări)$/, (m, n, w) => `${n} ${w === 'vizionare' ? 'watch' : 'watches'}`],

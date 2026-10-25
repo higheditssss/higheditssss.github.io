@@ -932,7 +932,7 @@ a.cmt-name:hover { color: var(--accent-text); }
 .cmt-del .ico { width: 13px; height: 13px; }
 .cmt-text { margin-top: 2px; white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; color: #dadde3; }
 .cmt-form { display: flex; gap: 8px; align-items: flex-end; }
-.cmt-form .textarea { flex: 1; min-height: 42px; height: 42px; padding: 10px 12px; transition: height .15s; }
+.cmt-form .textarea { flex: 1; min-height: 46px; height: 46px; padding: 11px 12px; line-height: 1.4; resize: none; overflow-y: auto; transition: height .15s; }
 .cmt-form .textarea:focus, .cmt-form .textarea:valid { height: 84px; }
 .cmt-login { font-size: 13px; }
 .bell-quote { margin-top: 4px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
@@ -1099,3 +1099,9 @@ body.wrapped-mode .site-header, body.wrapped-mode .site-footer, body.wrapped-mod
   .wr-bars span { font-size: 9px; }
   .wr-genres { padding: 30px 20px; }
 }
+
+.modal.modal-review { max-width: 620px; }
+.cmts-wall { margin-top: 0; }
+.cmts-wall .cmt-body { margin-top: 0; gap: 12px; }
+.cmts-wall .cmt-form { margin-bottom: 6px; }
+.cmt-none { padding: 6px 2px; font-size: 14px; }

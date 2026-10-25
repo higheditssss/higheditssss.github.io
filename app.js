@@ -31,7 +31,7 @@
     return t.type === 'movie' ? 'Film' : 'Serial';
   }
 
-  // cheia unei recenzii pentru comentarii: t = recenzia titlului, d = intrare din jurnal
+  // cheia unei recenzii pentru comentarii: t = recenzia titlului, d = intrare din jurnal, p = peretele profilului
   const reviewKey = (kind, id) => `${DB.uid}_${kind}_${id}`;
   const commentsSlot = (key, t) => (key && DB.uid ? `<div class="cmts" data-target="${esc(key)}" data-title-id="${esc(t.id)}" data-title="${esc(t.title)}"></div>` : '');
 
@@ -190,6 +190,7 @@
       ${section('Activitate recentă', recent.length ? `<div class="row-scroll">${recent.join('')}</div>` : empty('Încă nu e nimic aici.'), R('/diary'))}
       ${reviews.length ? section('Recenzii recente', reviews.map((r) => reviewItem(r)).join(''), R('/reviews')) : ''}
       ${lists.length ? section('Liste', `<div class="list-cards">${lists.map(listCard).join('')}</div>`, R('/lists')) : ''}
+      ${section('Comentarii', `<div class="cmts cmts-wall" data-target="${esc(reviewKey('p', 'wall'))}" data-title-id="" data-title=""></div>`)}
     `;
     if (DB.profile.showStats === false) {
       const fc = friendsSidebarCard();
@@ -701,16 +702,20 @@
     };
     const who = (c) => (c.username ? `<a class="cmt-name" href="${BASE}${esc(c.username)}">${esc(c.name || c.username)}</a>` : `<span class="cmt-name">${esc(c.name || 'Membru')}</span>`);
     const n = list.length;
-    if (!n && !myUid) { box.innerHTML = ''; return; }
-    box.innerHTML = `<button type="button" class="cmt-toggle${open ? ' on' : ''}">${WL.ic('comment')}${n ? plural(n, 'comentariu', 'comentarii') : 'Comentează'}</button>
-      <div class="cmt-body${open ? '' : ' hidden'}">
-        ${list.map((c) => `<div class="cmt" data-id="${esc(c.id)}">${av(c)}
+    // peretele profilului: mereu deschis, cel mai nou sus, campul de scris deasupra
+    const wall = box.classList.contains('cmts-wall');
+    if (!n && !myUid && !wall) { box.innerHTML = ''; return; }
+    const items = (wall ? [...list].reverse() : list).map((c) => `<div class="cmt" data-id="${esc(c.id)}">${av(c)}
           <div class="cmt-main"><div class="cmt-head">${who(c)}<span class="muted">${fmtDate(String(c.createdAt).slice(0, 10))}</span>
             ${myUid && (c.uid === myUid || owner === myUid) ? `<button type="button" class="cmt-del" data-del="${esc(c.id)}" title="Șterge comentariul" aria-label="Șterge comentariul">${WL.ic('x')}</button>` : ''}</div>
-            <div class="cmt-text">${esc(c.text)}</div></div></div>`).join('')}
-        ${myUid ? `<form class="cmt-form"><textarea class="textarea" maxlength="2000" placeholder="Scrie un comentariu…" required></textarea><button class="btn small primary">Trimite</button></form>`
-          : `<div class="muted cmt-login"><a href="login" style="color:var(--accent-text)">Intră în cont</a> ca să comentezi.</div>`}
-      </div>`;
+            <div class="cmt-text">${esc(c.text)}</div></div></div>`).join('');
+    const formHtml = myUid
+      ? `<form class="cmt-form"><textarea class="textarea" maxlength="2000" placeholder="${wall ? (owner === myUid ? 'Scrie ceva pe profilul tău…' : `Scrie-i ceva lui ${esc(DB.profile.name || DB.profile.username)}…`) : 'Scrie un comentariu…'}" required></textarea><button class="btn small primary">Trimite</button></form>`
+      : `<div class="muted cmt-login"><a href="login" style="color:var(--accent-text)">Intră în cont</a> ca să comentezi.</div>`;
+    box.innerHTML = wall
+      ? `<div class="cmt-body">${formHtml}${items || '<div class="muted cmt-none">Niciun comentariu încă.</div>'}</div>`
+      : `<button type="button" class="cmt-toggle${open ? ' on' : ''}">${WL.ic('comment')}${n ? plural(n, 'comentariu', 'comentarii') : 'Comentează'}</button>
+      <div class="cmt-body${open ? '' : ' hidden'}">${items}${formHtml}</div>`;
     box.onclick = async (e) => {
       if (e.target.closest('.cmt-toggle')) {
         box.querySelector('.cmt-toggle').classList.toggle('on');
@@ -943,7 +948,9 @@
             ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ți-a trimis o cerere de prietenie.
                <div class="follow-btns"><button class="btn small primary" data-act="add">${WL.ic('check')}Acceptă</button><button class="btn small ghost" data-act="decline">Refuză</button></div>`
             : n.type === 'comment'
-              ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> a comentat la recenzia ta pentru <a href="${BASE}${esc(notifState.me.profile.username)}/show/${slug(n.c.title) || 'titlu'}-${esc(n.c.titleId)}"><b class="notranslate">${esc(n.c.title)}</b></a>:
+              ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ${n.c.titleId
+                ? `a comentat la recenzia ta pentru <a href="${BASE}${esc(notifState.me.profile.username)}/show/${slug(n.c.title) || 'titlu'}-${esc(n.c.titleId)}"><b class="notranslate">${esc(n.c.title)}</b></a>`
+                : `ți-a scris pe <a href="${BASE}${esc(notifState.me.profile.username)}"><b>profil</b></a>`}:
                  <div class="bell-quote notranslate">„${esc(n.c.text.length > 120 ? n.c.text.slice(0, 120) + '…' : n.c.text)}”</div>`
               : `Tu și <a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> sunteți acum prieteni.`}
         </div>
@@ -1889,6 +1896,50 @@
 
     starInput(document.getElementById('sp-rating'), owned ? t.rating : 0, (v) => save({ rating: v }, 'Nota salvată'));
 
+    // recenzia: buton la vedere langa titlu, cu o fereastra doar pentru nota si text
+    const hasReview = owned && Boolean(t.review && t.review.trim());
+    const titleActions = app.querySelector('.title-actions');
+    if (titleActions) titleActions.insertAdjacentHTML('afterbegin', `<button type="button" class="btn small primary" id="sp-review">${WL.ic('pen')}${hasReview ? 'Editează recenzia' : 'Scrie o recenzie'}</button>`);
+    const openReview = () => {
+      let rating = (state.owned && state.t.rating) || 0;
+      const m = openModal(`<div class="modal-head">
+          <div style="width:56px;flex:none">${poster(t, { showMeta: false })}</div>
+          <div style="min-width:0"><h2 class="notranslate">${esc(t.title)}</h2><div class="muted" style="font-size:14px">${hasReview ? 'Editează recenzia' : 'Scrie o recenzie'}</div></div>
+        </div>
+        <div class="modal-body">
+          <div class="field"><span class="lbl">Nota ta</span><div id="rv-rating"></div></div>
+          <div class="field"><label for="rv-text">Recenzia</label>
+            <textarea class="textarea" id="rv-text" style="min-height:170px" maxlength="20000" placeholder="Ce părere ai despre ${esc(t.title)}?">${esc((state.owned && state.t.review) || '')}</textarea>
+            <label class="check"><input type="checkbox" id="rv-spoiler" ${state.owned && state.t.spoiler ? 'checked' : ''}> Conține spoilere</label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          ${hasReview ? `<button class="btn danger" id="rv-del">${WL.ic('trash')}Șterge recenzia</button>` : ''}
+          <span class="grow"></span>
+          <button class="btn ghost" id="rv-cancel">Anulează</button>
+          <button class="btn primary" id="rv-save">Publică recenzia</button>
+        </div>`);
+      m.el.classList.add('modal-review');
+      const $ = (s) => m.el.querySelector(s);
+      starInput($('#rv-rating'), rating, (v) => { rating = v; });
+      $('#rv-text').focus();
+      $('#rv-cancel').addEventListener('click', m.close);
+      $('#rv-save').addEventListener('click', () => {
+        const text = $('#rv-text').value.trim();
+        if (!text) { toast('Scrie ceva în recenzie.', true); return; }
+        m.close();
+        // un titlu nou primit cu recenzie intra in biblioteca ca „Văzut”
+        save({ rating, review: text, spoiler: $('#rv-spoiler').checked, ...(state.owned ? {} : { status: 'watched' }) }, 'Recenzia a fost publicată');
+      });
+      if ($('#rv-del')) $('#rv-del').addEventListener('click', () => {
+        if (!confirm('Ștergi recenzia?')) return;
+        m.close();
+        save({ review: '', spoiler: false }, 'Recenzia a fost ștearsă');
+      });
+    };
+    const reviewBtn = document.getElementById('sp-review');
+    if (reviewBtn) reviewBtn.addEventListener('click', openReview);
+
     app.querySelector('.act-card').addEventListener('click', async (e) => {
       const b = e.target.closest('[data-act]');
       if (!b) return;
@@ -2439,7 +2490,15 @@
     renderAuthSlot();
     setupSearch();
     document.getElementById('bn-search').addEventListener('click', (e) => { e.stopPropagation(); openMobileSearch(); });
-    b.onAuth(() => { renderAuthSlot(); loadedUser = null; userCache.clear(); render(); });
+    // Firebase anunta si contul cu care deja am pornit: redesenam doar daca s-a schimbat contul
+    // (altfel pagina se desena de doua ori si un click dat imediat se pierdea)
+    let authUid = b.user ? b.user.uid : null;
+    b.onAuth((u) => {
+      const uid = u ? u.uid : null;
+      if (uid === authUid) return;
+      authUid = uid;
+      renderAuthSlot(); loadedUser = null; userCache.clear(); render();
+    });
     render();
   });
 })();
