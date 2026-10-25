@@ -35,6 +35,9 @@
   const reviewKey = (kind, id) => `${DB.uid}_${kind}_${id}`;
   const commentsSlot = (key, t) => (key && DB.uid ? `<div class="cmts" data-target="${esc(key)}" data-title-id="${esc(t.id)}" data-title="${esc(t.title)}"></div>` : '');
 
+  // sezoanele in ordine, cu „Speciale” (sezonul 0 de pe TMDB) la final
+  const seasonOrder = (list) => [...(list || [])].sort((a, b) => (a.number === 0) - (b.number === 0) || a.number - b.number);
+
   function allReviews() {
     const out = [];
     for (const t of DB.titles) {
@@ -623,7 +626,7 @@
       : '';
 
     const seasons = isTv && (t.seasons || []).length
-      ? section(`Sezoane (${t.seasons.filter((s) => s.number > 0).length})`, `<div class="card" style="padding:0">${t.seasons.map((s) => {
+      ? section(`Sezoane (${t.seasons.filter((s) => s.number > 0).length})`, `<div class="card" style="padding:0">${seasonOrder(t.seasons).map((s) => {
           const r = (t.seasonRatings || {})[String(s.number)];
           return `<div class="season-row">
             <div class="thumb">${s.poster ? `<img src="${esc(s.poster)}" alt="" loading="lazy">` : ''}</div>
@@ -987,7 +990,7 @@
   // ---------- episoadele pe pagina serialului: nota si recenzie pe fiecare episod ----------
 
   function seasonsSection(t) {
-    const seasons = (t.seasons || []).filter((s) => s.episodes);
+    const seasons = seasonOrder(t.seasons).filter((s) => s.episodes);
     if (t.type !== 'tv' || !seasons.length) return '';
     return section(`Sezoane (${seasons.filter((s) => s.number > 0).length})`, `<div class="ep-seasons card" style="padding:0">${seasons.map((s) => {
       const r = (t.seasonRatings || {})[String(s.number)];
