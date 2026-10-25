@@ -39,13 +39,13 @@
     const out = [];
     for (const t of DB.titles) {
       if (t.review && t.review.trim()) {
-        out.push({ t, text: t.review, rating: t.rating, liked: t.liked, spoiler: t.spoiler, date: (t.updatedAt || t.addedAt || '').slice(0, 10), scope: '', key: reviewKey('t', t.id) });
+        out.push({ t, text: t.review, rating: t.rating, liked: t.liked, spoiler: t.spoiler, date: (t.updatedAt || t.addedAt || '').slice(0, 10), scope: '', key: reviewKey('t', t.id), image: t.reviewImage || '' });
       }
     }
     for (const e of DB.diary) {
       const t = byId.get(e.titleId);
       if (t && e.review && e.review.trim()) {
-        out.push({ t, text: e.review, rating: e.rating, liked: e.liked, spoiler: e.spoiler, date: e.date, scope: scopeLabel(e, t), rewatch: e.rewatch, key: reviewKey('d', e.id) });
+        out.push({ t, text: e.review, rating: e.rating, liked: e.liked, spoiler: e.spoiler, date: e.date, scope: scopeLabel(e, t), rewatch: e.rewatch, key: reviewKey('d', e.id), image: e.image || '', diaryId: e.id, season: e.season });
       }
     }
     return out.sort((a, b) => b.date.localeCompare(a.date));
@@ -152,8 +152,9 @@
           ${r.spoiler ? '<span class="badge">spoiler — click ca să vezi</span>' : ''}
           <span>${fmtDate(r.date)}</span>
         </div>
-        <div class="text">${esc(r.text)}</div>
+        <div class="text">${esc(r.text)}${reviewImage(r.image)}</div>
         ${r.key && r.key.includes('_t_') ? `<div class="mrv-actions">${likeBtn(`${DB.uid}_${t.id}`, [], 0, true)}</div>` : ''}
+        ${r.diaryId && r.season != null ? `<div class="mrv-actions">${likeBtn(`${DB.uid}_d-${r.diaryId}`, [], 0, true)}</div>` : ''}
         ${commentsSlot(r.key, t)}
       </div>
     </article>`;
@@ -607,7 +608,7 @@
       ? `<div class="card"><h3>Apare în liste</h3>${inLists.map((l) => `<a href="${R('/list/' + l.id)}" style="display:block;padding:4px 0;color:var(--accent-text)">${esc(l.name)}</a>`).join('')}</div>` : '';
 
     const review = t.review
-      ? section('Recenzia mea', reviewItem({ t, text: t.review, rating: t.rating, liked: t.liked, spoiler: t.spoiler, date: (t.updatedAt || '').slice(0, 10), scope: '', key: reviewKey('t', t.id) }, false))
+      ? section('Recenzia mea', reviewItem({ t, text: t.review, rating: t.rating, liked: t.liked, spoiler: t.spoiler, date: (t.updatedAt || '').slice(0, 10), scope: '', key: reviewKey('t', t.id), image: t.reviewImage || '' }, false))
       : '';
 
     const diary = entries.length
@@ -615,7 +616,7 @@
           const d = parseDate(e.date);
           return `<div class="diary-row" style="grid-template-columns:54px minmax(0,1fr) auto">
             <div class="diary-day"><b>${d.getDate()}</b><span>${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}</span></div>
-            <div style="min-width:0"><div class="diary-title">${esc(scopeLabel(e, t))}${e.rewatch ? ` <span class="badge">${WL.ic('refresh')} revăzut</span>` : ''}</div>${e.review ? `<div class="diary-sub ${e.spoiler ? 'spoiler' : ''}"><div class="text">${esc(e.review)}</div></div>${commentsSlot(reviewKey('d', e.id), t)}` : ''}</div>
+            <div style="min-width:0"><div class="diary-title">${esc(scopeLabel(e, t))}${e.rewatch ? ` <span class="badge">${WL.ic('refresh')} revăzut</span>` : ''}</div>${e.review ? `<div class="diary-sub ${e.spoiler ? 'spoiler' : ''}"><div class="text">${esc(e.review)}${reviewImage(e.image)}</div></div>${commentsSlot(reviewKey('d', e.id), t)}` : ''}</div>
             <div class="diary-flags">${stars(e.rating, 'accent')}${heart(e.liked)}</div>
           </div>`;
         }).join('')}</div>`)
@@ -695,11 +696,11 @@
   }
 
   // poza aleasa se micsoreaza in browser (max 1280px, JPEG), ca sa incapa in comentariu
-  async function shrinkImage(file) {
+  async function shrinkImage(file, max = 1280, limit = 600000) {
     const url = URL.createObjectURL(file);
     try {
       const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Fișierul nu e o poză.')); i.src = url; });
-      const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const k = Math.min(1, max / Math.max(img.width, img.height));
       const c = document.createElement('canvas');
       c.width = Math.round(img.width * k);
       c.height = Math.round(img.height * k);
@@ -709,7 +710,7 @@
       g.drawImage(img, 0, 0, c.width, c.height);
       let q = 0.82;
       let out = c.toDataURL('image/jpeg', q);
-      while (out.length > 600000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      while (out.length > limit && q > 0.3) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
       return out;
     } finally { URL.revokeObjectURL(url); }
   }
@@ -856,30 +857,105 @@
     b.disabled = false;
   }, true);
 
+  // ---------- fereastra de recenzie (serial sau episod): nota, text, poza, spoiler ----------
+
+  function reviewModal({ t, subtitle, placeholder, rating = 0, text = '', spoiler = false, image = '', date = '', requireText = true, canDelete = false, saveLabel = 'Publică recenzia', onSave, onDelete }) {
+    let r = rating;
+    let img = image;
+    const m = openModal(`<div class="modal-head">
+        <div style="width:56px;flex:none">${poster(t, { showMeta: false })}</div>
+        <div style="min-width:0"><h2 class="notranslate">${esc(t.title)}</h2><div class="muted" style="font-size:14px">${subtitle}</div></div>
+      </div>
+      <div class="modal-body">
+        <div class="row-fields">
+          <div class="field"><span class="lbl">Nota ta</span><div id="rv-rating"></div></div>
+          ${date ? `<div class="field"><label for="rv-date">Văzut pe</label><input class="input" type="date" id="rv-date" value="${esc(date)}"></div>` : ''}
+        </div>
+        <div class="field"><label for="rv-text">${requireText ? 'Recenzia' : 'Recenzie (opțional)'}</label>
+          <textarea class="textarea" id="rv-text" style="min-height:150px" maxlength="20000" placeholder="${esc(placeholder)}">${esc(text)}</textarea>
+        </div>
+        <div class="rv-media">
+          <div class="cmt-preview${img ? '' : ' hidden'}" id="rv-preview"><img src="${esc(img)}" alt=""><button type="button" class="cmt-unpick" id="rv-unpick" aria-label="Scoate poza">${WL.ic('x')}</button></div>
+          <div class="cmt-tools">
+            <label class="cmt-tool" title="Adaugă o poză">${WL.ic('image')}<span>Poză</span><input type="file" accept="image/*" hidden id="rv-file"></label>
+            <label class="check"><input type="checkbox" id="rv-spoiler" ${spoiler ? 'checked' : ''}> Conține spoilere</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        ${canDelete ? `<button class="btn danger" id="rv-del">${WL.ic('trash')}Șterge recenzia</button>` : ''}
+        <span class="grow"></span>
+        <button class="btn ghost" id="rv-cancel">Anulează</button>
+        <button class="btn primary" id="rv-save">${saveLabel}</button>
+      </div>`);
+    m.el.classList.add('modal-review');
+    const $ = (s) => m.el.querySelector(s);
+    starInput($('#rv-rating'), r, (v) => { r = v; });
+    $('#rv-text').focus();
+    $('#rv-cancel').addEventListener('click', m.close);
+    $('#rv-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        img = await shrinkImage(file, 1024, 300000); // incape langa recenzie in acelasi document
+        $('#rv-preview img').src = img;
+        $('#rv-preview').classList.remove('hidden');
+      } catch (err) { toast(err.message, true); }
+    });
+    $('#rv-unpick').addEventListener('click', () => { img = ''; $('#rv-preview').classList.add('hidden'); $('#rv-file').value = ''; });
+    $('#rv-save').addEventListener('click', () => {
+      const body = $('#rv-text').value.trim();
+      if (requireText && !body) { toast('Scrie ceva în recenzie.', true); return; }
+      m.close();
+      onSave({ rating: r, text: body, spoiler: $('#rv-spoiler').checked, image: img, date: $('#rv-date') ? $('#rv-date').value : '' });
+    });
+    if ($('#rv-del')) $('#rv-del').addEventListener('click', () => {
+      if (!confirm('Ștergi recenzia?')) return;
+      m.close();
+      onDelete();
+    });
+  }
+
+  // pozele din recenzii se maresc peste pagina (dar nu cat timp sunt ascunse ca spoiler)
+  const reviewImage = (src) => (src ? `<button type="button" class="rv-img" data-lightbox aria-label="Mărește poza"><img src="${esc(src)}" alt="" loading="lazy"></button>` : '');
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-lightbox]');
+    if (!b || b.closest('.spoiler:not(.revealed)')) return;
+    ev.preventDefault();
+    const m = openModal(`<img class="cmt-full" src="${esc(b.querySelector('img').src)}" alt="">`);
+    m.el.classList.add('modal-image');
+    m.el.addEventListener('click', m.close);
+  }, true);
+
   // ---------- recenziile membrilor pe pagina serialului ----------
 
-  function memberReview(r, people) {
+  const epLabel = (r) => (r.season != null ? (r.episode != null ? `S${r.season} · E${r.episode}` : `Sezonul ${r.season}`) : '');
+
+  function memberReview(r, people, withEpisode = false) {
     const p = people.get(r.uid);
     const mine = backend.user && r.uid === backend.user.uid;
     const name = r.name || r.username || 'Membru';
     const av = p && p.avatar ? `<img class="mrv-av" src="${esc(p.avatar)}" alt="" loading="lazy">`
       : `<span class="mrv-av" style="color:${esc((p && p.accent) || 'var(--accent)')}">${esc(name.charAt(0).toUpperCase())}</span>`;
     const href = r.username ? BASE + r.username : '';
+    // comentariile la o recenzie de episod sunt ale intrarii din jurnal (d), la serial ale titlului (t)
+    const target = r.diaryId ? `${r.uid}_d_${r.diaryId}` : `${r.uid}_t_${r.titleId}`;
     return `<article class="mrv${r.spoiler ? ' spoiler' : ''}${mine ? ' is-mine' : ''}">
       ${href ? `<a href="${esc(href)}" aria-label="${esc(name)}">${av}</a>` : av}
       <div class="mrv-main">
         <div class="mrv-head">${href ? `<a class="mrv-name" href="${esc(href)}">${esc(name)}</a>` : `<span class="mrv-name">${esc(name)}</span>`}
-          ${mine ? '<span class="badge accent">tu</span>' : ''}${stars(r.rating, 'accent')}${heart(r.liked)}
+          ${mine ? '<span class="badge accent">tu</span>' : ''}${withEpisode && epLabel(r) ? `<span class="badge">${esc(epLabel(r))}</span>` : ''}${stars(r.rating, 'accent')}${heart(r.liked)}
           <span class="muted">${fmtDate(String(r.updatedAt).slice(0, 10))}</span>
           ${r.spoiler ? '<span class="badge">spoiler — click ca să vezi</span>' : ''}</div>
-        <div class="text">${esc(r.text)}</div>
+        <div class="text">${esc(r.text)}${reviewImage(r.image)}</div>
         <div class="mrv-actions">${likeBtn(r.id, r.likes || [], r.likeCount || 0)}</div>
-        <div class="cmts" data-target="${esc(r.uid + '_t_' + r.titleId)}" data-owner="${esc(r.uid)}" data-title-id="${esc(r.titleId)}" data-title="${esc(r.title)}"></div>
+        <div class="cmts" data-target="${esc(target)}" data-owner="${esc(r.uid)}" data-title-id="${esc(r.titleId)}" data-title="${esc(r.title)}"></div>
       </div>
     </article>`;
   }
 
-  async function fillTitleReviews(t) {
+  async function fillTitleReviews(state) {
+    const t = state.t;
     const box = document.getElementById('title-reviews');
     if (!box || !t.tmdbId) return;
     let list;
@@ -887,20 +963,169 @@
     try { [list, members] = await Promise.all([backend.reviewsFor(t.type, t.tmdbId), backend.listMembers().catch(() => [])]); } catch { return; }
     if (!box.isConnected) return;
     const myUid = backend.user && backend.user.uid;
+    const people = new Map(members.map((p) => [p.uid, p]));
+    // recenziile pe episod merg la episoadele lor (lista de sezoane de mai jos)
+    state.people = people;
+    state.epReviews = list.filter((r) => r.season != null);
+    refreshEpisodeCounts(state);
+    list = list.filter((r) => r.season == null);
     // recenzia mea abia salvata poate ajunge in lista comuna o clipa mai tarziu: o pun eu
     if (t.id && t.review && t.review.trim() && myUid && !list.some((r) => r.uid === myUid)) {
       const prof = (await backend.myProfile().catch(() => null)) || {};
-      list.push({ id: `${myUid}_${t.id}`, uid: myUid, username: prof.username || '', name: prof.name || '', titleId: t.id, title: t.title, rating: t.rating, liked: t.liked, spoiler: t.spoiler, text: t.review, updatedAt: t.updatedAt || '', likes: [], likeCount: 0 });
+      list.push({ id: `${myUid}_${t.id}`, uid: myUid, username: prof.username || '', name: prof.name || '', titleId: t.id, title: t.title, rating: t.rating, liked: t.liked, spoiler: t.spoiler, text: t.review, image: t.reviewImage || '', updatedAt: t.updatedAt || '', likes: [], likeCount: 0 });
     }
     if (!list.length) { box.innerHTML = ''; return; }
     list.sort((a, b) => (b.uid === myUid) - (a.uid === myUid) || (b.likeCount || 0) - (a.likeCount || 0) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    const people = new Map(members.map((p) => [p.uid, p]));
     const rated = list.filter((r) => r.rating);
     const avg = rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : 0;
     box.innerHTML = section(`Recenzii (${list.length})`, `
       ${avg ? `<div class="mrv-summary">${stars(Math.round(avg * 2) / 2, 'accent lg')}<b>${avg.toFixed(1)}</b><span class="muted">nota medie din ${plural(rated.length, 'recenzie', 'recenzii')} pe EDITSEL</span></div>` : ''}
       <div class="mrv-list">${list.map((r) => memberReview(r, people)).join('')}</div>`);
     fillComments(box);
+  }
+
+  // ---------- episoadele pe pagina serialului: nota si recenzie pe fiecare episod ----------
+
+  function seasonsSection(t) {
+    const seasons = (t.seasons || []).filter((s) => s.episodes);
+    if (t.type !== 'tv' || !seasons.length) return '';
+    return section(`Sezoane (${seasons.filter((s) => s.number > 0).length})`, `<div class="ep-seasons card" style="padding:0">${seasons.map((s) => {
+      const r = (t.seasonRatings || {})[String(s.number)];
+      return `<div class="ep-season" data-season="${s.number}">
+        <button type="button" class="season-row ep-toggle" aria-expanded="false">
+          <div class="thumb">${s.poster ? `<img src="${esc(s.poster)}" alt="" loading="lazy">` : ''}</div>
+          <div><b>${esc(s.name || 'Sezonul ' + s.number)}</b><div class="diary-sub">${s.airDate ? fmtDate(s.airDate) + ' · ' : ''}${plural(s.episodes, 'episod', 'episoade')}<span class="ep-count"></span></div></div>
+          <div class="ep-right">${r ? stars(r, 'accent') : ''}<span class="ep-chev">${WL.ic('down')}</span></div>
+        </button>
+        <div class="ep-list hidden"></div>
+      </div>`;
+    }).join('')}</div>`);
+  }
+
+  // cate recenzii are fiecare sezon (apare langa numarul de episoade)
+  function refreshEpisodeCounts(state) {
+    for (const box of app.querySelectorAll('.ep-season')) {
+      const n = (state.epReviews || []).filter((r) => r.season === Number(box.dataset.season)).length;
+      const c = box.querySelector('.ep-count');
+      if (c) c.textContent = n ? ' · ' + plural(n, 'recenzie', 'recenzii') : '';
+      if (!box.querySelector('.ep-list').classList.contains('hidden')) drawEpisodes(state, box);
+    }
+  }
+
+  function drawEpisodes(state, box) {
+    const season = Number(box.dataset.season);
+    const eps = state.seasonData && state.seasonData[season];
+    const list = box.querySelector('.ep-list');
+    if (!eps) { list.innerHTML = '<div class="ep-loading muted">Se încarcă episoadele…</div>'; return; }
+    if (!eps.length) { list.innerHTML = '<div class="ep-loading muted">Nu am găsit episoadele sezonului ăsta.</div>'; return; }
+    const today = localDay();
+    const mine = (n) => (state.diary || []).filter((e) => e.season === season && e.episode === n).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    // recenzii date sezonului intreg (din jurnal, fara episod)
+    const whole = (state.epReviews || []).filter((r) => r.season === season && r.episode == null);
+    list.innerHTML = (whole.length ? `<div class="ep-whole"><button type="button" class="ep-revs" data-ep-revs="all">${WL.ic('comment')}${plural(whole.length, 'recenzie', 'recenzii')} la tot sezonul</button></div>
+      <div class="ep-reviews hidden" data-ep-box="all"></div>` : '') + eps.map((ep) => {
+      const my = mine(ep.number);
+      const revs = (state.epReviews || []).filter((r) => r.season === season && r.episode === ep.number);
+      const rated = revs.filter((r) => r.rating);
+      const avg = rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : 0;
+      const future = ep.airDate && ep.airDate > today;
+      return `<div class="ep-row${my ? ' is-seen' : ''}" data-ep="${ep.number}">
+          <div class="ep-still">${ep.still ? `<img src="${esc(ep.still)}" alt="" loading="lazy">` : `<span>E${ep.number}</span>`}</div>
+          <div class="ep-info">
+            <b>E${ep.number}${ep.name && !/^(episodul|episode) \d+$/i.test(ep.name) ? ` · <span class="notranslate">${esc(ep.name)}</span>` : ''}</b>
+            <small class="muted">${ep.airDate ? fmtDate(ep.airDate) : 'Fără dată'}${ep.runtime ? ` · ${ep.runtime} min` : ''}</small>
+            <div class="ep-meta">
+              ${avg ? `<span class="ep-avg" title="Nota medie pe EDITSEL">${WL.ic('star')}${avg.toFixed(1)}</span>` : ''}
+              ${my ? `<span class="ep-mine">${WL.ic('check')}Văzut${my.rating ? ' ' + stars(my.rating, 'accent') : ''}${my.review ? ' · cu recenzie' : ''}</span>` : ''}
+              ${revs.length ? `<button type="button" class="ep-revs" data-ep-revs="${ep.number}">${WL.ic('comment')}${plural(revs.length, 'recenzie', 'recenzii')}</button>` : ''}
+            </div>
+          </div>
+          ${future ? '<span class="badge">Nu a apărut</span>' : `<button type="button" class="btn small${my ? '' : ' primary'}" data-ep-rate="${ep.number}">${WL.ic(my ? 'pen' : 'star')}${my ? 'Editează' : 'Notează'}</button>`}
+        </div>
+        <div class="ep-reviews hidden" data-ep-box="${ep.number}"></div>`;
+    }).join('');
+  }
+
+  function setupEpisodes(state) {
+    const t = state.t;
+    const wrap = app.querySelector('.ep-seasons');
+    if (!wrap || !t.tmdbId) return;
+    state.seasonData = state.seasonData || {};
+    wrap.addEventListener('click', async (ev) => {
+      const toggle = ev.target.closest('.ep-toggle');
+      if (toggle) {
+        const box = toggle.closest('.ep-season');
+        const list = box.querySelector('.ep-list');
+        const open = list.classList.toggle('hidden') === false;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (!open) return;
+        const season = Number(box.dataset.season);
+        drawEpisodes(state, box);
+        if (!state.seasonData[season]) {
+          try { state.seasonData[season] = await api(`/api/tmdb/season?id=${t.tmdbId}&season=${season}`); } catch { state.seasonData[season] = []; }
+          if (box.isConnected) drawEpisodes(state, box);
+        }
+        return;
+      }
+      const revBtn = ev.target.closest('[data-ep-revs]');
+      if (revBtn) {
+        const box = revBtn.closest('.ep-season');
+        const key = revBtn.dataset.epRevs;
+        const n = key === 'all' ? null : Number(key);
+        const panel = box.querySelector(`[data-ep-box="${key}"]`);
+        if (!panel.classList.toggle('hidden')) {
+          const revs = (state.epReviews || []).filter((r) => r.season === Number(box.dataset.season) && (r.episode ?? null) === n)
+            .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+          panel.innerHTML = `<div class="mrv-list">${revs.map((r) => memberReview(r, state.people || new Map())).join('')}</div>`;
+          fillComments(panel);
+        }
+        return;
+      }
+      const rateBtn = ev.target.closest('[data-ep-rate]');
+      if (rateBtn) openEpisodeReview(state, Number(rateBtn.closest('.ep-season').dataset.season), Number(rateBtn.dataset.epRate));
+    });
+  }
+
+  function openEpisodeReview(state, season, n) {
+    const t = state.t;
+    const ep = ((state.seasonData || {})[season] || []).find((x) => x.number === n) || { number: n, name: '' };
+    const my = (state.diary || []).filter((e) => e.season === season && e.episode === n).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    reviewModal({
+      t, subtitle: `S${season} · E${n}${ep.name && !/^(episodul|episode) \d+$/i.test(ep.name) ? ' · ' + esc(ep.name) : ''}`,
+      placeholder: 'Ce părere ai despre episodul ăsta?', requireText: false, saveLabel: my ? 'Salvează' : 'Marchează văzut',
+      rating: my ? my.rating : 0, text: my ? my.review : '', spoiler: my ? my.spoiler : false, image: my ? my.image || '' : '',
+      date: my ? my.date : localDay(), canDelete: Boolean(my),
+      onSave: async (d) => {
+        try {
+          // episodul se noteaza in jurnal; serialul intra in biblioteca daca nu era
+          if (!state.owned) {
+            state.t = await api('/api/titles', { method: 'POST', body: { ...t, status: 'watching' } });
+            state.owned = true;
+          }
+          const body = { titleId: state.t.id, season, episode: n, rating: d.rating, review: d.text, spoiler: d.spoiler, image: d.image, date: d.date };
+          const saved = my ? await api(`/api/diary/${my.id}`, { method: 'PUT', body }) : await api('/api/diary', { method: 'POST', body });
+          state.diary = [...(state.diary || []).filter((e) => e.id !== saved.id), saved];
+          loadedUser = null;
+          toast(d.text ? 'Recenzia episodului a fost publicată' : `S${season} · E${n} marcat ca văzut`);
+          refreshAfterEpisode(state);
+        } catch (err) { toast(err.message, true); }
+      },
+      onDelete: async () => {
+        try {
+          await api(`/api/diary/${my.id}`, { method: 'DELETE' });
+          state.diary = (state.diary || []).filter((e) => e.id !== my.id);
+          loadedUser = null;
+          toast('Episodul a fost scos din jurnal');
+          refreshAfterEpisode(state);
+        } catch (err) { toast(err.message, true); }
+      },
+    });
+  }
+
+  // dupa o nota pe episod: lista sezonului se redeseneaza, iar recenziile comune se recitesc
+  function refreshAfterEpisode(state) {
+    for (const box of app.querySelectorAll('.ep-season')) if (!box.querySelector('.ep-list').classList.contains('hidden')) drawEpisodes(state, box);
+    setTimeout(() => fillTitleReviews(state), 600);
   }
 
   // ---------- Descopera: recenzii populare ----------
@@ -920,7 +1145,7 @@
       return `<a class="prv-card" href="${esc(showHref(r.type, r.tmdbId, r.title))}">
         <div class="prv-poster">${r.poster ? `<img src="${esc(r.poster)}" alt="" loading="lazy">` : ''}</div>
         <div class="prv-body">
-          <b class="notranslate">${esc(r.title)}</b>
+          <b><span class="notranslate">${esc(r.title)}</span>${epLabel(r) ? ` <small class="prv-ep">${esc(epLabel(r))}</small>` : ''}</b>
           <div class="prv-by">${p && p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<span style="color:${esc((p && p.accent) || 'var(--accent)')}">${esc(name.charAt(0).toUpperCase())}</span>`}<em>${esc(name)}</em>${stars(r.rating, 'accent')}</div>
           <p class="prv-text${r.spoiler ? ' is-spoiler' : ''}">${r.spoiler ? 'Conține spoilere — deschide ca să citești.' : esc(r.text.length > 180 ? r.text.slice(0, 180) + '…' : r.text)}</p>
           <span class="prv-likes">${WL.ic('heart')}${r.likeCount || 0}</span>
@@ -2073,7 +2298,7 @@
       return;
     }
     if (token !== renderToken) return;
-    const state = { t, owned: Boolean(t.id) };
+    const state = { t, owned: Boolean(t.id), diary: t.id ? me.diary.filter((e) => e.titleId === t.id) : [] };
     document.title = `${t.title} · EDITSEL`;
     drawShowPage(state);
   }
@@ -2107,16 +2332,7 @@
         </div>
         ${total ? `<div class="progress"><div style="width:${Math.min(100, (eps / total) * 100)}%"></div></div>` : ''}
       </div>` : '';
-    const seasons = isTv && (t.seasons || []).length
-      ? section(`Sezoane (${t.seasons.filter((s) => s.number > 0).length})`, `<div class="card" style="padding:0">${t.seasons.map((s) => {
-          const r = (t.seasonRatings || {})[String(s.number)];
-          return `<div class="season-row">
-            <div class="thumb">${s.poster ? `<img src="${esc(s.poster)}" alt="" loading="lazy">` : ''}</div>
-            <div><b>${esc(s.name || 'Sezonul ' + s.number)}</b><div class="diary-sub">${s.airDate ? fmtDate(s.airDate) + ' · ' : ''}${plural(s.episodes, 'episod', 'episoade')}</div></div>
-            <div>${r ? stars(r, 'accent') : ''}</div>
-          </div>`;
-        }).join('')}</div>`)
-      : '';
+    const seasons = seasonsSection(t);
     const cast = (t.cast || []).length
       ? section('Distribuție', `<div class="cast">${t.cast.map((c) => `<div><div class="face">${c.photo ? `<img src="${esc(c.photo)}" alt="" loading="lazy">` : ''}</div><b>${esc(c.name)}</b><span>${esc(c.character)}</span></div>`).join('')}</div>`)
       : '';
@@ -2145,7 +2361,7 @@
           <aside class="sidebar">${actions}${rating}${epsCard}${creators}</aside>
         </div>
       </div>`;
-    if (profilePage) { fillComments(); fillReviewLikes(); } else fillTitleReviews(state.t);
+    if (profilePage) { fillComments(); fillReviewLikes(); } else { fillTitleReviews(state); setupEpisodes(state); }
 
     // salveaza o schimbare: adauga titlul in biblioteca daca nu e deja, altfel il actualizeaza
     const save = async (patch, msg) => {
@@ -2173,43 +2389,14 @@
     const hasReview = owned && Boolean(t.review && t.review.trim());
     const titleActions = app.querySelector('.title-actions');
     if (titleActions) titleActions.insertAdjacentHTML('afterbegin', `<button type="button" class="btn small primary" id="sp-review">${WL.ic('pen')}${hasReview ? 'Editează recenzia' : 'Scrie o recenzie'}</button>`);
-    const openReview = () => {
-      let rating = (state.owned && state.t.rating) || 0;
-      const m = openModal(`<div class="modal-head">
-          <div style="width:56px;flex:none">${poster(t, { showMeta: false })}</div>
-          <div style="min-width:0"><h2 class="notranslate">${esc(t.title)}</h2><div class="muted" style="font-size:14px">${hasReview ? 'Editează recenzia' : 'Scrie o recenzie'}</div></div>
-        </div>
-        <div class="modal-body">
-          <div class="field"><span class="lbl">Nota ta</span><div id="rv-rating"></div></div>
-          <div class="field"><label for="rv-text">Recenzia</label>
-            <textarea class="textarea" id="rv-text" style="min-height:170px" maxlength="20000" placeholder="Ce părere ai despre ${esc(t.title)}?">${esc((state.owned && state.t.review) || '')}</textarea>
-            <label class="check"><input type="checkbox" id="rv-spoiler" ${state.owned && state.t.spoiler ? 'checked' : ''}> Conține spoilere</label>
-          </div>
-        </div>
-        <div class="modal-foot">
-          ${hasReview ? `<button class="btn danger" id="rv-del">${WL.ic('trash')}Șterge recenzia</button>` : ''}
-          <span class="grow"></span>
-          <button class="btn ghost" id="rv-cancel">Anulează</button>
-          <button class="btn primary" id="rv-save">Publică recenzia</button>
-        </div>`);
-      m.el.classList.add('modal-review');
-      const $ = (s) => m.el.querySelector(s);
-      starInput($('#rv-rating'), rating, (v) => { rating = v; });
-      $('#rv-text').focus();
-      $('#rv-cancel').addEventListener('click', m.close);
-      $('#rv-save').addEventListener('click', () => {
-        const text = $('#rv-text').value.trim();
-        if (!text) { toast('Scrie ceva în recenzie.', true); return; }
-        m.close();
-        // un titlu nou primit cu recenzie intra in biblioteca ca „Văzut”
-        save({ rating, review: text, spoiler: $('#rv-spoiler').checked, ...(state.owned ? {} : { status: 'watched' }) }, 'Recenzia a fost publicată');
-      });
-      if ($('#rv-del')) $('#rv-del').addEventListener('click', () => {
-        if (!confirm('Ștergi recenzia?')) return;
-        m.close();
-        save({ review: '', spoiler: false }, 'Recenzia a fost ștearsă');
-      });
-    };
+    const openReview = () => reviewModal({
+      t, subtitle: hasReview ? 'Editează recenzia' : 'Scrie o recenzie', placeholder: `Ce părere ai despre ${t.title}?`,
+      rating: (state.owned && state.t.rating) || 0, text: (state.owned && state.t.review) || '', spoiler: state.owned && state.t.spoiler,
+      image: (state.owned && state.t.reviewImage) || '', canDelete: hasReview,
+      // un titlu nou primit cu recenzie intra in biblioteca ca „Văzut”
+      onSave: (d) => save({ rating: d.rating, review: d.text, spoiler: d.spoiler, reviewImage: d.image, ...(state.owned ? {} : { status: 'watched' }) }, 'Recenzia a fost publicată'),
+      onDelete: () => save({ review: '', spoiler: false, reviewImage: '' }, 'Recenzia a fost ștearsă'),
+    });
     const reviewBtn = document.getElementById('sp-review');
     if (reviewBtn) reviewBtn.addEventListener('click', openReview);
 

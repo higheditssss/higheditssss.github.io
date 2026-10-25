@@ -1216,3 +1216,50 @@ a.mrv-name:hover { color: var(--accent-text); }
 .wr-hbtn:hover { filter: brightness(1.08); }
 body.logged-out .wr-hbtn { display: none; }
 @media (max-width: 640px) { .wr-hbtn { margin-left: 10px; padding: 6px 11px; font-size: 12px; } }
+
+/* ---------- poza din recenzii ---------- */
+.rv-img { display: block; margin-top: 10px; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.rv-img img { display: block; max-width: min(100%, 300px); max-height: 240px; border-radius: 12px; object-fit: cover; }
+.spoiler:not(.revealed) .rv-img { cursor: pointer; }
+.rv-media { display: flex; flex-direction: column; gap: 6px; }
+.rv-media .cmt-preview { margin: 0 0 4px; }
+.rv-media .cmt-tools { gap: 14px; padding: 0; }
+.rv-media .check { margin: 0; }
+.prv-ep { margin-left: 6px; color: var(--muted); font-size: 11px; font-weight: 600; }
+
+/* ---------- sezoane si episoade pe pagina serialului ---------- */
+.ep-season + .ep-season { border-top: 1px solid var(--border); }
+.ep-toggle { width: 100%; border: 0; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ep-season:first-child .ep-toggle { border-top: 0; }
+.ep-toggle:hover { background: var(--surface-2); }
+.ep-right { display: flex; align-items: center; gap: 10px; }
+.ep-chev { display: grid; place-items: center; color: var(--muted); transition: transform .2s; }
+.ep-chev .ico { width: 16px; height: 16px; }
+.ep-toggle[aria-expanded="true"] .ep-chev { transform: rotate(180deg); }
+.ep-list { border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 40%, var(--surface)); }
+.ep-loading { padding: 16px; font-size: 14px; }
+.ep-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 16px; }
+.ep-row + .ep-reviews + .ep-row, .ep-reviews + .ep-row { border-top: 1px solid var(--border); }
+.ep-still { width: 112px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; background: var(--surface-3); display: grid; place-items: center; color: var(--muted); font-weight: 700; font-size: 13px; }
+.ep-still img { width: 100%; height: 100%; object-fit: cover; }
+.ep-row.is-seen .ep-still { box-shadow: 0 0 0 2px var(--accent); }
+.ep-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ep-info b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-info small { font-size: 12px; }
+
+.ep-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 2px; }
+.ep-mine { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-text); font-size: 12px; font-weight: 600; }
+.ep-mine .ico { width: 13px; height: 13px; }
+.ep-revs { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--muted); font: 600 12px Inter, sans-serif; cursor: pointer; }
+.ep-revs:hover { color: var(--text); border-color: #3a3a44; }
+.ep-revs .ico { width: 12px; height: 12px; }
+.ep-reviews { padding: 4px 16px 14px; }
+@media (max-width: 640px) {
+  .ep-row { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 10px 12px; }
+  .ep-still { width: 84px; }
+  .ep-row > .btn, .ep-row > .badge { grid-column: 2; justify-self: start; }
+  .ep-reviews { padding: 4px 10px 12px; }
+}
+.ep-whole { padding: 10px 16px 0; }
+.ep-avg { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-size: 12px; font-weight: 700; }
+.ep-avg .ico { width: 12px; height: 12px; }

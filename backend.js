@@ -29,6 +29,8 @@ const str = (v, max = 5000) => (v == null ? '' : String(v).slice(0, max));
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const rating = (v) => Math.max(0, Math.min(5, Math.round(num(v) * 2) / 2));
 const clean = (o) => JSON.parse(JSON.stringify(o)); // Firestore nu accepta undefined
+// poza unei recenzii: data URL micsorat in browser (un document Firestore are maxim 1 MB)
+const cleanImage = (v) => (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(v) && v.length <= 350000 ? v : '');
 
 const PROFILE_DEFAULTS = {
   name: '', username: '', bio: '', avatar: '', banner: '', bannerFrom: '', statsBanner: '', statsBannerFrom: '',
@@ -69,6 +71,7 @@ function cleanTitle(input, existing = {}) {
   });
   pick('note', (v) => str(v, 5000));
   pick('providers', (v) => (v && typeof v === 'object' ? v : null));
+  pick('reviewImage', cleanImage);
   return t;
 }
 
@@ -84,6 +87,7 @@ function cleanDiary(input, existing = {}) {
   pick('review', (v) => str(v, 20000));
   pick('season', (v) => (v === '' || v == null ? null : num(v)));
   pick('episode', (v) => (v === '' || v == null ? null : num(v)));
+  pick('image', cleanImage);
   return e;
 }
 
@@ -399,6 +403,16 @@ export async function createBackend(config) {
     } catch { return null; }
   }
 
+  // episoadele unui sezon (pagina serialului: note si recenzii pe episod)
+  async function tmdbSeason(id, season) {
+    const l = await lang();
+    const d = await tmdb(`/tv/${encodeURIComponent(id)}/season/${Number(season)}`, { language: l });
+    return (d.episodes || []).map((e) => ({
+      number: e.episode_number, name: e.name || '', airDate: e.air_date || '', runtime: e.runtime || 0,
+      still: e.still_path ? IMG + 'w300' + e.still_path : '', overview: e.overview || '', tmdbRating: Math.round((e.vote_average || 0) * 10) / 10,
+    }));
+  }
+
   // trailerul de pe YouTube: de preferat trailerul oficial, cel mai vechi (al primului sezon / al filmului)
   async function tmdbTrailer(type, id) {
     if (type !== 'tv' && type !== 'movie') throw err('Tip invalid');
@@ -458,7 +472,7 @@ export async function createBackend(config) {
     uid: user.uid, username: profile.username || '', name: profile.name || profile.username || '',
     titleId: t.id, tmdbId: t.tmdbId, type: t.type, title: t.title, year: t.year || '', poster: /^https?:/.test(t.poster || '') ? t.poster : '',
     rating: t.rating || 0, liked: Boolean(t.liked), spoiler: Boolean(t.spoiler), text: str(t.review, 20000),
-    updatedAt: t.updatedAt || new Date().toISOString(),
+    image: t.reviewImage || '', updatedAt: t.updatedAt || new Date().toISOString(),
   });
   const wantsPublic = (t, profile) => Boolean(!profile.private && t.tmdbId && t.review && t.review.trim());
 
@@ -470,6 +484,21 @@ export async function createBackend(config) {
     } catch (e) { console.warn('Recenzia publică nu s-a putut salva:', e.message); }
   }
 
+  // recenziile pe episod (intrari din jurnal cu sezon): id = <uid>_d-<id-ul intrarii>
+  const episodeReviewId = (diaryId) => `${user.uid}_d-${diaryId}`;
+  const episodeReviewData = (e, t, profile) => clean({
+    ...reviewData(t, profile), diaryId: e.id, season: e.season, episode: e.episode,
+    rating: e.rating || 0, liked: Boolean(e.liked), spoiler: Boolean(e.spoiler), text: str(e.review, 20000),
+    image: e.image || '', updatedAt: e.updatedAt || e.createdAt || new Date().toISOString(),
+  });
+  const wantsEpisodePublic = (e, t, profile) => Boolean(t && !profile.private && t.tmdbId && e.season != null && e.review && e.review.trim());
+  async function publishEpisodeReview(e, t, profile, hadReview) {
+    try {
+      if (wantsEpisodePublic(e, t, profile)) await setDoc(doc(fs, 'reviews', episodeReviewId(e.id)), episodeReviewData(e, t, profile), { merge: true });
+      else if (hadReview) await deleteDoc(doc(fs, 'reviews', episodeReviewId(e.id)));
+    } catch (err) { console.warn('Recenzia episodului nu s-a putut salva:', err.message); }
+  }
+
   // o data pe sesiune: lista comuna se aliniaza cu recenziile din cont (cele scrise inainte, profil privat, nume schimbat)
   let reviewsSynced = false;
   async function syncReviews() {
@@ -478,13 +507,22 @@ export async function createBackend(config) {
       const d = mine;
       const s = await getDocs(query(collection(fs, 'reviews'), where('uid', '==', user.uid), limit(1000)));
       const have = new Map(s.docs.map((x) => [x.id, x.data()]));
-      const same = (a, b) => ['text', 'rating', 'spoiler', 'liked', 'name', 'username', 'title', 'poster'].every((k) => a[k] === b[k]);
+      const same = (a, b) => ['text', 'rating', 'spoiler', 'liked', 'name', 'username', 'title', 'poster', 'image'].every((k) => (a[k] || '') === (b[k] || ''));
       for (const t of d.titles) {
         const id = reviewId(t.id);
         const cur = have.get(id);
         have.delete(id);
         if (wantsPublic(t, d.profile)) { if (!cur || !same(cur, reviewData(t, d.profile))) await publishReview(t, d.profile, Boolean(cur)); }
         else if (cur) await publishReview(t, d.profile, true);
+      }
+      const titles = new Map(d.titles.map((t) => [t.id, t]));
+      for (const e of d.diary) {
+        const id = episodeReviewId(e.id);
+        const cur = have.get(id);
+        have.delete(id);
+        const t = titles.get(e.titleId);
+        if (wantsEpisodePublic(e, t, d.profile)) { if (!cur || !same(cur, episodeReviewData(e, t, d.profile))) await publishEpisodeReview(e, t, d.profile, Boolean(cur)); }
+        else if (cur) await publishEpisodeReview(e, t, d.profile, true);
       }
       for (const id of have.keys()) await deleteDoc(doc(fs, 'reviews', id)); // titluri sterse
     } catch (e) { console.warn('Nu am putut sincroniza recenziile publice:', e.message); }
@@ -644,6 +682,7 @@ export async function createBackend(config) {
     if (p === '/api/tmdb/details') return tmdbDetails(url.searchParams.get('type'), url.searchParams.get('id'));
     if (p === '/api/tmdb/images') return tmdbImages(url.searchParams.get('type'), url.searchParams.get('id'), url.searchParams.get('season'));
     if (p === '/api/tmdb/trailer') return tmdbTrailer(url.searchParams.get('type'), url.searchParams.get('id'));
+    if (p === '/api/tmdb/season') return tmdbSeason(url.searchParams.get('id'), url.searchParams.get('season'));
     if (p === '/api/upcoming') return upcoming(url.searchParams.get('force') === '1');
 
     // titluri
@@ -688,6 +727,8 @@ export async function createBackend(config) {
       if (m === 'DELETE') {
         const id = d.titles[idx].id;
         if (d.titles[idx].review && d.titles[idx].review.trim()) deleteDoc(doc(fs, 'reviews', reviewId(id))).catch(() => {});
+        d.diary.filter((e) => e.titleId === id && e.season != null && e.review && e.review.trim())
+          .forEach((e) => deleteDoc(doc(fs, 'reviews', episodeReviewId(e.id))).catch(() => {}));
         const batch = writeBatch(fs);
         batch.delete(sub('titles', id));
         d.diary.filter((e) => e.titleId === id).forEach((e) => batch.delete(sub('diary', e.id)));
@@ -710,6 +751,7 @@ export async function createBackend(config) {
       const { id, ...rest } = e;
       await setDoc(sub('diary', id), clean(rest));
       d.diary.push(e);
+      publishEpisodeReview(e, d.titles.find((t) => t.id === e.titleId), d.profile, false);
       touch();
       return clean(e);
     }
@@ -717,15 +759,24 @@ export async function createBackend(config) {
       const d = await me();
       const idx = d.diary.findIndex((e) => e.id === mm[1]);
       if (idx < 0) throw err('Intrare inexistentă.', 404);
+      const had = Boolean(d.diary[idx].review && d.diary[idx].review.trim() && d.diary[idx].season != null);
       if (m === 'PUT') {
         const e = cleanDiary(b, d.diary[idx]);
+        e.updatedAt = new Date().toISOString();
         const { id, ...rest } = e;
         await setDoc(sub('diary', id), clean(rest));
         d.diary[idx] = e;
+        publishEpisodeReview(e, d.titles.find((t) => t.id === e.titleId), d.profile, had);
         touch();
         return clean(e);
       }
-      if (m === 'DELETE') { await deleteDoc(sub('diary', mm[1])); d.diary.splice(idx, 1); touch(); return { ok: true }; }
+      if (m === 'DELETE') {
+        await deleteDoc(sub('diary', mm[1]));
+        if (had) deleteDoc(doc(fs, 'reviews', episodeReviewId(mm[1]))).catch(() => {});
+        d.diary.splice(idx, 1);
+        touch();
+        return { ok: true };
+      }
     }
 
     // liste

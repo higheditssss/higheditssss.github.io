@@ -196,6 +196,12 @@
     'Like-urile nu sunt pornite încă pe site.': "Likes aren't enabled on the site yet.", 'Recenzia nu mai există.': 'This review no longer exists.',
     'Conține spoilere — deschide ca să citești.': 'Contains spoilers — open to read.', 'ți-a apreciat recenzia pentru': 'liked your review of', '(poză)': '(photo)',
 
+    // episoade
+    'Nota medie pe EDITSEL': 'Average rating on EDITSEL', 'Notează': 'Rate','Editează': 'Edit', 'Nu a apărut': 'Not out yet', 'Fără dată': 'No date', 'Văzut pe': 'Watched on',
+    'Marchează văzut': 'Mark watched', 'Ce părere ai despre episodul ăsta?': 'What did you think of this episode?', 'cu recenzie': 'with review',
+    'Se încarcă episoadele…': 'Loading episodes…', 'Nu am găsit episoadele sezonului ăsta.': "Couldn't find this season's episodes.",
+    'Recenzia episodului a fost publicată': 'Episode review published', 'Episodul a fost scos din jurnal': 'Episode removed from the diary',
+
     // comentarii
     'Comentarii': 'Comments', 'Niciun comentariu încă.': 'No comments yet.', 'Scrie ceva pe profilul tău…': 'Write something on your profile…',
     'ți-a scris pe': 'wrote on your', 'profil': 'profile',
@@ -273,6 +279,10 @@
     [/^(Anul tău în seriale|Anul în seriale) · (\d{4})$/, (m, a, y) => `${D[a]} · ${y}`],
     [/^Ce părere ai despre (.+)\?$/, (m, t) => `What did you think of ${t}?`],
     [/^Recenzii \((\d+)\)$/, (m, n) => `Reviews (${n})`],
+    [/^S(\d+) · E(\d+) marcat ca văzut$/, (m, s, e) => `S${s} · E${e} marked as watched`],
+    [/^(\d+) (recenzie|recenzii)$/, (m, n, w) => `${n} ${w === 'recenzie' ? 'review' : 'reviews'}`],
+    [/^· (\d+) (recenzie|recenzii)$/, (m, n, w) => `· ${n} ${w === 'recenzie' ? 'review' : 'reviews'}`],
+    [/^(\d+) (recenzie|recenzii) la tot sezonul$/, (m, n, w) => `${n} ${w === 'recenzie' ? 'review' : 'reviews'} of the whole season`],
     [/^nota medie din (\d+) (recenzie|recenzii) pe EDITSEL$/, (m, n, w) => `average from ${n} ${w === 'recenzie' ? 'review' : 'reviews'} on EDITSEL`],
     [/^Scrie-i ceva lui (.+)…$/, (m, n) => `Write something to ${n}…`],
     [/^Descoperă anul( tău)? (\d{4})$/, (m, you, y) => `Explore ${you ? 'your ' : ''}${y}`],
