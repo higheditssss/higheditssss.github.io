@@ -134,7 +134,7 @@
           <a href="${R('/shows?status=watched')}"><span class="ic">${WL.ic('eye')}</span>Văzute<span class="val">${watched}</span></a>
           <a href="${R('/shows?status=watchlist')}"><span class="ic">${WL.ic('clock')}</span>De văzut<span class="val">${watchlist}</span></a>
           <a href="${R('/reviews')}"><span class="ic">${WL.ic('star')}</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
-          <a href="${R('/year/' + new Date().getFullYear())}"><span class="ic">${WL.ic('sparkle')}</span>Anul în seriale<span class="val">${new Date().getFullYear()}</span></a>
+          <a href="${R('/wrapped/' + new Date().getFullYear())}"><span class="ic">${WL.ic('sparkle')}</span>Wrapped<span class="val">${new Date().getFullYear()}</span></a>
           <a href="${R('/stats')}"><span class="ic">${WL.ic('chart')}</span>Toate statisticile<span class="val">›</span></a>
         </div>
       </div>`;
@@ -340,8 +340,8 @@
 
     const yr = String(new Date().getFullYear());
     return shell('stats', `
-      <a class="yr-promo" href="${R('/year/' + yr)}"><span class="yr-promo-ic">${WL.ic('sparkle')}</span>
-        <span><b>${backend.user && backend.user.uid === DB.uid ? 'Anul tău în seriale' : 'Anul în seriale'} · ${yr}</b><small>Orele, topurile și momentele anului, într-o singură pagină.</small></span><span class="arrow">›</span></a>
+      <a class="yr-promo" href="${R('/wrapped/' + yr)}"><span class="yr-promo-ic">${WL.ic('sparkle')}</span>
+        <span><b>Wrapped ${yr} · ${backend.user && backend.user.uid === DB.uid ? 'Anul tău în seriale' : 'Anul în seriale'}</b><small>Orele, topurile și momentele anului, într-o singură pagină.</small></span><span class="arrow">›</span></a>
       <div class="big-stats">
         <div class="card"><b>${T.filter((t) => t.type === 'tv').length}</b><span>Seriale</span></div>
         <div class="card"><b>${T.filter((t) => t.type === 'movie').length}</b><span>Filme</span></div>
@@ -364,7 +364,7 @@
     `);
   }
 
-  // ---------- anul in seriale (/<username>/year/2026): rezumatul unui an, din jurnal ----------
+  // ---------- Wrapped (/<username>/wrapped/2026): rezumatul unui an, din jurnal ----------
 
   // cat valoreaza o intrare din jurnal: un episod, un sezon intreg sau un film
   function entryWeight(e, t) {
@@ -378,15 +378,34 @@
     return { eps: 1, min: rt };
   }
 
+  // „Wrapped”: pagina separata de profil (fara antetul si tab-urile lui), o poveste care se deruleaza sectiune cu sectiune
   function pageYear(yParam) {
     const years = [...new Set(DB.diary.map((e) => String(e.date).slice(0, 4)))].filter((y) => /^\d{4}$/.test(y)).sort().reverse();
     const year = /^\d{4}$/.test(yParam || '') ? yParam : String(new Date().getFullYear());
     const entries = DB.diary.filter((e) => String(e.date).startsWith(year) && byId.has(e.titleId)).sort((a, b) => a.date.localeCompare(b.date));
     const mine = backend.user && backend.user.uid === DB.uid;
-    const chips = years.length > 1 ? `<div class="yr-years">${years.map((y) => `<a href="${R('/year/' + y)}" class="${y === year ? 'on' : ''}">${y}</a>`).join('')}</div>` : '';
-    const hero = (inner) => `<div class="yr-hero"><span class="yr-kicker">${WL.ic('sparkle')}${mine ? 'Anul tău în seriale' : 'Anul în seriale'}</span>
-        <h2>${year}</h2>${inner}</div>${chips}`;
-    if (!entries.length) return shell('stats', hero(`<p>${mine ? 'N-ai' : 'N-a'} notat nimic în jurnal în ${year}.</p>`));
+    const name = DB.profile.name || DB.profile.username || '';
+    const shareText = `${name} · Wrapped ${year} · EDITSEL`;
+    const shareBtn = (cls) => `<button type="button" class="${cls} wr-share-btn" data-text="${esc(shareText)}">${WL.ic('share')}Distribuie</button>`;
+    const top = `<header class="wr-top">
+        <a class="wr-brand" href="${BASE}" aria-label="EDITSEL">${WL.logoSvg('', { size: 26, id: 'wrlg' })}<span>EDITSEL</span></a>
+        <span class="wr-sep"></span><span class="wr-label">Wrapped ${year}</span>
+        <span class="grow"></span>
+        ${years.length > 1 ? `<nav class="wr-years">${years.map((y) => `<a href="${R('/wrapped/' + y)}" class="${y === year ? 'on' : ''}">${y}</a>`).join('')}</nav>` : ''}
+        ${shareBtn('wr-share')}
+        <a class="wr-close" href="${R('/')}" title="Înapoi la profil" aria-label="Înapoi la profil">${WL.ic('x')}</a>
+      </header>`;
+    const intro = (cta) => `<section class="wr-intro">
+        <div class="wr-arc" aria-hidden="true"></div>
+        <div class="wr-avatar">${DB.profile.avatar ? `<img src="${esc(DB.profile.avatar)}" alt="">` : `<span>${esc(name.charAt(0).toUpperCase())}</span>`}</div>
+        <span class="wr-cap">Membru</span>
+        <h1 class="notranslate">${esc(name)}</h1>
+        ${cta}
+        <div class="wr-giant" aria-hidden="true">WRAPPED ${year}</div>
+      </section>`;
+    if (!entries.length) {
+      return `<div class="wrapped">${top}${intro(`<p class="wr-empty">${mine ? 'N-ai' : 'N-a'} notat nimic în jurnal în ${year}.</p>`)}</div>`;
+    }
 
     let minutes = 0;
     let episodes = 0;
@@ -405,66 +424,147 @@
       const day = perDay.get(e.date) || { eps: 0, movies: 0 };
       if (t.type === 'movie') day.movies++; else day.eps += w.eps;
       perDay.set(e.date, day);
-      if (!per.has(t.id)) per.set(t.id, { t, n: 0, eps: 0, best: 0 });
+      if (!per.has(t.id)) per.set(t.id, { t, n: 0, eps: 0, min: 0, best: 0 });
       const p = per.get(t.id);
       p.n++;
       p.eps += w.eps;
+      p.min += w.min;
       p.best = Math.max(p.best, e.rating || 0, t.rating || 0);
     }
     const all = [...per.values()];
     const shows = all.filter((p) => p.t.type === 'tv').sort((a, b) => b.eps - a.eps || b.best - a.best);
     const movies = all.filter((p) => p.t.type === 'movie').sort((a, b) => b.best - a.best || b.n - a.n);
+    const byTime = [...all].sort((a, b) => b.min - a.min).slice(0, 5);
     const ratings = entries.map((e) => e.rating).filter(Boolean);
     const avg = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '—';
     const reviews = allReviews().filter((r) => r.date.startsWith(year)).length;
     const hours = Math.round(minutes / 60);
-
     const genres = new Map();
     all.forEach((p) => (p.t.genres || []).forEach((g) => genres.set(g, (genres.get(g) || 0) + p.n)));
-    const topGenres = [...genres].sort((a, b) => b[1] - a[1]).slice(0, 6);
-    const gMax = Math.max(1, ...topGenres.map((g) => g[1]));
+    const topGenres = [...genres].sort((a, b) => b[1] - a[1]).slice(0, 8);
     const mMax = Math.max(1, ...months);
     const bestMonth = months.indexOf(Math.max(...months));
     const bestDay = weekdays.indexOf(Math.max(...weekdays));
     const [bigDate, big] = [...perDay].sort((a, b) => (b[1].eps + b[1].movies) - (a[1].eps + a[1].movies))[0];
     const bigText = [big.eps ? plural(big.eps, 'episod', 'episoade') : '', big.movies ? plural(big.movies, 'film', 'filme') : ''].filter(Boolean).join(' și ');
-    const topRated = all.filter((p) => p.best).sort((a, b) => b.best - a.best || b.n - a.n)[0];
-    const first = entries[0];
-    const last = entries[entries.length - 1];
-    const fact = (label, value, sub = '') => `<div class="card yr-fact"><span class="label-sm">${label}</span><b>${value}</b>${sub ? `<small class="muted">${sub}</small>` : ''}</div>`;
-    const ranked = (list, n) => `<div class="grid">${list.slice(0, n).map((p, i) => poster({ ...p.t, rating: p.best }, { href: titleHref(p.t), rank: i + 1 })).join('')}</div>`;
+    const first = byId.get(entries[0].titleId);
+    const last = byId.get(entries[entries.length - 1].titleId);
+    const fav = shows[0] || movies[0];
+    const bestOf = (list) => [...list].sort((a, b) => b.best - a.best || b.n - a.n)[0];
+    const bg = (t) => (t && (t.backdrop || t.poster) ? `style="--wr-bg:url('${esc(t.backdrop || t.poster)}')"` : '');
+    const num = (n) => `<b class="wr-num" data-count="${n}">${n}</b>`;
+    const tile = (label, value) => `<div class="wr-tile"><span class="wr-cap">${label}</span>${typeof value === 'number' ? num(value) : `<b class="wr-num">${value}</b>`}</div>`;
+    const half = (cls, label, count, p) => `<div class="wr-card wr-half ${cls}">
+        <div class="wr-half-text"><span class="wr-cap">${label}</span>${num(count)}
+          ${p ? `<span class="wr-cap wr-gap">Cel mai bine notat</span><a class="wr-title notranslate" href="${titleHref(p.t)}">${esc(p.t.title)}</a>${p.best ? stars(p.best, 'accent') : ''}` : ''}</div>
+        ${p && p.t.poster ? `<a class="wr-half-poster" href="${titleHref(p.t)}"><img src="${esc(p.t.poster)}" alt="" loading="lazy"></a>` : ''}
+      </div>`;
+    const PLACE = ['#1', '#2', '#3', '#4', '#5'];
 
-    return shell('stats', `
-      ${hero(`<p>${hours === 1 ? '1 oră' : hours % 100 >= 20 || hours >= 100 && hours % 100 === 0 ? hours + ' de ore' : hours + ' ore'} în fața ecranului, ${plural(per.size, 'titlu', 'titluri')} și ${plural(entries.length, 'intrare', 'intrări')} în jurnal.</p>
-        <button type="button" class="btn small" id="yr-share">${WL.ic('share')}Distribuie</button>`)}
-      <div class="big-stats">
-        <div class="card"><b>${hours}h</b><span>Ore de privit</span></div>
-        <div class="card"><b>${episodes}</b><span>Episoade</span></div>
-        <div class="card"><b>${shows.length}</b><span>Seriale</span></div>
-        <div class="card"><b>${movies.length}</b><span>Filme</span></div>
-        <div class="card"><b>${avg}</b><span>Nota medie</span></div>
-        <div class="card"><b>${reviews}</b><span>Recenzii scrise</span></div>
-      </div>
-      <div class="yr-facts">
-        ${topRated ? fact('Cel mai bine notat', `<a class="notranslate" href="${titleHref(topRated.t)}">${esc(topRated.t.title)}</a>`, stars(topRated.best, 'accent')) : ''}
-        ${shows[0] ? fact('Serialul anului', `<a class="notranslate" href="${titleHref(shows[0].t)}">${esc(shows[0].t.title)}</a>`, plural(shows[0].eps, 'episod', 'episoade')) : ''}
-        ${fact('Luna cea mai activă', MONTHS[bestMonth], plural(months[bestMonth], 'intrare', 'intrări'))}
-        ${fact('Ziua preferată', WEEKDAYS[bestDay], plural(weekdays[bestDay], 'intrare', 'intrări'))}
-        ${fact('Maratonul anului', fmtDate(bigDate), bigText)}
-        ${fact('Primul din an', `<a class="notranslate" href="${titleHref(byId.get(first.titleId))}">${esc(byId.get(first.titleId).title)}</a>`, fmtDate(first.date))}
-        ${last !== first ? fact('Cel mai recent', `<a class="notranslate" href="${titleHref(byId.get(last.titleId))}">${esc(byId.get(last.titleId).title)}</a>`, fmtDate(last.date)) : ''}
-      </div>
-      <div class="two-col">
-        <div class="card"><h3>Pe luni</h3>
-          <div class="vbars">${months.map((n, i) => `<div class="col" title="${n}"><div style="height:${(n / mMax) * 85}%"></div><span>${MONTHS[i].slice(0, 3)}</span></div>`).join('')}</div>
+    return `<div class="wrapped">${top}
+      ${intro(`<a class="wr-cta" href="#wr-start">${mine ? 'Descoperă anul tău' : 'Descoperă anul'} ${year}</a>`)}
+
+      <section class="wr-chapter wr-reveal" id="wr-start">
+        <h2>${mine ? 'Ai văzut câteva seriale' : 'A văzut câteva seriale'}<br><span>anul ăsta</span></h2>
+        <p>…bine, poate mai mult decât câteva.</p>
+      </section>
+
+      <section class="wr-card wr-stats wr-reveal" ${bg(fav && fav.t)}>
+        <div class="wr-stats-text"><span class="wr-cap">Wrapped ${year}</span><h3>${mine ? 'Hai să vedem anul tău' : 'Hai să vedem anul lui ' + esc(name)}</h3><small>Totul din jurnal</small></div>
+        <div class="wr-tiles">
+          ${tile('Ore de privit', hours)}${tile('Episoade', episodes)}${tile('Seriale', shows.length)}
+          ${tile('Filme', movies.length)}${tile('Recenzii scrise', reviews)}${tile('Nota medie', avg)}
         </div>
-        <div class="card"><h3>Genuri</h3>${topGenres.length
-          ? `<div class="hbars">${topGenres.map(([k, n]) => `<div class="hbar"><span>${esc(k)}</span><div class="track"><div style="width:${(n / gMax) * 100}%"></div></div><span class="n">${n}</span></div>`).join('')}</div>`
-          : '<div class="muted">Nu sunt date încă.</div>'}</div>
-      </div>
-      ${shows.length ? `<div style="margin-top:30px">${section('Top seriale', ranked(shows, 10))}</div>` : ''}
-      ${movies.length ? section('Top filme', ranked(movies, 10)) : ''}
-      <p class="muted yr-note">Calculat din jurnal: un episod notat = un episod, un sezon notat = toate episoadele lui. Orele sunt aproximative.</p>`);
+      </section>
+
+      ${fav ? `<section class="wr-card wr-fav wr-reveal" ${bg(fav.t)}>
+        <span class="wr-cap">${fav.t.type === 'tv' ? 'Serialul anului' : 'Filmul anului'}</span>
+        <a class="wr-fav-title notranslate" href="${titleHref(fav.t)}">${esc(fav.t.title)}</a>
+        <span class="wr-pill">${fav.t.type === 'tv' ? plural(fav.eps, 'episod', 'episoade') : plural(fav.n, 'vizionare', 'vizionări')}</span>
+      </section>` : ''}
+
+      <section class="wr-split wr-reveal">
+        ${half('is-tv', 'Seriale văzute', shows.length, shows.length ? bestOf(shows) : null)}
+        ${half('is-movie', 'Filme văzute', movies.length, movies.length ? bestOf(movies) : null)}
+      </section>
+
+      <section class="wr-card wr-record wr-reveal">
+        <span class="wr-date">${WL.ic('sparkle')}${fmtDate(bigDate)}</span>
+        <span class="wr-cap">Cele mai multe într-o singură zi</span>
+        <h2>${bigText}</h2>
+      </section>
+
+      <section class="wr-block wr-reveal">
+        <h2 class="wr-h">Aici ți-a mers timpul anul ăsta</h2>
+        <div class="wr-rank">${byTime.map((p, i) => `<a class="wr-rank-card place-${i + 1}" href="${titleHref(p.t)}">
+            <span class="wr-place">${PLACE[i]}</span>
+            <div class="wr-rank-img">${p.t.poster ? `<img src="${esc(p.t.poster)}" alt="" loading="lazy">` : `<span>${esc(p.t.title)}</span>`}</div>
+            <b class="notranslate">${esc(p.t.title)}</b>
+            <div class="wr-rank-stat"><strong>${Math.max(1, Math.round(p.min / 60))}h</strong><small>${Math.round((p.min / minutes) * 100)}% din tot</small></div>
+          </a>`).join('')}</div>
+      </section>
+
+      <section class="wr-chapter wr-reveal">
+        <h2>Încălzirea s-a terminat<br><span>acum vin detaliile</span></h2>
+      </section>
+
+      <section class="wr-card wr-rhythm wr-reveal">
+        <div class="wr-rhythm-text">
+          <span class="wr-cap">Luna cea mai activă</span><h3>${MONTHS[bestMonth]}</h3><small>${plural(months[bestMonth], 'intrare', 'intrări')} în jurnal</small>
+          <span class="wr-cap wr-gap">Ziua preferată</span><h3>${WEEKDAYS[bestDay]}</h3>
+        </div>
+        <div class="wr-bars">${months.map((n, i) => `<div class="${i === bestMonth ? 'on' : ''}" title="${n}"><i style="--h:${Math.max(3, (n / mMax) * 100)}%"></i><span>${MONTHS[i].slice(0, 3)}</span></div>`).join('')}</div>
+      </section>
+
+      ${topGenres.length ? `<section class="wr-card wr-genres wr-reveal">
+        <span class="wr-cap">Genurile ${mine ? 'tale' : 'lui'}</span>
+        <div class="wr-genre-list">${topGenres.map(([g], i) => `<span class="g${Math.min(i, 4)}">${esc(g)}</span>`).join('')}</div>
+      </section>` : ''}
+
+      <section class="wr-split wr-reveal">
+        <a class="wr-card wr-moment" href="${titleHref(first)}" ${bg(first)}><span class="wr-cap">Primul din an</span><b class="notranslate">${esc(first.title)}</b><small>${fmtDate(entries[0].date)}</small></a>
+        <a class="wr-card wr-moment" href="${titleHref(last)}" ${bg(last)}><span class="wr-cap">Cel mai recent</span><b class="notranslate">${esc(last.title)}</b><small>${fmtDate(entries[entries.length - 1].date)}</small></a>
+      </section>
+
+      <section class="wr-outro wr-reveal">
+        <h2>Ne vedem în ${Number(year) + 1}</h2>
+        <p>${plural(per.size, 'titlu', 'titluri')}, ${plural(entries.length, 'intrare', 'intrări')} în jurnal și ${hours} ore de privit.</p>
+        <div class="wr-outro-btns">${shareBtn('btn primary')}<a class="btn" href="${R('/')}">Înapoi la profil</a></div>
+        <small>Calculat din jurnal: un episod notat = un episod, un sezon notat = toate episoadele lui. Orele sunt aproximative.</small>
+      </section>
+    </div>`;
+  }
+
+  // animatiile paginii Wrapped: sectiunile apar la derulare, cifrele cresc de la 0
+  function setupWrapped() {
+    const box = app.querySelector('.wrapped');
+    if (!box) return;
+    const count = (el) => {
+      const to = Number(el.dataset.count) || 0;
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 1100);
+        el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3)));
+        if (k < 1 && el.isConnected) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    const io = 'IntersectionObserver' in window ? new IntersectionObserver((list) => {
+      for (const en of list) {
+        if (!en.isIntersecting) continue;
+        en.target.classList.add('in');
+        en.target.querySelectorAll('[data-count]').forEach(count);
+        io.unobserve(en.target);
+      }
+    }, { threshold: 0.18 }) : null;
+    box.querySelectorAll('.wr-reveal').forEach((el) => (io ? io.observe(el) : el.classList.add('in')));
+    const cta = box.querySelector('.wr-cta');
+    if (cta) cta.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('wr-start').scrollIntoView({ behavior: 'smooth' }); });
+    box.querySelectorAll('.wr-share-btn').forEach((b) => b.addEventListener('click', async () => {
+      const url = location.origin + location.pathname;
+      if (navigator.share) { navigator.share({ title: b.dataset.text, url }).catch(() => {}); return; }
+      try { await navigator.clipboard.writeText(url); toast('Link copiat'); } catch { prompt('Copiază linkul:', url); }
+    }));
   }
 
   // butonul de trailer: logat, trailerul se deschide pe pagina; altfel, cautare pe YouTube
@@ -2048,6 +2148,7 @@
 
   async function render() {
     const token = ++renderToken;
+    document.body.classList.remove('wrapped-mode');
     const rel = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1));
     const parts = rel.split('/').filter(Boolean);
     // /add/tv/1405: deschide pop-up-ul de adaugare peste Descopera
@@ -2192,7 +2293,13 @@
       case 'list': html = pageList(parts[1]); title += ' · Listă'; break;
       case 'friends': html = pageFriends(); title += ' · Prieteni'; break;
       case 'stats': html = DB.profile.showStats === false ? pageProfile() : pageStats(); title += ' · Statistici'; break;
-      case 'year': html = DB.profile.showStats === false ? pageProfile() : pageYear(parts[1]); title += ' · Anul în seriale'; break;
+      case 'year': return navigate(R('/wrapped' + (parts[1] ? '/' + parts[1] : '')), true);
+      case 'wrapped':
+        if (DB.profile.showStats === false) { html = pageProfile(); break; }
+        html = pageYear(parts[1]);
+        title = `${DB.profile.name} · Wrapped ${/^\d{4}$/.test(parts[1] || '') ? parts[1] : new Date().getFullYear()}`;
+        parts[0] = 'w';
+        break;
       case 'show':
       case 'movie': {
         parts[1] = titleId(parts[1]);
@@ -2218,13 +2325,9 @@
     fillFollowButton();
     fillComments();
     if (parts[0] === 'friends') fillFriendsPage();
-    const share = document.getElementById('yr-share');
-    if (share) share.addEventListener('click', async () => {
-      const url = location.origin + location.pathname;
-      const text = `${DB.profile.name} · ${share.closest('.page').querySelector('.yr-hero h2').textContent} în seriale pe EDITSEL`;
-      if (navigator.share) { navigator.share({ title: text, url }).catch(() => {}); return; }
-      try { await navigator.clipboard.writeText(url); toast('Link copiat'); } catch { prompt('Copiază linkul:', url); }
-    });
+    // Wrapped e o pagina separata: fara antetul, subsolul si bara de jos ale site-ului
+    document.body.classList.toggle('wrapped-mode', parts[0] === 'w');
+    if (parts[0] === 'w') setupWrapped();
     // pe telefon tab-urile se deruleaza: tab-ul activ adus in centru
     const tabsEl = app.querySelector('.tabs');
     const activeTab = tabsEl && tabsEl.querySelector('a.active');

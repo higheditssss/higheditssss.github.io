@@ -194,6 +194,11 @@
     'Cel mai bine notat': 'Top rated', 'Serialul anului': 'Show of the year', 'Luna cea mai activă': 'Busiest month', 'Ziua preferată': 'Favorite day',
     'Maratonul anului': 'Biggest binge', 'Primul din an': 'First of the year', 'Cel mai recent': 'Most recent', 'Pe luni': 'By month', 'Genuri': 'Genres',
     'Top seriale': 'Top shows', 'Top filme': 'Top movies', 'Orele, topurile și momentele anului, într-o singură pagină.': 'The hours, top picks and moments of the year, on one page.',
+    'Ai văzut câteva seriale': 'You watched a few shows', 'A văzut câteva seriale': 'They watched a few shows', 'anul ăsta': 'this year',
+    '…bine, poate mai mult decât câteva.': '…okay, maybe more than a few.', 'Hai să vedem anul tău': "Let's look at your year", 'Totul din jurnal': 'All from the diary',
+    'Filmul anului': 'Movie of the year', 'Seriale văzute': 'Shows watched', 'Filme văzute': 'Movies watched', 'Cele mai multe într-o singură zi': 'Most in a single day',
+    'Aici ți-a mers timpul anul ăsta': 'Here’s where your time went this year', 'Încălzirea s-a terminat': 'The warm-up is over', 'acum vin detaliile': 'now for the details',
+    'Genurile tale': 'Your genres', 'Genurile lui': 'Their genres', 'Înapoi la profil': 'Back to profile',
     'Calculat din jurnal: un episod notat = un episod, un sezon notat = toate episoadele lui. Orele sunt aproximative.': 'Based on the diary: a logged episode = one episode, a logged season = all its episodes. Hours are approximate.',
   };
   const WEEKDAY = { Duminică: 'Sunday', Luni: 'Monday', Marți: 'Tuesday', Miercuri: 'Wednesday', Joi: 'Thursday', Vineri: 'Friday', Sâmbătă: 'Saturday' };
@@ -251,7 +256,14 @@
     }],
     [/^(Ianuarie|Februarie|Martie|Aprilie|Mai|Iunie|Iulie|August|Septembrie|Octombrie|Noiembrie|Decembrie)$/, (m) => MONTHS[m]],
     [/^(Anul tău în seriale|Anul în seriale) · (\d{4})$/, (m, a, y) => `${D[a]} · ${y}`],
-    [/^(\d+) (?:de )?or[eă] în fața ecranului, (.+) și (.+) în jurnal\.$/, (m, h, a, b) => `${h} ${h === '1' ? 'hour' : 'hours'} in front of the screen, ${translateString(a)} and ${translateString(b)} in the diary.`],
+    [/^Descoperă anul( tău)? (\d{4})$/, (m, you, y) => `Explore ${you ? 'your ' : ''}${y}`],
+    [/^Hai să vedem anul lui (.+)$/, (m, n) => `Let's look at ${n}'s year`],
+    [/^(\d+) (vizionare|vizionări)$/, (m, n, w) => `${n} ${w === 'vizionare' ? 'watch' : 'watches'}`],
+    [/^(\d+)% din tot$/, (m, n) => `${n}% of all`],
+    [/^(\d+) (intrare|intrări) în jurnal$/, (m, n, w) => `${n} diary ${w === 'intrare' ? 'entry' : 'entries'}`],
+    [/^Ne vedem în (\d{4})$/, (m, y) => `See you in ${y}`],
+    [/^(.+), (.+) în jurnal și (\d+) ore de privit\.$/, (m, a, b, h) => `${translateString(a)}, ${translateString(b)} in the diary and ${h} hours watched.`],
+    [/^Wrapped (\d{4}) · (Anul tău în seriale|Anul în seriale)$/, (m, y, a) => `Wrapped ${y} · ${D[a]}`],
     [/^N-a(i?) notat nimic în jurnal în (\d{4})\.$/, (m, you, y) => `${you ? 'You' : 'They'} didn't log anything in ${y}.`],
   ];
 
