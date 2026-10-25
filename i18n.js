@@ -188,6 +188,14 @@
     'Șterge recenzia': 'Delete review', 'Ștergi recenzia?': 'Delete your review?', 'Recenzia a fost publicată': 'Review published',
     'Recenzia a fost ștearsă': 'Review deleted', 'Scrie ceva în recenzie.': 'Write something in your review.',
 
+    // recenziile membrilor, like-uri, poze si spoilere in comentarii
+    'Recenzii populare': 'Popular reviews', 'Recenzii recente': 'Recent reviews', 'Îmi place recenzia': 'Like this review',
+    'Poză': 'Photo', 'Spoiler': 'Spoiler', 'spoiler': 'spoiler', 'Spoiler · click ca să vezi': 'Spoiler · click to reveal',
+    'Adaugă o poză': 'Add a photo', 'Scoate poza': 'Remove photo', 'Mărește poza': 'Enlarge photo', 'Ascunde comentariul până dă click': 'Hide the comment until clicked',
+    'Scrie ceva sau adaugă o poză.': 'Write something or add a photo.', 'Fișierul nu e o poză.': "That file isn't a photo.", 'Poza e prea mare. Încearcă alta.': 'The photo is too large. Try another.',
+    'Like-urile nu sunt pornite încă pe site.': "Likes aren't enabled on the site yet.", 'Recenzia nu mai există.': 'This review no longer exists.',
+    'Conține spoilere — deschide ca să citești.': 'Contains spoilers — open to read.', 'ți-a apreciat recenzia pentru': 'liked your review of', '(poză)': '(photo)',
+
     // comentarii
     'Comentarii': 'Comments', 'Niciun comentariu încă.': 'No comments yet.', 'Scrie ceva pe profilul tău…': 'Write something on your profile…',
     'ți-a scris pe': 'wrote on your', 'profil': 'profile',
@@ -264,6 +272,8 @@
     [/^(Ianuarie|Februarie|Martie|Aprilie|Mai|Iunie|Iulie|August|Septembrie|Octombrie|Noiembrie|Decembrie)$/, (m) => MONTHS[m]],
     [/^(Anul tău în seriale|Anul în seriale) · (\d{4})$/, (m, a, y) => `${D[a]} · ${y}`],
     [/^Ce părere ai despre (.+)\?$/, (m, t) => `What did you think of ${t}?`],
+    [/^Recenzii \((\d+)\)$/, (m, n) => `Reviews (${n})`],
+    [/^nota medie din (\d+) (recenzie|recenzii) pe EDITSEL$/, (m, n, w) => `average from ${n} ${w === 'recenzie' ? 'review' : 'reviews'} on EDITSEL`],
     [/^Scrie-i ceva lui (.+)…$/, (m, n) => `Write something to ${n}…`],
     [/^Descoperă anul( tău)? (\d{4})$/, (m, you, y) => `Explore ${you ? 'your ' : ''}${y}`],
     [/^Hai să vedem anul lui (.+)$/, (m, n) => `Let's look at ${n}'s year`],
@@ -300,7 +310,7 @@
   }
 
   // nu traducem continutul membrilor
-  const SKIP = 'textarea, input, script, style, .profile-bio, .review .text, .cmt-text, .cmt-name, .overview, .tagline, .poster-fallback, .diary-title, .hs-text b, .disc-over b, .trend-title, .member-body b, .friend-card b, .list-card h3, .list-card p, .cast, .profile-head h1, .title-head h1, .notranslate';
+  const SKIP = 'textarea, input, script, style, .profile-bio, .review .text, .cmt-text, .cmt-name, .mrv .text, .mrv-name, .prv-by em, .overview, .tagline, .poster-fallback, .diary-title, .hs-text b, .disc-over b, .trend-title, .member-body b, .friend-card b, .list-card h3, .list-card p, .cast, .profile-head h1, .title-head h1, .notranslate';
 
   const doneText = new WeakMap(); // nod text -> textul pus de noi
   const doneAttr = new WeakMap(); // element -> { atribut: valoarea pusa de noi }

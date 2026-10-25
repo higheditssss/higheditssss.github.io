@@ -931,9 +931,6 @@ a.cmt-name:hover { color: var(--accent-text); }
 .cmt-del:hover { background: var(--surface-3); color: #ff8d98; }
 .cmt-del .ico { width: 13px; height: 13px; }
 .cmt-text { margin-top: 2px; white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; color: #dadde3; }
-.cmt-form { display: flex; gap: 8px; align-items: flex-end; }
-.cmt-form .textarea { flex: 1; min-height: 46px; height: 46px; padding: 11px 12px; line-height: 1.4; resize: none; overflow-y: auto; transition: height .15s; }
-.cmt-form .textarea:focus, .cmt-form .textarea:valid { height: 84px; }
 .cmt-login { font-size: 13px; }
 .bell-quote { margin-top: 4px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 
@@ -1103,5 +1100,79 @@ body.wrapped-mode .site-header, body.wrapped-mode .site-footer, body.wrapped-mod
 .modal.modal-review { max-width: 620px; }
 .cmts-wall { margin-top: 0; }
 .cmts-wall .cmt-body { margin-top: 0; gap: 12px; }
-.cmts-wall .cmt-form { margin-bottom: 6px; }
 .cmt-none { padding: 6px 2px; font-size: 14px; }
+
+/* ---------- campul de comentariu: text, poza, spoiler ---------- */
+.cmt-form { display: block; }
+.cmts-wall .cmt-form { margin-bottom: 6px; }
+.cmt-compose { padding: 6px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); transition: border-color .15s; }
+.cmt-compose:focus-within { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.cmt-compose .textarea { width: 100%; min-height: 44px; height: 44px; padding: 8px 10px; border: 0; background: none; line-height: 1.4; resize: none; transition: height .15s; }
+.cmt-compose .textarea:focus { outline: none; }
+.cmt-compose:focus-within .textarea, .cmt-compose .textarea:not(:placeholder-shown), .cmt-compose:has(.cmt-preview:not(.hidden)) .textarea { height: 88px; }
+.cmt-preview { position: relative; display: inline-block; margin: 4px 8px 6px; }
+.cmt-preview img { display: block; max-width: 160px; max-height: 120px; border-radius: 10px; object-fit: cover; }
+.cmt-unpick { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text); cursor: pointer; }
+.cmt-unpick .ico { width: 13px; height: 13px; }
+.cmt-tools { display: flex; align-items: center; gap: 6px; padding: 2px 2px 0; }
+.cmt-tools .grow { flex: 1; }
+.cmt-tool { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 600 12px Inter, sans-serif; cursor: pointer; }
+.cmt-tool:hover { background: var(--surface-3); color: var(--text); }
+.cmt-tool .ico { width: 15px; height: 15px; }
+.cmt-spoiler[aria-pressed="true"] { background: #3a2a10; color: #ffc46b; }
+
+/* ---------- comentarii cu poza / spoiler ---------- */
+.cmt-content { position: relative; }
+.cmt-img { display: block; margin-top: 8px; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.cmt-img img { display: block; max-width: min(100%, 320px); max-height: 260px; border-radius: 10px; object-fit: cover; }
+.cmt.is-spoiler:not(.revealed) .cmt-text, .cmt.is-spoiler:not(.revealed) .cmt-img { filter: blur(10px); pointer-events: none; user-select: none; }
+.cmt-reveal { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; min-height: 34px; border: 0; border-radius: 8px; background: rgba(9, 9, 11, .35); color: #ffc46b; font: 700 12px Inter, sans-serif; letter-spacing: .04em; cursor: pointer; }
+.cmt.is-spoiler.revealed .cmt-reveal { display: none; }
+.modal.modal-image { max-width: min(1100px, 96vw); background: none; border: 0; box-shadow: none; cursor: zoom-out; }
+.modal-back:has(.modal-image) { align-items: center; }
+.cmt-full { display: block; max-width: 100%; max-height: 88vh; margin: 0 auto; border-radius: 14px; }
+
+/* ---------- like la recenzii ---------- */
+.mrv-actions { display: flex; gap: 8px; margin-top: 10px; }
+.rv-like { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--muted); font: 600 13px Inter, sans-serif; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+.rv-like .ico { width: 14px; height: 14px; }
+.rv-like:hover { color: var(--text); border-color: #3a3a44; }
+.rv-like.on { border-color: color-mix(in srgb, var(--heart, #ff5466) 50%, transparent); background: color-mix(in srgb, var(--heart, #ff5466) 14%, transparent); color: var(--heart, #ff5466); }
+.rv-like:disabled { opacity: .6; }
+
+/* ---------- recenziile membrilor pe pagina serialului ---------- */
+.mrv-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.mrv-summary b { font: 700 24px var(--head); }
+.mrv-summary .muted { font-size: 13px; }
+.mrv-list { display: flex; flex-direction: column; gap: 12px; }
+.mrv { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.mrv.is-mine { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.mrv-av { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; object-fit: cover; background: var(--surface-3); font-weight: 700; font-size: 17px; }
+.mrv-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+.mrv-name { font-weight: 700; font-size: 15px; color: var(--text); }
+a.mrv-name:hover { color: var(--accent-text); }
+.mrv .text { white-space: pre-line; color: #dadde3; overflow-wrap: anywhere; }
+
+/* ---------- Descopera: recenzii populare ---------- */
+.prv-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(300px, 360px); gap: 14px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+.prv-card { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); scroll-snap-align: start; transition: border-color .15s, transform .15s; }
+.prv-card:hover { border-color: #3a3a44; transform: translateY(-2px); }
+.prv-poster { aspect-ratio: 2 / 3; overflow: hidden; border-radius: 10px; background: var(--surface-3); }
+.prv-poster img { width: 100%; height: 100%; object-fit: cover; }
+.prv-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.prv-body > b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prv-by { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.prv-by > img, .prv-by > span:not(.stars) { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 6px; object-fit: cover; background: var(--surface-3); font-weight: 700; font-size: 11px; }
+.prv-by em { font-style: normal; font-weight: 600; color: #d6d9df; }
+.prv-text { margin: 0; color: #c9ccd2; font-size: 13px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.prv-text.is-spoiler { color: #ffc46b; font-style: italic; }
+.prv-likes { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; color: var(--heart, #ff5466); font-size: 12px; font-weight: 700; }
+.prv-likes .ico { width: 13px; height: 13px; }
+@media (max-width: 640px) {
+  .prv-row { grid-auto-columns: 86%; }
+  .mrv { grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .mrv-av { width: 36px; height: 36px; font-size: 15px; }
+}
+.prv-by .stars { flex: none; display: inline-flex; white-space: nowrap; }
+.prv-by em { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prv-row { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }

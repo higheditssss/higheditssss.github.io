@@ -154,6 +154,7 @@
           <span>${fmtDate(r.date)}</span>
         </div>
         <div class="text">${esc(r.text)}</div>
+        ${r.key && r.key.includes('_t_') ? `<div class="mrv-actions">${likeBtn(`${DB.uid}_${t.id}`, [], 0, true)}</div>` : ''}
         ${commentsSlot(r.key, t)}
       </div>
     </article>`;
@@ -674,23 +675,47 @@
     box.innerHTML = `<div class="card"><h3>Unde poți viziona${d.region ? ' · ' + esc(d.region) : ''}</h3>${html}${d.link ? `<a class="see-all" style="display:inline-block;margin-top:10px" href="${esc(d.link)}" target="_blank" rel="noopener">Detalii ›</a>` : ''}<div class="hint" style="margin-top:8px;font-size:11px;color:var(--faint)">Sursa: JustWatch prin TMDB</div></div>`;
   }
 
-  // ---------- comentarii la recenzii ----------
-  // toate comentariile de pe un profil vin dintr-o singura cerere (dupa autorul recenziilor)
+  // ---------- comentarii (la recenzii si pe profil), cu poze si spoilere ----------
+  // pe un profil vin toate dintr-o singura cerere (dupa proprietar); pe pagina serialului, dupa recenzii
 
-  async function fillComments() {
-    const boxes = [...app.querySelectorAll('.cmts[data-target]')];
+  async function fillComments(root = app) {
+    const boxes = [...root.querySelectorAll('.cmts[data-target]')];
     if (!boxes.length) return;
-    const owner = DB.uid;
+    const ownerOf = (box) => box.dataset.owner || DB.uid;
+    const owners = [...new Set(boxes.map(ownerOf))];
     let list;
     let members;
     try {
-      [list, members] = await Promise.all([backend.commentsFor(owner), backend.listMembers().catch(() => [])]);
+      [list, members] = await Promise.all([
+        owners.length === 1 ? backend.commentsFor(owners[0]) : backend.commentsForTargets(boxes.map((b) => b.dataset.target)),
+        backend.listMembers().catch(() => []),
+      ]);
     } catch { return; } // regulile Firebase pentru comentarii nu sunt puse inca: nu afisam nimic
     if (!boxes[0].isConnected) return;
     const people = new Map(members.map((p) => [p.uid, p]));
     const byTarget = new Map();
     for (const c of list) { if (!byTarget.has(c.target)) byTarget.set(c.target, []); byTarget.get(c.target).push(c); }
-    for (const box of boxes) drawComments(box, owner, byTarget.get(box.dataset.target) || [], people);
+    for (const box of boxes) drawComments(box, ownerOf(box), byTarget.get(box.dataset.target) || [], people);
+  }
+
+  // poza aleasa se micsoreaza in browser (max 1280px, JPEG), ca sa incapa in comentariu
+  async function shrinkImage(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Fișierul nu e o poză.')); i.src = url; });
+      const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      const g = c.getContext('2d');
+      g.fillStyle = '#111';
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.82;
+      let out = c.toDataURL('image/jpeg', q);
+      while (out.length > 600000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      return out;
+    } finally { URL.revokeObjectURL(url); }
   }
 
   function drawComments(box, owner, list, people, open = false) {
@@ -705,23 +730,58 @@
     // peretele profilului: mereu deschis, cel mai nou sus, campul de scris deasupra
     const wall = box.classList.contains('cmts-wall');
     if (!n && !myUid && !wall) { box.innerHTML = ''; return; }
-    const items = (wall ? [...list].reverse() : list).map((c) => `<div class="cmt" data-id="${esc(c.id)}">${av(c)}
-          <div class="cmt-main"><div class="cmt-head">${who(c)}<span class="muted">${fmtDate(String(c.createdAt).slice(0, 10))}</span>
+    const items = (wall ? [...list].reverse() : list).map((c) => `<div class="cmt${c.spoiler ? ' is-spoiler' : ''}" data-id="${esc(c.id)}">${av(c)}
+          <div class="cmt-main"><div class="cmt-head">${who(c)}<span class="muted">${fmtDate(String(c.createdAt).slice(0, 10))}</span>${c.spoiler ? '<span class="badge">spoiler</span>' : ''}
             ${myUid && (c.uid === myUid || owner === myUid) ? `<button type="button" class="cmt-del" data-del="${esc(c.id)}" title="Șterge comentariul" aria-label="Șterge comentariul">${WL.ic('x')}</button>` : ''}</div>
-            <div class="cmt-text">${esc(c.text)}</div></div></div>`).join('');
+            <div class="cmt-content">${c.spoiler ? '<button type="button" class="cmt-reveal">Spoiler · click ca să vezi</button>' : ''}
+              ${c.text ? `<div class="cmt-text">${esc(c.text)}</div>` : ''}
+              ${c.image ? `<button type="button" class="cmt-img" data-img aria-label="Mărește poza"><img src="${esc(c.image)}" alt="" loading="lazy"></button>` : ''}
+            </div></div></div>`).join('');
+    const placeholder = wall ? (owner === myUid ? 'Scrie ceva pe profilul tău…' : `Scrie-i ceva lui ${esc(DB.profile.name || DB.profile.username)}…`) : 'Scrie un comentariu…';
     const formHtml = myUid
-      ? `<form class="cmt-form"><textarea class="textarea" maxlength="2000" placeholder="${wall ? (owner === myUid ? 'Scrie ceva pe profilul tău…' : `Scrie-i ceva lui ${esc(DB.profile.name || DB.profile.username)}…`) : 'Scrie un comentariu…'}" required></textarea><button class="btn small primary">Trimite</button></form>`
+      ? `<form class="cmt-form">
+          <div class="cmt-compose">
+            <textarea class="textarea" maxlength="2000" placeholder="${placeholder}"></textarea>
+            <div class="cmt-preview hidden"><img alt=""><button type="button" class="cmt-unpick" aria-label="Scoate poza">${WL.ic('x')}</button></div>
+            <div class="cmt-tools">
+              <label class="cmt-tool" title="Adaugă o poză">${WL.ic('image')}<span>Poză</span><input type="file" accept="image/*" hidden></label>
+              <button type="button" class="cmt-tool cmt-spoiler" aria-pressed="false" title="Ascunde comentariul până dă click">${WL.ic('eyeOff')}<span>Spoiler</span></button>
+              <span class="grow"></span>
+              <button class="btn small primary">Trimite</button>
+            </div>
+          </div>
+        </form>`
       : `<div class="muted cmt-login"><a href="login" style="color:var(--accent-text)">Intră în cont</a> ca să comentezi.</div>`;
     box.innerHTML = wall
       ? `<div class="cmt-body">${formHtml}${items || '<div class="muted cmt-none">Niciun comentariu încă.</div>'}</div>`
       : `<button type="button" class="cmt-toggle${open ? ' on' : ''}">${WL.ic('comment')}${n ? plural(n, 'comentariu', 'comentarii') : 'Comentează'}</button>
       <div class="cmt-body${open ? '' : ' hidden'}">${items}${formHtml}</div>`;
+    let image = '';
     box.onclick = async (e) => {
       if (e.target.closest('.cmt-toggle')) {
         box.querySelector('.cmt-toggle').classList.toggle('on');
         const b = box.querySelector('.cmt-body');
         b.classList.toggle('hidden');
         if (!b.classList.contains('hidden') && box.querySelector('textarea')) box.querySelector('textarea').focus();
+        return;
+      }
+      const hidden = e.target.closest('.cmt.is-spoiler:not(.revealed)');
+      if (hidden && e.target.closest('.cmt-content')) { hidden.classList.add('revealed'); return; }
+      if (e.target.closest('[data-img]')) {
+        const m = openModal(`<img class="cmt-full" src="${esc(e.target.closest('[data-img]').querySelector('img').src)}" alt="">`);
+        m.el.classList.add('modal-image');
+        m.el.addEventListener('click', m.close);
+        return;
+      }
+      if (e.target.closest('.cmt-spoiler')) {
+        const b = e.target.closest('.cmt-spoiler');
+        b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+        return;
+      }
+      if (e.target.closest('.cmt-unpick')) {
+        image = '';
+        box.querySelector('.cmt-preview').classList.add('hidden');
+        box.querySelector('input[type=file]').value = '';
         return;
       }
       const del = e.target.closest('[data-del]');
@@ -733,19 +793,145 @@
       }
     };
     const form = box.querySelector('.cmt-form');
-    if (form) form.onsubmit = async (e) => {
+    if (!form) return;
+    form.querySelector('input[type=file]').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        image = await shrinkImage(file);
+        const pv = box.querySelector('.cmt-preview');
+        pv.querySelector('img').src = image;
+        pv.classList.remove('hidden');
+      } catch (err) { toast(err.message, true); }
+    });
+    form.onsubmit = async (e) => {
       e.preventDefault();
       const ta = form.querySelector('textarea');
-      const btn = form.querySelector('button');
+      const btn = form.querySelector('button.primary');
+      if (!ta.value.trim() && !image) { toast('Scrie ceva sau adaugă o poză.', true); return; }
       btn.disabled = true;
       try {
-        const c = await backend.addComment({ owner, target: box.dataset.target, titleId: box.dataset.titleId, title: box.dataset.title, text: ta.value });
+        const c = await backend.addComment({
+          owner, target: box.dataset.target, titleId: box.dataset.titleId, title: box.dataset.title,
+          text: ta.value, image, spoiler: form.querySelector('.cmt-spoiler').getAttribute('aria-pressed') === 'true',
+        });
         drawComments(box, owner, [...list, c], people, true);
       } catch (err) {
         btn.disabled = false;
         toast(err.code === 'permission-denied' ? 'Comentariile nu sunt pornite încă pe site.' : err.message, true);
       }
     };
+  }
+
+  // ---------- like-uri la recenzii ----------
+
+  const likeBtn = (id, likes = [], count = 0, hidden = false) => {
+    const on = backend.user && likes.includes(backend.user.uid);
+    return `<button type="button" class="rv-like${on ? ' on' : ''}${hidden ? ' hidden' : ''}" data-review-like="${esc(id)}" title="Îmi place recenzia" aria-pressed="${on ? 'true' : 'false'}">${WL.ic('heart')}<span>${count}</span></button>`;
+  };
+
+  // pe profil: numarul de like-uri al recenziilor (butoanele stau ascunse pana vin datele)
+  async function fillReviewLikes(root = app) {
+    const btns = [...root.querySelectorAll('.rv-like.hidden[data-review-like]')];
+    if (!btns.length || !DB || !DB.uid) return;
+    let list;
+    try { list = await backend.reviewsByUser(DB.uid); } catch { return; }
+    const byId = new Map(list.map((r) => [r.id, r]));
+    for (const b of btns) {
+      const r = byId.get(b.dataset.reviewLike);
+      if (!r || !b.isConnected) continue;
+      b.outerHTML = likeBtn(r.id, r.likes || [], r.likeCount || 0);
+    }
+  }
+
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-review-like]');
+    if (!b) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!backend || !backend.user) { location.href = 'login'; return; }
+    b.disabled = true;
+    try {
+      const r = await backend.toggleReviewLike(b.dataset.reviewLike);
+      b.classList.toggle('on', r.liked);
+      b.setAttribute('aria-pressed', r.liked ? 'true' : 'false');
+      b.querySelector('span').textContent = r.likeCount;
+    } catch (err) { toast(err.code === 'permission-denied' ? 'Like-urile nu sunt pornite încă pe site.' : err.message, true); }
+    b.disabled = false;
+  }, true);
+
+  // ---------- recenziile membrilor pe pagina serialului ----------
+
+  function memberReview(r, people) {
+    const p = people.get(r.uid);
+    const mine = backend.user && r.uid === backend.user.uid;
+    const name = r.name || r.username || 'Membru';
+    const av = p && p.avatar ? `<img class="mrv-av" src="${esc(p.avatar)}" alt="" loading="lazy">`
+      : `<span class="mrv-av" style="color:${esc((p && p.accent) || 'var(--accent)')}">${esc(name.charAt(0).toUpperCase())}</span>`;
+    const href = r.username ? BASE + r.username : '';
+    return `<article class="mrv${r.spoiler ? ' spoiler' : ''}${mine ? ' is-mine' : ''}">
+      ${href ? `<a href="${esc(href)}" aria-label="${esc(name)}">${av}</a>` : av}
+      <div class="mrv-main">
+        <div class="mrv-head">${href ? `<a class="mrv-name" href="${esc(href)}">${esc(name)}</a>` : `<span class="mrv-name">${esc(name)}</span>`}
+          ${mine ? '<span class="badge accent">tu</span>' : ''}${stars(r.rating, 'accent')}${heart(r.liked)}
+          <span class="muted">${fmtDate(String(r.updatedAt).slice(0, 10))}</span>
+          ${r.spoiler ? '<span class="badge">spoiler — click ca să vezi</span>' : ''}</div>
+        <div class="text">${esc(r.text)}</div>
+        <div class="mrv-actions">${likeBtn(r.id, r.likes || [], r.likeCount || 0)}</div>
+        <div class="cmts" data-target="${esc(r.uid + '_t_' + r.titleId)}" data-owner="${esc(r.uid)}" data-title-id="${esc(r.titleId)}" data-title="${esc(r.title)}"></div>
+      </div>
+    </article>`;
+  }
+
+  async function fillTitleReviews(t) {
+    const box = document.getElementById('title-reviews');
+    if (!box || !t.tmdbId) return;
+    let list;
+    let members;
+    try { [list, members] = await Promise.all([backend.reviewsFor(t.type, t.tmdbId), backend.listMembers().catch(() => [])]); } catch { return; }
+    if (!box.isConnected) return;
+    const myUid = backend.user && backend.user.uid;
+    // recenzia mea abia salvata poate ajunge in lista comuna o clipa mai tarziu: o pun eu
+    if (t.id && t.review && t.review.trim() && myUid && !list.some((r) => r.uid === myUid)) {
+      const prof = (await backend.myProfile().catch(() => null)) || {};
+      list.push({ id: `${myUid}_${t.id}`, uid: myUid, username: prof.username || '', name: prof.name || '', titleId: t.id, title: t.title, rating: t.rating, liked: t.liked, spoiler: t.spoiler, text: t.review, updatedAt: t.updatedAt || '', likes: [], likeCount: 0 });
+    }
+    if (!list.length) { box.innerHTML = ''; return; }
+    list.sort((a, b) => (b.uid === myUid) - (a.uid === myUid) || (b.likeCount || 0) - (a.likeCount || 0) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    const people = new Map(members.map((p) => [p.uid, p]));
+    const rated = list.filter((r) => r.rating);
+    const avg = rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : 0;
+    box.innerHTML = section(`Recenzii (${list.length})`, `
+      ${avg ? `<div class="mrv-summary">${stars(Math.round(avg * 2) / 2, 'accent lg')}<b>${avg.toFixed(1)}</b><span class="muted">nota medie din ${plural(rated.length, 'recenzie', 'recenzii')} pe EDITSEL</span></div>` : ''}
+      <div class="mrv-list">${list.map((r) => memberReview(r, people)).join('')}</div>`);
+    fillComments(box);
+  }
+
+  // ---------- Descopera: recenzii populare ----------
+
+  async function fillPopularReviews() {
+    const wrap = document.getElementById('pop-reviews-wrap');
+    if (!wrap) return;
+    let list;
+    let members;
+    try { [list, members] = await Promise.all([backend.popularReviews(12), backend.listMembers().catch(() => [])]); } catch { return; }
+    if (!wrap.isConnected || !list.length) return;
+    const people = new Map(members.map((p) => [p.uid, p]));
+    wrap.querySelector('.section-head h2').textContent = list.some((r) => r.likeCount) ? 'Recenzii populare' : 'Recenzii recente';
+    document.getElementById('pop-reviews').innerHTML = list.map((r) => {
+      const p = people.get(r.uid);
+      const name = r.name || r.username || 'Membru';
+      return `<a class="prv-card" href="${esc(showHref(r.type, r.tmdbId, r.title))}">
+        <div class="prv-poster">${r.poster ? `<img src="${esc(r.poster)}" alt="" loading="lazy">` : ''}</div>
+        <div class="prv-body">
+          <b class="notranslate">${esc(r.title)}</b>
+          <div class="prv-by">${p && p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<span style="color:${esc((p && p.accent) || 'var(--accent)')}">${esc(name.charAt(0).toUpperCase())}</span>`}<em>${esc(name)}</em>${stars(r.rating, 'accent')}</div>
+          <p class="prv-text${r.spoiler ? ' is-spoiler' : ''}">${r.spoiler ? 'Conține spoilere — deschide ca să citești.' : esc(r.text.length > 180 ? r.text.slice(0, 180) + '…' : r.text)}</p>
+          <span class="prv-likes">${WL.ic('heart')}${r.likeCount || 0}</span>
+        </div>
+      </a>`;
+    }).join('');
+    wrap.hidden = false;
   }
 
   // ---------- prieteni: cereri de prietenie ----------
@@ -893,8 +1079,9 @@
 
   async function loadNotifications() {
     const myUid = backend.user.uid;
-    const [members, me, comments] = await Promise.all([
+    const [members, me, comments, myReviews] = await Promise.all([
       backend.listMembers().catch(() => []), api('/api/public').catch(() => null), backend.commentsFor(myUid).catch(() => []),
+      backend.reviewsByUser(myUid).catch(() => []),
     ]);
     if (!me) return null;
     const others = members.filter((p) => p.username && p.uid !== myUid);
@@ -910,8 +1097,17 @@
       const p = others.find((x) => x.uid === c.uid) || { uid: c.uid, username: c.username, name: c.name, avatar: '', accent: '' };
       items.push({ id: 'c:' + c.id, type: 'comment', p, c });
     });
-    // cererile primite sunt mereu sus, apoi comentariile, apoi prieteniile noi
-    const order = { request: 0, comment: 1, friend: 2 };
+    // like-urile altora la recenziile mele
+    let likes = 0;
+    for (const r of myReviews) {
+      for (const uid of r.likes || []) {
+        if (uid === myUid || likes >= 20) continue;
+        const p = others.find((x) => x.uid === uid);
+        if (p) { items.push({ id: `l:${r.id}:${uid}`, type: 'like', p, r }); likes++; }
+      }
+    }
+    // cererile primite sunt mereu sus, apoi comentariile, like-urile si prieteniile noi
+    const order = { request: 0, comment: 1, like: 2, friend: 3 };
     items.sort((a, b) => order[a.type] - order[b.type]);
     notifState = { items, me, members: others };
     return notifState;
@@ -951,7 +1147,9 @@
               ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ${n.c.titleId
                 ? `a comentat la recenzia ta pentru <a href="${BASE}${esc(notifState.me.profile.username)}/show/${slug(n.c.title) || 'titlu'}-${esc(n.c.titleId)}"><b class="notranslate">${esc(n.c.title)}</b></a>`
                 : `ți-a scris pe <a href="${BASE}${esc(notifState.me.profile.username)}"><b>profil</b></a>`}:
-                 <div class="bell-quote notranslate">„${esc(n.c.text.length > 120 ? n.c.text.slice(0, 120) + '…' : n.c.text)}”</div>`
+                 <div class="bell-quote notranslate">${n.c.spoiler ? '(spoiler)' : n.c.text ? `„${esc(n.c.text.length > 120 ? n.c.text.slice(0, 120) + '…' : n.c.text)}”` : '(poză)'}</div>`
+              : n.type === 'like'
+                ? `<a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> ți-a apreciat recenzia pentru <a href="${esc(showHref(n.r.type, n.r.tmdbId, n.r.title))}"><b class="notranslate">${esc(n.r.title)}</b></a>.`
               : `Tu și <a href="${BASE}${esc(n.p.username)}"><b>${esc(n.p.name || n.p.username)}</b></a> sunteți acum prieteni.`}
         </div>
       </div>`).join('') : '<div class="hs-empty">Nu ai notificări.</div>'}
@@ -1318,12 +1516,15 @@
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
     const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(show.backdrops[0])}')"></div></div>`;
-    return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
+    const popular = one ? '' : `<section class="section disc-pop" id="pop-reviews-wrap" hidden>
+        <div class="section-head"><h2>Recenzii populare</h2></div><div class="prv-row" id="pop-reviews"></div></section>`;
+    return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}${popular}
     </div>`;
   }
 
   async function fillDiscover(listKey) {
     fillBanner();
+    if (!listKey) fillPopularReviews();
     const [home, me] = await Promise.all([
       loadHomeData(),
       backend.user ? api('/api/public').catch(() => null) : null,
@@ -1866,13 +2067,13 @@
         <div class="title-body page">
           <div>
             ${t.overview ? `<p class="overview mobile">${esc(t.overview)}</p>` : ''}
-            ${review}${seasons}${cast}
+            <div id="title-reviews">${review}</div>${seasons}${cast}
             ${!review && !seasons && !cast ? empty('Nimic în plus de afișat.') : ''}
           </div>
           <aside class="sidebar">${actions}${rating}${epsCard}${creators}</aside>
         </div>
       </div>`;
-    if (profilePage) fillComments();
+    if (profilePage) { fillComments(); fillReviewLikes(); } else fillTitleReviews(state.t);
 
     // salveaza o schimbare: adauga titlul in biblioteca daca nu e deja, altfel il actualizeaza
     const save = async (patch, msg) => {
@@ -2375,6 +2576,7 @@
     fillFriendsSidebar();
     fillFollowButton();
     fillComments();
+    fillReviewLikes();
     if (parts[0] === 'friends') fillFriendsPage();
     // Wrapped e o pagina separata: fara antetul, subsolul si bara de jos ale site-ului
     document.body.classList.toggle('wrapped-mode', parts[0] === 'w');

@@ -6,7 +6,7 @@ import {
   sendPasswordResetEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, limit,
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, limit, orderBy,
   writeBatch, runTransaction,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
@@ -95,7 +95,7 @@ export async function createBackend(config) {
   // starea de autentificare, asteptata o data la pornire
   let user = await new Promise((resolve) => { const off = onAuthStateChanged(auth, (u) => { off(); resolve(u); }); });
   const authListeners = new Set();
-  onAuthStateChanged(auth, (u) => { user = u; mine = null; authListeners.forEach((fn) => fn(u)); });
+  onAuthStateChanged(auth, (u) => { user = u; mine = null; reviewsSynced = false; authListeners.forEach((fn) => fn(u)); });
 
   let siteConfig = null;
   async function loadSiteConfig(force = false) {
@@ -246,6 +246,7 @@ export async function createBackend(config) {
       if (snap && snap.profile) { mine = snap; refreshMine(); } else { mine = await readAll(user.uid); saveSnap(); }
     }
     if (!mine) throw err('Profilul nu există.', 404);
+    if (!reviewsSynced) syncReviews();
     return mine;
   }
   const userDoc = () => doc(fs, 'users', user.uid);
@@ -448,22 +449,108 @@ export async function createBackend(config) {
     return episodes;
   }
 
-  // ---------- comentarii la recenzii (colectia comments) ----------
-  // target = <uid-ul autorului recenziei>_<t (recenzia titlului) | d (intrare din jurnal)>_<id>
+  // ---------- recenziile publice (colectia reviews) ----------
+  // o copie a recenziei fiecarui titlu, ca s-o vada toti pe pagina serialului; id = <uid>_<id-ul titlului>.
+  // like-urile (likes, likeCount) si le scrie fiecare membru pentru el, printr-o tranzactie
+
+  const reviewId = (titleId) => `${user.uid}_${titleId}`;
+  const reviewData = (t, profile) => clean({
+    uid: user.uid, username: profile.username || '', name: profile.name || profile.username || '',
+    titleId: t.id, tmdbId: t.tmdbId, type: t.type, title: t.title, year: t.year || '', poster: /^https?:/.test(t.poster || '') ? t.poster : '',
+    rating: t.rating || 0, liked: Boolean(t.liked), spoiler: Boolean(t.spoiler), text: str(t.review, 20000),
+    updatedAt: t.updatedAt || new Date().toISOString(),
+  });
+  const wantsPublic = (t, profile) => Boolean(!profile.private && t.tmdbId && t.review && t.review.trim());
+
+  // dupa salvarea unui titlu: publica, actualizeaza sau scoate recenzia lui din lista comuna
+  async function publishReview(t, profile, hadReview) {
+    try {
+      if (wantsPublic(t, profile)) await setDoc(doc(fs, 'reviews', reviewId(t.id)), reviewData(t, profile), { merge: true });
+      else if (hadReview) await deleteDoc(doc(fs, 'reviews', reviewId(t.id)));
+    } catch (e) { console.warn('Recenzia publică nu s-a putut salva:', e.message); }
+  }
+
+  // o data pe sesiune: lista comuna se aliniaza cu recenziile din cont (cele scrise inainte, profil privat, nume schimbat)
+  let reviewsSynced = false;
+  async function syncReviews() {
+    reviewsSynced = true;
+    try {
+      const d = mine;
+      const s = await getDocs(query(collection(fs, 'reviews'), where('uid', '==', user.uid), limit(1000)));
+      const have = new Map(s.docs.map((x) => [x.id, x.data()]));
+      const same = (a, b) => ['text', 'rating', 'spoiler', 'liked', 'name', 'username', 'title', 'poster'].every((k) => a[k] === b[k]);
+      for (const t of d.titles) {
+        const id = reviewId(t.id);
+        const cur = have.get(id);
+        have.delete(id);
+        if (wantsPublic(t, d.profile)) { if (!cur || !same(cur, reviewData(t, d.profile))) await publishReview(t, d.profile, Boolean(cur)); }
+        else if (cur) await publishReview(t, d.profile, true);
+      }
+      for (const id of have.keys()) await deleteDoc(doc(fs, 'reviews', id)); // titluri sterse
+    } catch (e) { console.warn('Nu am putut sincroniza recenziile publice:', e.message); }
+  }
+
+  const listReviews = async (...filters) => {
+    const s = await getDocs(query(collection(fs, 'reviews'), ...filters));
+    return s.docs.map((x) => ({ ...x.data(), id: x.id }));
+  };
+  const reviewsFor = async (type, tmdbId) => (await listReviews(where('tmdbId', '==', Number(tmdbId)), limit(300))).filter((r) => r.type === type);
+  const reviewsByUser = (uid) => listReviews(where('uid', '==', uid), limit(1000));
+
+  // Descopera: cele mai apreciate, completate cu cele mai noi
+  async function popularReviews(n = 12) {
+    let list = [];
+    try { list = (await listReviews(orderBy('likeCount', 'desc'), limit(n))).filter((r) => r.likeCount > 0); } catch { /* fara index inca */ }
+    if (list.length < n) {
+      const recent = await listReviews(orderBy('updatedAt', 'desc'), limit(n));
+      list = [...list, ...recent.filter((r) => !list.some((x) => x.id === r.id))];
+    }
+    return list.slice(0, n);
+  }
+
+  async function toggleReviewLike(id) {
+    if (!user) throw err('Neautentificat.', 401);
+    return runTransaction(fs, async (tx) => {
+      const ref = doc(fs, 'reviews', id);
+      const s = await tx.get(ref);
+      if (!s.exists()) throw err('Recenzia nu mai există.', 404);
+      const likes = new Set(s.data().likes || []);
+      if (likes.has(user.uid)) likes.delete(user.uid); else likes.add(user.uid);
+      const arr = [...likes];
+      tx.update(ref, { likes: arr, likeCount: arr.length });
+      return { likes: arr, likeCount: arr.length, liked: likes.has(user.uid) };
+    });
+  }
+
+  // ---------- comentarii la recenzii si pe profil (colectia comments) ----------
+  // target = <uid-ul proprietarului>_<t (recenzia titlului) | d (intrare din jurnal) | p (peretele profilului)>_<id>
 
   async function commentsFor(owner) {
     const s = await getDocs(query(collection(fs, 'comments'), where('owner', '==', owner), limit(500)));
     return s.docs.map((d) => ({ ...d.data(), id: d.id })).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   }
 
-  async function addComment({ owner, target, titleId, title, text }) {
+  // comentariile mai multor recenzii (pagina serialului): Firestore primeste cate 30 de tinte deodata
+  async function commentsForTargets(targets) {
+    const all = [];
+    for (let i = 0; i < targets.length; i += 30) {
+      const s = await getDocs(query(collection(fs, 'comments'), where('target', 'in', targets.slice(i, i + 30))));
+      all.push(...s.docs.map((d) => ({ ...d.data(), id: d.id })));
+    }
+    return all.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  }
+
+  async function addComment({ owner, target, titleId, title, text, image, spoiler }) {
     if (!user) throw err('Neautentificat.', 401);
     const body = str(text, 2000).trim();
-    if (!body) throw err('Scrie ceva înainte să trimiți.');
+    const img = typeof image === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/.test(image) ? image : '';
+    if (img.length > 700000) throw err('Poza e prea mare. Încearcă alta.');
+    if (!body && !img) throw err('Scrie ceva înainte să trimiți.');
     const p = (await me()).profile;
     const c = {
       target: str(target, 200), owner: str(owner, 128), uid: user.uid, username: p.username || '', name: p.name || p.username || '',
       titleId: str(titleId, 40), title: str(title, 300), text: body, createdAt: new Date().toISOString(),
+      ...(img ? { image: img } : {}), ...(spoiler ? { spoiler: true } : {}),
     };
     const id = uid6() + uid6();
     await setDoc(doc(fs, 'comments', id), c);
@@ -543,6 +630,8 @@ export async function createBackend(config) {
       if (JSON.stringify(upd).length > 900000) throw err('Imaginile sunt prea mari. Încearcă o poză mai mică.');
       await updateDoc(userDoc(), clean(upd));
       if ('favorites' in b && Array.isArray(b.favorites)) await saveFavorites(b.favorites);
+      // profil privat sau nume nou: si recenziile publice se aliniaza
+      if ('private' in b || 'name' in b || 'username' in b) syncReviews();
       return clean(pr);
     }
 
@@ -571,6 +660,7 @@ export async function createBackend(config) {
       const { id, ...rest } = t;
       await setDoc(sub('titles', id), clean(rest));
       d.titles.push(t);
+      publishReview(t, d.profile, false);
       if (t.favorite) await saveFavorites([...d.profile.favorites, t.id]);
       touch();
       return clean(t);
@@ -588,6 +678,7 @@ export async function createBackend(config) {
         const { id, ...rest } = t;
         await setDoc(sub('titles', id), clean(rest));
         d.titles[idx] = t;
+        publishReview(t, d.profile, Boolean(cur.review && cur.review.trim()));
         if ('favorite' in b && Boolean(b.favorite) !== Boolean(cur.favorite)) {
           await saveFavorites(b.favorite ? [...d.profile.favorites, t.id] : d.profile.favorites.filter((x) => x !== t.id));
         }
@@ -596,6 +687,7 @@ export async function createBackend(config) {
       }
       if (m === 'DELETE') {
         const id = d.titles[idx].id;
+        if (d.titles[idx].review && d.titles[idx].review.trim()) deleteDoc(doc(fs, 'reviews', reviewId(id))).catch(() => {});
         const batch = writeBatch(fs);
         batch.delete(sub('titles', id));
         d.diary.filter((e) => e.titleId === id).forEach((e) => batch.delete(sub('diary', e.id)));
@@ -696,6 +788,7 @@ export async function createBackend(config) {
       upd.updatedAt = new Date().toISOString();
       await updateDoc(userDoc(), clean(upd));
       mine = null;
+      reviewsSynced = false;
       return { ok: true };
     }
 
@@ -709,7 +802,8 @@ export async function createBackend(config) {
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
     loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, bannerImages, uidForUsername,
-    commentsFor, addComment, deleteComment: (id) => deleteDoc(doc(fs, 'comments', id)),
+    commentsFor, commentsForTargets, addComment, deleteComment: (id) => deleteDoc(doc(fs, 'comments', id)),
+    reviewsFor, reviewsByUser, popularReviews, toggleReviewLike,
     myUsername: async () => (user ? (await me()).profile.username : null),
     myProfile: async () => (user ? (await me()).profile : null),
     exportMine: async () => clean(await me()),
