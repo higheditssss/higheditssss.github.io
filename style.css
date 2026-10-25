@@ -878,38 +878,78 @@ body.logged-out .footer-me { display: none; }
 /* ---------- calendar ---------- */
 .cal-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .cal-top .btn { margin-bottom: 26px; }
-.cal-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 30px; }
-.cal-summary .card b { display: block; font-family: var(--head); font-size: 30px; font-weight: 700; }
-.cal-summary .card span { color: var(--muted); font-size: 13px; }
-.cal-summary .card:first-child { background: var(--accent); border-color: var(--accent); }
-.cal-summary .card:first-child b, .cal-summary .card:first-child span { color: var(--accent-ink); }
+.cal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.cal-chips span { display: inline-flex; align-items: baseline; gap: 6px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; }
+.cal-chips b { color: var(--text); font: 700 16px var(--head); }
+.cal-chips span.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+.cal-chips span.on b { color: var(--accent-text); }
+.cal-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start; margin-bottom: 34px; }
+
+/* grila lunii */
+.calg { padding: 18px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); }
+.calg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.calg-head h2 { font-size: 22px; }
+.calg-nav { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; background: var(--surface-2); color: var(--text); cursor: pointer; }
+.calg-nav .ico { width: 17px; height: 17px; }
+.calg-nav[data-month="-1"] .ico { transform: rotate(90deg); }
+.calg-nav[data-month="1"] .ico { transform: rotate(-90deg); }
+.calg-nav:hover:not(:disabled) { background: var(--surface-3); }
+.calg-nav:disabled { opacity: .3; cursor: default; }
+.calg-week, .calg-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.calg-week { margin-bottom: 6px; }
+.calg-week span { text-align: center; color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.calg-cell { position: relative; aspect-ratio: 4 / 3; overflow: hidden; padding: 0; border: 1px solid transparent; border-radius: 12px; background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; transition: transform .15s, border-color .15s; }
+.calg-cell:hover { border-color: #3a3a44; }
+.calg-cell.out { opacity: .35; }
+.calg-cell.is-past { opacity: .6; }
+.calg-cell.out.is-past { opacity: .25; }
+.calg-bg { position: absolute; inset: 0; background: center / cover no-repeat; }
+.calg-cell.has-eps .calg-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(9, 9, 11, .55), rgba(9, 9, 11, .1) 40%, rgba(9, 9, 11, .9)); }
+.calg-num { position: absolute; top: 7px; left: 9px; z-index: 1; font: 700 15px var(--head); }
+.calg-cell.is-today .calg-num { min-width: 26px; height: 26px; top: 5px; left: 5px; display: grid; place-items: center; padding: 0 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+.calg-cell.is-today { border-color: var(--accent); }
+.calg-cell.is-sel { border-color: var(--text); box-shadow: 0 0 0 2px var(--text) inset; opacity: 1; }
+.calg-more { position: absolute; top: 6px; right: 6px; z-index: 1; padding: 1px 7px; border-radius: 999px; background: rgba(9, 9, 11, .75); font-size: 11px; font-weight: 700; }
+.calg-info { position: absolute; left: 8px; right: 8px; bottom: 7px; z-index: 1; display: flex; flex-direction: column; min-width: 0; }
+.calg-info b { font-size: 12px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calg-info small { color: #d6d9df; font-size: 11px; }
+
+/* lista zilei alese si „Mai tarziu” */
+.cal-panel { position: sticky; top: 90px; }
+.cal-none { padding: 22px; border: 1px dashed #33333b; border-radius: 16px; text-align: center; font-size: 14px; }
 .cal-day { margin-bottom: 28px; }
 .cal-day-head { display: flex; align-items: baseline; gap: 10px; font-size: 19px; margin-bottom: 10px; }
 .cal-day-head span { font: 500 13px Inter, sans-serif; color: var(--muted); }
-.cal-day.is-today .cal-day-head { color: var(--accent-text); }
 .cal-list { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
-.cal-row { display: grid; grid-template-columns: 128px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); transition: background .15s; }
+.cal-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); transition: background .15s; }
+.cal-panel .cal-row { grid-template-columns: 104px minmax(0, 1fr); gap: 12px; padding: 12px; }
 .cal-row:first-child { border-top: 0; }
 .cal-row:hover { background: var(--surface-2); }
-.cal-still { width: 128px; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: var(--surface-3); }
+.cal-still { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: var(--surface-3); }
 .cal-still img { width: 100%; height: 100%; object-fit: cover; }
 .cal-still img.is-poster { object-position: center 25%; }
 .cal-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cal-info b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-panel .cal-info b { font-size: 15px; }
 .cal-info > span { color: #d6d9df; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-info small { font-size: 12px; }
-.cal-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.cal-day.is-past .cal-row { opacity: .75; }
+.cal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 #cal-body > .cal-row.skeleton { height: 96px; margin-bottom: 12px; border: 0; border-radius: 18px; background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }
 .cal-note { font-size: 12px; margin-top: 10px; }
+@media (max-width: 900px) {
+  .cal-wrap { grid-template-columns: 1fr; }
+  .cal-panel { position: static; scroll-margin-top: 80px; }
+}
 @media (max-width: 640px) {
-  .cal-row { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 10px 12px; }
-  .cal-still { width: 96px; }
-  .cal-tags { grid-column: 2; justify-content: flex-start; }
-  .cal-tags:empty { display: none; }
-  .cal-summary { gap: 8px; }
-  .cal-summary .card { padding: 12px; }
-  .cal-summary .card b { font-size: 24px; }
+  .calg { padding: 12px; border-radius: 18px; }
+  .calg-week, .calg-grid { gap: 4px; }
+  .calg-cell { aspect-ratio: 1; border-radius: 9px; }
+  .calg-num { top: 4px; left: 6px; font-size: 13px; }
+  .calg-cell.is-today .calg-num { min-width: 22px; height: 22px; top: 3px; left: 3px; }
+  .calg-info { display: none; }
+  .calg-more { top: auto; bottom: 4px; right: 4px; font-size: 10px; padding: 0 5px; }
+  .calg-cell.has-eps .calg-bg::after { background: rgba(9, 9, 11, .35); }
+  .cal-row, .cal-panel .cal-row { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 10px 12px; }
 }
 
 /* ---------- comentarii la recenzii ---------- */
@@ -923,7 +963,7 @@ body.logged-out .footer-me { display: none; }
 .cmt-body { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .cmt { display: flex; gap: 10px; }
 .cmt-av { width: 30px; height: 30px; flex: none; border-radius: 9px; object-fit: cover; background: var(--surface-3); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
-.cmt-main { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
+.cmt-main { flex: 0 1 auto; width: fit-content; min-width: 180px; max-width: 100%; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
 .cmt-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .cmt-name { font-weight: 600; font-size: 13px; color: var(--text); }
 a.cmt-name:hover { color: var(--accent-text); }
@@ -935,13 +975,6 @@ a.cmt-name:hover { color: var(--accent-text); }
 .bell-quote { margin-top: 4px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 
 /* ---------- anul in seriale ---------- */
-.yr-promo { display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 22px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 24%, var(--surface)), var(--surface)); transition: border-color .15s; }
-.yr-promo:hover { border-color: var(--accent); }
-.yr-promo-ic { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--accent); color: var(--accent-ink); }
-.yr-promo-ic .ico { width: 20px; height: 20px; }
-.yr-promo b { display: block; font-family: var(--head); font-size: 17px; }
-.yr-promo small { color: var(--muted); font-size: 13px; }
-.yr-promo .arrow { margin-left: auto; font-size: 22px; color: var(--muted); }
 
 /* ---------- Wrapped: pagina separata, derulata sectiune cu sectiune ---------- */
 body.wrapped-mode .site-header, body.wrapped-mode .site-footer, body.wrapped-mode .bottom-nav, body.wrapped-mode .install-bar { display: none; }
@@ -1124,7 +1157,7 @@ body.wrapped-mode .site-header, body.wrapped-mode .site-footer, body.wrapped-mod
 /* ---------- comentarii cu poza / spoiler ---------- */
 .cmt-content { position: relative; }
 .cmt-img { display: block; margin-top: 8px; padding: 0; border: 0; background: none; cursor: zoom-in; }
-.cmt-img img { display: block; max-width: min(100%, 320px); max-height: 260px; border-radius: 10px; object-fit: cover; }
+.cmt-img img { display: block; max-width: min(100%, 260px); max-height: 220px; border-radius: 10px; object-fit: cover; }
 .cmt.is-spoiler:not(.revealed) .cmt-text, .cmt.is-spoiler:not(.revealed) .cmt-img { filter: blur(10px); pointer-events: none; user-select: none; }
 .cmt-reveal { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; min-height: 34px; border: 0; border-radius: 8px; background: rgba(9, 9, 11, .35); color: #ffc46b; font: 700 12px Inter, sans-serif; letter-spacing: .04em; cursor: pointer; }
 .cmt.is-spoiler.revealed .cmt-reveal { display: none; }
@@ -1176,3 +1209,10 @@ a.mrv-name:hover { color: var(--accent-text); }
 .prv-by .stars { flex: none; display: inline-flex; white-space: nowrap; }
 .prv-by em { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prv-row { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+
+/* ---------- butonul Wrapped din antet ---------- */
+.wr-hbtn { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px; padding: 8px 14px; border-radius: 999px; background: linear-gradient(120deg, var(--accent-hover), var(--accent) 55%, var(--accent-deep)); color: var(--accent-ink); font-weight: 700; font-size: 14px; box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); transition: filter .15s; }
+.wr-hbtn .ico { width: 15px; height: 15px; }
+.wr-hbtn:hover { filter: brightness(1.08); }
+body.logged-out .wr-hbtn { display: none; }
+@media (max-width: 640px) { .wr-hbtn { margin-left: 10px; padding: 6px 11px; font-size: 12px; } }

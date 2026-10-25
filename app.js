@@ -134,7 +134,6 @@
           <a href="${R('/shows?status=watched')}"><span class="ic">${WL.ic('eye')}</span>Văzute<span class="val">${watched}</span></a>
           <a href="${R('/shows?status=watchlist')}"><span class="ic">${WL.ic('clock')}</span>De văzut<span class="val">${watchlist}</span></a>
           <a href="${R('/reviews')}"><span class="ic">${WL.ic('star')}</span>Ratinguri<span class="val">${ratings.length + DB.diary.filter((e) => e.rating).length}</span></a>
-          <a href="${R('/wrapped/' + new Date().getFullYear())}"><span class="ic">${WL.ic('sparkle')}</span>Wrapped<span class="val">${new Date().getFullYear()}</span></a>
           <a href="${R('/stats')}"><span class="ic">${WL.ic('chart')}</span>Toate statisticile<span class="val">›</span></a>
         </div>
       </div>`;
@@ -340,10 +339,7 @@
       ? `<div class="hbars">${rows.map(([k, n]) => `<div class="hbar"><span>${esc(k)}</span><div class="track"><div style="width:${(n / max) * 100}%"></div></div><span class="n">${n}</span></div>`).join('')}</div>`
       : '<div class="muted">Nu sunt date încă.</div>';
 
-    const yr = String(new Date().getFullYear());
     return shell('stats', `
-      <a class="yr-promo" href="${R('/wrapped/' + yr)}"><span class="yr-promo-ic">${WL.ic('sparkle')}</span>
-        <span><b>Wrapped ${yr} · ${backend.user && backend.user.uid === DB.uid ? 'Anul tău în seriale' : 'Anul în seriale'}</b><small>Orele, topurile și momentele anului, într-o singură pagină.</small></span><span class="arrow">›</span></a>
       <div class="big-stats">
         <div class="card"><b>${T.filter((t) => t.type === 'tv').length}</b><span>Seriale</span></div>
         <div class="card"><b>${T.filter((t) => t.type === 'movie').length}</b><span>Filme</span></div>
@@ -1238,6 +1234,8 @@
     if (fp && username) fp.href = BASE + username;
     const fd = document.getElementById('footer-diary');
     if (fd && username) fd.href = BASE + username + '/diary';
+    const hw = document.getElementById('hdr-wrapped');
+    if (hw && username) hw.href = BASE + username + '/wrapped';
     const fa = document.getElementById('footer-add');
     if (fa && !fa.dataset.hooked) {
       fa.dataset.hooked = '1';
@@ -1712,6 +1710,7 @@
     </div>`;
   }
 
+  // calendarul ca grila pe luna: fiecare zi cu episoade are imaginea lor; click pe o zi = lista din dreapta
   async function fillCalendar(force = false) {
     const body = document.getElementById('cal-body');
     if (!body) return;
@@ -1721,38 +1720,111 @@
       return;
     }
     if (!body.isConnected) return;
+    if (!list.length) {
+      body.innerHTML = empty('Niciun episod nou în următoarele două luni. Marchează serialele pe care le urmărești cu „Mă uit acum” sau „De văzut” și apar aici.');
+      return;
+    }
     const today = localDay();
     const tomorrow = localDay(1);
     const weekEnd = localDay(7);
+    const later = list.filter((e) => e.later);
+    const dated = list.filter((e) => !e.later);
+    const byDay = new Map();
+    for (const e of dated) { if (!byDay.has(e.airDate)) byDay.set(e.airDate, []); byDay.get(e.airDate).push(e); }
+    const counts = {
+      today: (byDay.get(today) || []).length,
+      week: dated.filter((e) => e.airDate >= today && e.airDate < weekEnd).length,
+      past: dated.filter((e) => e.airDate < today).length,
+    };
+    const ym = (s) => s.slice(0, 7);
+    const firstMonth = ym(localDay(-7));
+    const lastMonth = ym([...byDay.keys(), today].sort().pop());
+    const shiftMonth = (m, k) => { const d = new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+    let month = ym(today);
+    let selected = byDay.has(today) ? today : ([...byDay.keys()].sort().find((d) => d > today) || today);
+    if (ym(selected) !== month) month = ym(selected);
+
     const row = (e, withDate = false) => `<a class="cal-row" href="${esc(showHref('tv', e.tmdbId, e.title))}">
         <div class="cal-still">${e.still || e.poster ? `<img src="${esc(e.still || e.poster)}" alt="" loading="lazy" class="${e.still ? '' : 'is-poster'}">` : ''}</div>
         <div class="cal-info">
           <b class="notranslate">${esc(e.title)}</b>
           <span>S${e.season} · E${e.episode}${e.name && !/^(episodul|episode) \d+$/i.test(e.name) ? ` · <span class="notranslate">${esc(e.name)}</span>` : ''}</span>
           <small class="muted">${withDate ? esc(dayLabel(e.airDate)) + (e.network ? ' · ' : '') : ''}${esc(e.network)}${e.runtime ? ` · ${e.runtime} min` : ''}</small>
+          ${e.premiere || e.finale ? `<span class="cal-tags">${e.premiere ? `<span class="badge accent">${e.episode === 1 && e.season === 1 ? 'Serial nou' : 'Sezon nou'}</span>` : ''}${e.finale ? '<span class="badge">Final de sezon</span>' : ''}</span>` : ''}
         </div>
-        <div class="cal-tags">${e.premiere ? `<span class="badge accent">${e.episode === 1 && e.season === 1 ? 'Serial nou' : 'Sezon nou'}</span>` : ''}${e.finale ? '<span class="badge">Final de sezon</span>' : ''}</div>
       </a>`;
-    const later = list.filter((e) => e.later);
-    const recent = list.filter((e) => !e.later && e.airDate < today).reverse();
-    const next = list.filter((e) => !e.later && e.airDate >= today);
-    const days = new Map();
-    for (const e of next) { if (!days.has(e.airDate)) days.set(e.airDate, []); days.get(e.airDate).push(e); }
-    const thisWeek = next.filter((e) => e.airDate < weekEnd).length;
-    const group = (title, items, withDate, cls = '') => `<section class="cal-day ${cls}"><h2 class="cal-day-head">${title}<span>${plural(items.length, 'episod', 'episoade')}</span></h2>
-        <div class="cal-list">${items.map((e) => row(e, withDate)).join('')}</div></section>`;
     const dayTitle = (d) => (d === today ? 'Azi' : d === tomorrow ? 'Mâine' : esc(dayLabel(d)));
-    body.innerHTML = !list.length
-      ? empty('Niciun episod nou în următoarele două luni. Marchează serialele pe care le urmărești cu „Mă uit acum” sau „De văzut” și apar aici.')
-      : `<div class="cal-summary">
-          <div class="card"><b>${days.has(today) ? days.get(today).length : 0}</b><span>azi</span></div>
-          <div class="card"><b>${thisWeek}</b><span>în următoarele 7 zile</span></div>
-          <div class="card"><b>${recent.length}</b><span>apărute săptămâna trecută</span></div>
+
+    function grid() {
+      const y = Number(month.slice(0, 4));
+      const m = Number(month.slice(5, 7)) - 1;
+      const first = new Date(y, m, 1);
+      const start = new Date(y, m, 1 - ((first.getDay() + 6) % 7)); // saptamana incepe luni
+      const weeks = Math.ceil((((first.getDay() + 6) % 7) + new Date(y, m + 1, 0).getDate()) / 7);
+      const cells = [];
+      for (let i = 0; i < weeks * 7; i++) {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const eps = byDay.get(key) || [];
+        const top = eps[0];
+        const cls = [d.getMonth() !== m && 'out', key === today && 'is-today', key < today && 'is-past', key === selected && 'is-sel', eps.length && 'has-eps'].filter(Boolean).join(' ');
+        cells.push(`<button type="button" class="calg-cell ${cls}" data-day="${key}" aria-label="${esc(dayLabel(key))}${eps.length ? ', ' + plural(eps.length, 'episod', 'episoade') : ''}">
+            ${top && (top.still || top.poster) ? `<span class="calg-bg" style="background-image:url('${esc(top.still || top.poster)}')"></span>` : ''}
+            <span class="calg-num">${d.getDate()}</span>
+            ${eps.length > 1 ? `<span class="calg-more">+${eps.length - 1}</span>` : ''}
+            ${top ? `<span class="calg-info"><b class="notranslate">${esc(top.title)}</b><small>S${top.season} · E${top.episode}</small></span>` : ''}
+          </button>`);
+      }
+      return `<div class="calg">
+          <div class="calg-head">
+            <button type="button" class="calg-nav" data-month="-1" ${month <= firstMonth ? 'disabled' : ''} aria-label="Luna trecută">${WL.ic('down')}</button>
+            <h2>${MONTHS[m]} ${y}</h2>
+            <button type="button" class="calg-nav" data-month="1" ${month >= lastMonth ? 'disabled' : ''} aria-label="Luna următoare">${WL.ic('down')}</button>
+          </div>
+          <div class="calg-week">${['LUN', 'MAR', 'MIE', 'JOI', 'VIN', 'SÂM', 'DUM'].map((w) => `<span>${w}</span>`).join('')}</div>
+          <div class="calg-grid">${cells.join('')}</div>
+        </div>`;
+    }
+
+    function panel() {
+      const eps = byDay.get(selected) || [];
+      return `<aside class="cal-panel">
+          <h2 class="cal-day-head">${dayTitle(selected)}${eps.length ? `<span>${plural(eps.length, 'episod', 'episoade')}</span>` : ''}</h2>
+          ${eps.length ? `<div class="cal-list">${eps.map((e) => row(e)).join('')}</div>` : '<div class="cal-none muted">Niciun episod în ziua asta.</div>'}
+        </aside>`;
+    }
+
+    const draw = () => {
+      body.innerHTML = `<div class="cal-chips">
+          <span class="${counts.today ? 'on' : ''}"><b>${counts.today}</b> azi</span>
+          <span><b>${counts.week}</b> în următoarele 7 zile</span>
+          <span><b>${counts.past}</b> apărute săptămâna trecută</span>
         </div>
-        ${[...days].map(([d, items]) => group(dayTitle(d), items, false, d === today ? 'is-today' : '')).join('') || empty('Nimic programat în următoarele două luni.')}
-        ${recent.length ? group('Au apărut recent', recent, true, 'is-past') : ''}
-        ${later.length ? group('Mai târziu', later, true) : ''}
+        <div class="cal-wrap">${grid()}${panel()}</div>
+        ${later.length ? `<section class="cal-day"><h2 class="cal-day-head">Mai târziu<span>${plural(later.length, 'episod', 'episoade')}</span></h2>
+          <div class="cal-list">${later.map((e) => row(e, true)).join('')}</div></section>` : ''}
         <p class="muted cal-note">Datele sunt de pe TMDB, pentru serialele din biblioteca ta (fără cele abandonate). Se actualizează la câteva ore.</p>`;
+    };
+    draw();
+    body.onclick = (ev) => {
+      const nav = ev.target.closest('[data-month]');
+      if (nav) {
+        month = shiftMonth(month, Number(nav.dataset.month));
+        // in luna noua se alege prima zi cu episoade (sau ziua de azi, daca e in luna asta)
+        const days = [...byDay.keys()].filter((d) => ym(d) === month).sort();
+        selected = ym(today) === month ? (byDay.has(today) ? today : days.find((d) => d >= today) || today) : days[0] || `${month}-01`;
+        draw();
+        return;
+      }
+      const cell = ev.target.closest('[data-day]');
+      if (!cell) return;
+      selected = cell.dataset.day;
+      if (ym(selected) !== month) month = ym(selected);
+      draw();
+      // pe telefon lista e sub grila: o aducem in fata
+      const p = body.querySelector('.cal-panel');
+      if (p && window.matchMedia('(max-width: 900px)').matches) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
   }
 
   // ---------- adaugare rapida: pop-up direct pe pagina (fara sa mergi in Setari) ----------
@@ -2675,6 +2747,8 @@
     if (!me) return;
     const bn = document.getElementById('bn-profile');
     if (bn && me.username) { bn.href = BASE + me.username; bn.innerHTML = `<span>${icon('user')}</span>Profil`; }
+    const hw = document.getElementById('hdr-wrapped');
+    if (hw && me.username) hw.href = BASE + me.username + '/wrapped';
     const slot = document.getElementById('auth-slot');
     if (slot && !slot.innerHTML.trim()) slot.innerHTML = authSlotHtml(me);
   })();
