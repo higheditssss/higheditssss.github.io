@@ -169,7 +169,34 @@
     'Albastru gheață': 'Ice blue', 'Verde mentă': 'Mint green', 'Verde smarald': 'Emerald green', 'Verde salvie': 'Sage green',
     'România': 'Romania', 'SUA': 'USA', 'Marea Britanie': 'United Kingdom', 'Germania': 'Germany', 'Italia': 'Italy', 'Spania': 'Spain', 'Franța': 'France', 'Olanda': 'Netherlands', 'Ungaria': 'Hungary', 'Română': 'Romanian',
     'DUM': 'SUN', 'LUN': 'MON', 'MAR': 'TUE', 'MIE': 'WED', 'JOI': 'THU', 'VIN': 'FRI', 'SÂM': 'SAT',
+    'Duminică': 'Sunday', 'Luni': 'Monday', 'Marți': 'Tuesday', 'Miercuri': 'Wednesday', 'Joi': 'Thursday', 'Vineri': 'Friday', 'Sâmbătă': 'Saturday',
+
+    // trailer
+    'Trailer': 'Trailer', 'Închide': 'Close', 'Caută pe YouTube': 'Search on YouTube', 'Nu am găsit un trailer pe TMDB pentru titlul ăsta.': "We couldn't find a trailer on TMDB for this title.",
+
+    // calendar
+    'Calendar': 'Calendar', 'Reîmprospătează': 'Refresh', 'Episoadele noi din serialele tale, zi cu zi.': 'New episodes from your shows, day by day.',
+    'Azi': 'Today', 'Mâine': 'Tomorrow', 'Au apărut recent': 'Recently aired', 'Mai târziu': 'Later', 'azi': 'today',
+    'în următoarele 7 zile': 'in the next 7 days', 'apărute săptămâna trecută': 'aired last week',
+    'Serial nou': 'New show', 'Sezon nou': 'New season', 'Final de sezon': 'Season finale', 'Nimic programat în următoarele două luni.': 'Nothing scheduled in the next two months.',
+    'Niciun episod nou în următoarele două luni. Marchează serialele pe care le urmărești cu „Mă uit acum” sau „De văzut” și apar aici.': 'No new episodes in the next two months. Mark the shows you follow as “Watching” or “Watchlist” and they show up here.',
+    'Datele sunt de pe TMDB, pentru serialele din biblioteca ta (fără cele abandonate). Se actualizează la câteva ore.': 'Data from TMDB, for the shows in your library (except dropped ones). Refreshed every few hours.',
+    'ca să vezi când apar episoadele noi din serialele tale.': 'to see when new episodes of your shows come out.',
+
+    // comentarii
+    'Comentează': 'Comment', 'Trimite': 'Send', 'Scrie un comentariu…': 'Write a comment…', 'Ștergi comentariul?': 'Delete this comment?', 'Șterge comentariul': 'Delete comment',
+    'Intră în cont': 'Log in', 'ca să comentezi.': 'to comment.', 'Membru': 'Member', 'a comentat la recenzia ta pentru': 'commented on your review of',
+    'Comentariile nu sunt pornite încă pe site.': "Comments aren't enabled on the site yet.", 'Scrie ceva înainte să trimiți.': 'Write something before sending.',
+
+    // anul in seriale
+    'Anul tău în seriale': 'Your year in TV', 'Anul în seriale': 'Year in review', 'Distribuie': 'Share', 'Link copiat': 'Link copied', 'Copiază linkul:': 'Copy the link:',
+    'Ore de privit': 'Hours watched', 'Episoade': 'Episodes', 'Nota medie': 'Average rating', 'Recenzii scrise': 'Reviews written',
+    'Cel mai bine notat': 'Top rated', 'Serialul anului': 'Show of the year', 'Luna cea mai activă': 'Busiest month', 'Ziua preferată': 'Favorite day',
+    'Maratonul anului': 'Biggest binge', 'Primul din an': 'First of the year', 'Cel mai recent': 'Most recent', 'Pe luni': 'By month', 'Genuri': 'Genres',
+    'Top seriale': 'Top shows', 'Top filme': 'Top movies', 'Orele, topurile și momentele anului, într-o singură pagină.': 'The hours, top picks and moments of the year, on one page.',
+    'Calculat din jurnal: un episod notat = un episod, un sezon notat = toate episoadele lui. Orele sunt aproximative.': 'Based on the diary: a logged episode = one episode, a logged season = all its episodes. Hours are approximate.',
   };
+  const WEEKDAY = { Duminică: 'Sunday', Luni: 'Monday', Marți: 'Tuesday', Miercuri: 'Wednesday', Joi: 'Thursday', Vineri: 'Friday', Sâmbătă: 'Saturday' };
 
   const MONTHS = { Ianuarie: 'January', Februarie: 'February', Martie: 'March', Aprilie: 'April', Mai: 'May', Iunie: 'June', Iulie: 'July', August: 'August', Septembrie: 'September', Octombrie: 'October', Noiembrie: 'November', Decembrie: 'December' };
   const MON = { ian: 'Jan', feb: 'Feb', mar: 'Mar', apr: 'Apr', mai: 'May', iun: 'Jun', iul: 'Jul', aug: 'Aug', sep: 'Sep', oct: 'Oct', noi: 'Nov', dec: 'Dec' };
@@ -210,12 +237,22 @@
     [/^Ștergi lista „(.+)”\? Titlurile rămân în bibliotecă\.$/, (m, t) => `Delete the list “${t}”? The titles stay in your library.`],
     [/^Nu există niciun utilizator @(.+)\.$/, (m, u) => `There is no user @${u}.`],
     [/^Ultima publicare: (.+)$/, (m, d) => `Last published: ${d}`],
-    [/^(.+) · (Seriale|Filme|Recenzii|Aprecieri|Jurnal|Liste|Listă|Statistici|Prieteni|EDITSEL)$/, (m, a, b) => `${tr(a)} · ${{ Seriale: 'TV shows', Filme: 'Movies', Recenzii: 'Reviews', Aprecieri: 'Likes', Jurnal: 'Diary', Liste: 'Lists', Listă: 'List', Statistici: 'Stats', Prieteni: 'Friends', EDITSEL: 'EDITSEL' }[b]}`],
+    [/^(.+) · (Seriale|Filme|Recenzii|Aprecieri|Jurnal|Liste|Listă|Statistici|Prieteni|Anul în seriale|EDITSEL)$/, (m, a, b) => `${tr(a)} · ${{ Seriale: 'TV shows', Filme: 'Movies', Recenzii: 'Reviews', Aprecieri: 'Likes', Jurnal: 'Diary', Liste: 'Lists', Listă: 'List', Statistici: 'Stats', Prieteni: 'Friends', 'Anul în seriale': 'Year in review', EDITSEL: 'EDITSEL' }[b]}`],
     [/^„(.*)” · Căutare · EDITSEL$/, (m, q) => `“${q}” · Search · EDITSEL`],
     [/^(\d{4}) • (.+)$/, (m, y, rest) => `${y} • ${rest.replace(/(\d+) sezoane/, '$1 seasons').replace(/(\d+) sezon\b/, '$1 season')}`],
     [/^(\d+) \/ (\d+)$/, (m) => m],
     [/^din (\d+)$/, (m, n) => `of ${n}`],
     [/^(\d+) ep\.$/, (m, n) => `${n} ep.`],
+    [/^(\d+) (comentariu|comentarii|intrare|intrări)$/, (m, n, w) => `${n} ${{ comentariu: 'comment', comentarii: 'comments', intrare: 'entry', intrări: 'entries' }[w]}`],
+    [/^(\d+) (episod|episoade) și (\d+) (film|filme)$/, (m, a, w, b, v) => `${a} ${w === 'episod' ? 'episode' : 'episodes'} and ${b} ${v === 'film' ? 'movie' : 'movies'}`],
+    [/^(Duminică|Luni|Marți|Miercuri|Joi|Vineri|Sâmbătă), (\d{1,2}) (\p{L}+)$/u, (m, d, n, mo) => {
+      const k = mo.charAt(0).toUpperCase() + mo.slice(1);
+      return MONTHS[k] ? `${WEEKDAY[d]}, ${MONTHS[k]} ${n}` : null;
+    }],
+    [/^(Ianuarie|Februarie|Martie|Aprilie|Mai|Iunie|Iulie|August|Septembrie|Octombrie|Noiembrie|Decembrie)$/, (m) => MONTHS[m]],
+    [/^(Anul tău în seriale|Anul în seriale) · (\d{4})$/, (m, a, y) => `${D[a]} · ${y}`],
+    [/^(\d+) (?:de )?or[eă] în fața ecranului, (.+) și (.+) în jurnal\.$/, (m, h, a, b) => `${h} ${h === '1' ? 'hour' : 'hours'} in front of the screen, ${translateString(a)} and ${translateString(b)} in the diary.`],
+    [/^N-a(i?) notat nimic în jurnal în (\d{4})\.$/, (m, you, y) => `${you ? 'You' : 'They'} didn't log anything in ${y}.`],
   ];
 
   // pentru fiecare cheie cu simbol la inceput/sfarsit („✓ Acceptă”, „Mai multe opțiuni ▾”), si varianta fara simbol
@@ -242,7 +279,7 @@
   }
 
   // nu traducem continutul membrilor
-  const SKIP = 'textarea, input, script, style, .profile-bio, .review .text, .overview, .tagline, .poster-fallback, .diary-title, .hs-text b, .disc-over b, .trend-title, .member-body b, .friend-card b, .list-card h3, .list-card p, .cast, .profile-head h1, .title-head h1, .notranslate';
+  const SKIP = 'textarea, input, script, style, .profile-bio, .review .text, .cmt-text, .cmt-name, .overview, .tagline, .poster-fallback, .diary-title, .hs-text b, .disc-over b, .trend-title, .member-body b, .friend-card b, .list-card h3, .list-card p, .cast, .profile-head h1, .title-head h1, .notranslate';
 
   const doneText = new WeakMap(); // nod text -> textul pus de noi
   const doneAttr = new WeakMap(); // element -> { atribut: valoarea pusa de noi }

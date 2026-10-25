@@ -14,11 +14,17 @@ const IMG = 'https://image.tmdb.org/t/p/';
 const STATUSES = ['watching', 'watched', 'watchlist', 'paused', 'dropped'];
 const MAX_FAVS = 5;
 // adrese folosite de site, nu pot fi username-uri
-const RESERVED = new Set(['descopera', 'cauta', 'prieteni', 'membri', 'admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre']);
+const RESERVED = new Set(['descopera', 'cauta', 'prieteni', 'membri', 'admin', 'cont', 'setari', 'login', 'api', 'brand', 'uploads', 'index', 'data', 'profil', 'editsel', 'despre', 'muzica', 'calendar']);
 
 const err = (message, status = 400) => Object.assign(new Error(message), { status });
 const uid6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
 const today = () => { const n = new Date(); return new Date(n.getTime() - n.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const addDays = (s, n) => { const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+// ruleaza fn pe toate elementele, cate `size` deodata (ca sa nu bombardam TMDB)
+async function inPool(items, size, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(size, items.length) }, async () => { while (i < items.length) await fn(items[i++]); }));
+}
 const str = (v, max = 5000) => (v == null ? '' : String(v).slice(0, max));
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const rating = (v) => Math.max(0, Math.min(5, Math.round(num(v) * 2) / 2));
@@ -392,6 +398,78 @@ export async function createBackend(config) {
     } catch { return null; }
   }
 
+  // trailerul de pe YouTube: de preferat trailerul oficial, cel mai vechi (al primului sezon / al filmului)
+  async function tmdbTrailer(type, id) {
+    if (type !== 'tv' && type !== 'movie') throw err('Tip invalid');
+    const d = await tmdb(`/${type}/${encodeURIComponent(id)}/videos`, { language: 'en-US', include_video_language: 'en,ro,null' });
+    const score = (v) => (v.type === 'Trailer' ? 8 : v.type === 'Teaser' ? 4 : 0) + (v.official ? 2 : 0) + (v.iso_639_1 === 'en' ? 1 : 0);
+    const best = (d.results || []).filter((v) => v.site === 'YouTube' && v.key)
+      .sort((a, b) => score(b) - score(a) || String(a.published_at || '').localeCompare(String(b.published_at || '')))[0];
+    return best ? { key: best.key, name: best.name || '' } : null;
+  }
+
+  // calendarul: episoadele din ultima saptamana si din urmatoarele 60 de zile, din serialele din biblioteca
+  // (pastrat in browser 6 ore, ca sa nu intrebam TMDB la fiecare vizita)
+  async function upcoming(force) {
+    const d = await me();
+    const shows = d.titles.filter((t) => t.type === 'tv' && t.tmdbId && t.status !== 'dropped');
+    const key = 'editsel_upcoming_' + user.uid;
+    const sig = shows.map((t) => t.tmdbId).sort((a, b) => a - b).join(',') + '|' + (window.EDITSEL_LANG || 'ro') + '|' + today();
+    if (!force) {
+      try { const c = JSON.parse(localStorage.getItem(key) || 'null'); if (c && c.sig === sig && Date.now() - c.at < 6 * 3600 * 1000) return c.episodes; } catch { /* fara localStorage */ }
+    }
+    const l = await lang();
+    const from = addDays(today(), -7);
+    const to = addDays(today(), 60);
+    const episodes = [];
+    const item = (t, s, e) => ({
+      titleId: t.id, tmdbId: t.tmdbId, title: t.title, poster: t.poster || '', network: ((s.networks || [])[0] || {}).name || '',
+      season: e.season_number, episode: e.episode_number, name: e.name || '', airDate: e.air_date,
+      still: e.still_path ? IMG + 'w300' + e.still_path : '', runtime: e.runtime || 0,
+      premiere: e.episode_number === 1, finale: e.episode_type === 'finale',
+    });
+    await inPool(shows, 6, async (t) => {
+      const s = await tmdb(`/tv/${t.tmdbId}`, { language: l }).catch(() => null);
+      if (!s) return;
+      const seasons = new Set();
+      for (const e of [s.last_episode_to_air, s.next_episode_to_air]) if (e && e.air_date && e.air_date >= from && e.air_date <= to) seasons.add(e.season_number);
+      // urmatorul episod e mai tarziu de 60 de zile: apare doar el, la „Mai târziu”
+      const next = s.next_episode_to_air;
+      if (next && next.air_date && next.air_date > to) episodes.push({ ...item(t, s, next), later: true });
+      for (const n of seasons) {
+        const season = await tmdb(`/tv/${t.tmdbId}/season/${n}`, { language: l }).catch(() => null);
+        for (const e of (season && season.episodes) || []) {
+          if (e.air_date && e.air_date >= from && e.air_date <= to) episodes.push(item(t, s, e));
+        }
+      }
+    });
+    episodes.sort((a, b) => a.airDate.localeCompare(b.airDate) || a.title.localeCompare(b.title) || a.season - b.season || a.episode - b.episode);
+    try { localStorage.setItem(key, JSON.stringify({ sig, at: Date.now(), episodes })); } catch { /* plin sau blocat */ }
+    return episodes;
+  }
+
+  // ---------- comentarii la recenzii (colectia comments) ----------
+  // target = <uid-ul autorului recenziei>_<t (recenzia titlului) | d (intrare din jurnal)>_<id>
+
+  async function commentsFor(owner) {
+    const s = await getDocs(query(collection(fs, 'comments'), where('owner', '==', owner), limit(500)));
+    return s.docs.map((d) => ({ ...d.data(), id: d.id })).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  }
+
+  async function addComment({ owner, target, titleId, title, text }) {
+    if (!user) throw err('Neautentificat.', 401);
+    const body = str(text, 2000).trim();
+    if (!body) throw err('Scrie ceva înainte să trimiți.');
+    const p = (await me()).profile;
+    const c = {
+      target: str(target, 200), owner: str(owner, 128), uid: user.uid, username: p.username || '', name: p.name || p.username || '',
+      titleId: str(titleId, 40), title: str(title, 300), text: body, createdAt: new Date().toISOString(),
+    };
+    const id = uid6() + uid6();
+    await setDoc(doc(fs, 'comments', id), c);
+    return { ...c, id };
+  }
+
   // ---------- rutele vechiului server ----------
 
   // dupa fiecare modificare, copia din browser se actualizeaza (sau se sterge, daca s-a golit cache-ul)
@@ -476,6 +554,8 @@ export async function createBackend(config) {
     if (p === '/api/tmdb/search') return tmdbSearch(url.searchParams.get('q') || '', url.searchParams.get('type'));
     if (p === '/api/tmdb/details') return tmdbDetails(url.searchParams.get('type'), url.searchParams.get('id'));
     if (p === '/api/tmdb/images') return tmdbImages(url.searchParams.get('type'), url.searchParams.get('id'), url.searchParams.get('season'));
+    if (p === '/api/tmdb/trailer') return tmdbTrailer(url.searchParams.get('type'), url.searchParams.get('id'));
+    if (p === '/api/upcoming') return upcoming(url.searchParams.get('force') === '1');
 
     // titluri
     if (p === '/api/titles' && m === 'POST') {
@@ -629,6 +709,7 @@ export async function createBackend(config) {
     api, register, login, logout: () => signOut(auth),
     resetPassword: (email) => sendPasswordResetEmail(auth, email).catch((e) => { throw err(authMessage(e)); }),
     loadUser, loadUserByUid, listMembers, loadCommunity, loadHome, bannerImages, uidForUsername,
+    commentsFor, addComment, deleteComment: (id) => deleteDoc(doc(fs, 'comments', id)),
     myUsername: async () => (user ? (await me()).profile.username : null),
     myProfile: async () => (user ? (await me()).profile : null),
     exportMine: async () => clean(await me()),
