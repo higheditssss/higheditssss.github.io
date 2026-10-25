@@ -944,22 +944,48 @@
       </div></a>`;
   }
 
-  // banner comun pentru toti vizitatorii, independent de data si de cache-ul browserului
-  const DEXTER = { id: 1405, type: 'tv', title: 'Dexter',
-    backdrops: ['aSGSxGMTP893DPMCvMl9AdnEICE', 'iprMfJ9VHS4wMhBXyHtN7l9d2hP', 'a7fRjgWc37Ml6bSlWoNaG7wbaqP', 'l4pb3wCBGKYc1RaDOyXmJ1oWH9t', '90j5n0K8vxf5l3ACrKaWYBgQpst', 'sGh3WTqPaGJB3T9YNFJDNkELio5']
-      .map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') };
+  // serialul zilei: acelasi pentru toti vizitatorii, in fiecare zi urmatorul din lista (25 oct 2026 = primul)
+  const BANNER_SHOWS = [
+    [1396, 'Breaking Bad', 'tsRy63Mu5cu8etL1X7ZLyf7UP1M sp1RSDvoVsbvDouQx1A75ebU35e 84XPpjGvxNyExjSuLQe0SzioErt wSztOsbdspDi0E6dWU1cxNmYDV9 n3u3kgNttY1F5Ixi5bMY9BwZImQ 63FA8vwSZnXkGxedrDQwni4JuZN'],
+    [1399, 'Game of Thrones', 'zZqpAXxVSBtxV9qPBcscfXBcL2w wXSnajAZ5ppTKa8Z5zzWGOK85YH 4kTINu9mv2YV1PqFqPGG1FZMnhi jJojoFmsuLPQz8AOdkeV0b686RN suopoADq0k8YZr4dQXcU6pToj6s rIe3PnM6S7IBUmvNwDkBMX0i9EZ'],
+    [60574, 'Peaky Blinders', 'dzq83RHwQcnP6WGJ6YkenIqeaa5 wiE9doxiLwq3WCGamDIOb2PqBqc l8v3gJDlASN0lNn51gR8zQJsu5O kfUWupX3phYp7AleZA2U1dmVcjX 8V1XPEDLtJoxOWlE6gYzn2sQaMp or7wKwv1IT6LEOktt395O5qi7e'],
+    [1398, 'The Sopranos', 'lNpkvX2s8LGB0mjGODMT4o6Up7j 4QxoeC76pGZYlNmMXCRWb2GtWyd isJ4POBlbH5kmHVgbdP4gC4nFqO kGPuCU0ZytTans1eakw0xdLtAGo nseRssdVVNQJZh2kBPnHUU5fkgj mRsSY7CIE8mx8zanNIENFVUPmiO'],
+    [66732, 'Stranger Things', '9P4IIMYY3HifqeruZq0ZZ9g7YUi 8zbAoryWbtH0DKdev8abFAjdufy 56v2KjBlU4XaOv9rVYEQypROD7P kiFJZHRyTV207BhLRtUu3sAsJKh 2MaumbgBlW1NoPo3ZJO38A6v7OS ekLmP9wccC47PC83eJuklEy0twf'],
+    [5920, 'The Mentalist', 'rJFqKcmMSttdNP58l0dVzY2NcTA q3pCsNvJ7CmdJUz2sJEEUY3pOPC eUg803qy6luwe8Rys1PkDTw629C ov0WjAg0CclTDLBPy36nBiJ1fN5 jh9YpYaG1be7FOtBUxkLTIkhQHI 1mOt9QtVJAAeFD4mF33Bpr2Msv7'],
+    [60059, 'Better Call Saul', 'rfxryDIv8huejujg4JueDJx8zCz og2jKploGHYnCz68vV1nRSEE0xV t15KHp3iNfHVQBNIaqUGW12xQA4 u5pPTiLMEvxaPtdhF2Wj6YTXI2h hPea3Qy5Gd6z4kJLUruBbwAH8Rm nT91taow0c4Rcgu8FoEIvttBmeO'],
+    [46648, 'True Detective', 'v8YFr8BbU9qsO8PYIulzTeM6Qk bPLRjO2pcBx0WL73WUPzuNzQ3YN qezjDPeSfjJWhCFnqJPBrl08srT 2lc2sMBIK5emiMMcXBPBV23nRR6 scx72FpTF929jYXea0MphyE24Wa siA2d4PNn4JVFZAwfIYx4pnKCaK'],
+    [1408, 'House', 'r0Q6eeN9L1ORL9QsV0Sg8ZV3vnv 4EsemR6NIqsBspVxZppsAgeuaUg r9t9lblyPfudl0LV0Ujg1nXdKyW Ah8BIRHTvx4Rk6HgJHsIYgQT6PW rr6tcoprk8aDtEyrBRmEX2buk9T fALA09CjZREXJf80yyZR9A0nTqc'],
+    [100088, 'The Last of Us', 'lY2DhbA7Hy44fAKddr06UrXWWaQ uDgy6hyPd82kOHh6I95FLtLnj6p 2RSbYPDkNd3hkGp4VWpTFalU9z7 acevLdSl5I2MK5RYAm7gwAndt1w 7dowXHcFccjmxf0YZYxDFkfVq65 uQ4lG7E7mlyKsGvbASftQ6Hu2IX'],
+    [2288, 'Prison Break', 'n3Brk7roueE9HOwVmYlJx5j462g e9veIcSy0MUJpQqlffQJdKId9eF 2dEjX0XUq5PWEo9PH7HGtk0NzPj 7w165QdHmJuTHSQwEyJDBDpuDT7 snzSt7bn2y7I1hMYATMMDBxGns7 92OPBZpLc82y8CzOtrQ8P9RDvIN'],
+    [62560, 'Mr. Robot', 'uJUe985oIuRiD3hmHQYskIMc2WU hZOuVkhAWX9viLJuaIsMh8cM3Jz 4ceSkV7cmCon4exXaZwuhW1VdE0 iIKDEYVsA2B5nRjFw347dSlYpq0 2vDcqE0jrfmRnsSRf8X08ibr8x9 1SEVAgbaah9wE5xoLt4qWPMBdpL'],
+    [63351, 'Narcos', 'y9ekzkPFmWSqUU3Kj0wHmYUM8qu qx8XQund44cecIJiX2Yb4SUeiT 4C3wrZbM0KtRIBCp1eufD8xKAS2 2lZRgly6NrjN96nR0p6HUbxSs1u 4ryh7FgVSSaCRLS00ppWJihxto uFBiDlNYPW7SVeGwqC0KPcf8H0C'],
+    [76479, 'The Boys', 'bq28ajZaoMyzEIm6REelqyqtEDZ n6vVs6z8obNbExdD3QHTr4Utu1Z czffzEgaBko4mXW84B1J1EnQBzo 7cqKGQMnNabzOpi7qaIgZvQ7NGV bI37vIHSH7o4IVkq37P8cfxQGMx mGVrXeIjyecj6TKmwPVpHlscEmw'],
+    [76331, 'Succession', 'd87JXX3DLkRJMfm5StCmmnmhHuX bcdUYUFk8GdpZJPiSAas9UeocLH zZ3Cv1lz61V9OXXvtCPVtCFTVP7 pvxlTSiM7VsbxdSYLrnKrN1OIUZ 8BcQ49alz5CQABR0oiBKpQtQSro brC6qt6QLcWhVl1wsDp1dX9Lim'],
+    [2316, 'The Office', '9vMzIrMIncPmtalcxh1MOrgcE6C bY2J2Jq8rSrKm5xCFtzYzqFh44o mLyW3UTgi2lsMdtueYODcfAB9Ku 35w8giCVT7ZXc0gAAjx8MRaWL90 klDoi212oi2ewNSvbzPOvOP0KCl b7wyaeJGU2Q4ql7xZr52vdW5TKp'],
+    [95396, 'Severance', 'ixgFmf1X59PUZam2qbAfskx2gQr 9xDCTGhEWpz206PCiimRGmK67rV r9KaBE7i4ovg8uSppQrCp6ZdPD9 npD65vPa4vvn1ZHpp3o05A5vdKT 8MtMFngDWvIdRo34rz3ao0BGBAe 5OsiT39OiZNdD0v2LiAcI2TpSYj'],
+    [4607, 'Lost', 'yUOFocKDW7MCC5isx4FK8A68QFp 5FdGYic4Sho6DpOJCEVhcY83mc5 2e7UapYNf4DNaem6kHAuyQcF1e0 jBhcm0Rm5Uv1UaHt0TTWuRjG5G3 qpZ7dcM5yDyBDP4JSQr9LRUIBRm o1iJ1aJJnCPPjrJsfXFwgw3yA3H'],
+    [1400, 'Seinfeld', 'tMRdEsMg9MyXAkcufK9YJEeIaNW jqgO8AqwgQelXhmJn6cebWjjMcY mlAzs3tyl5253roHi6eIRbeuONN lyTCCuymqg8egIaQXZAY5vE4MB0 m23XIVqQoT9CKuaN5WiCvRai9gD 2qna37NBAeUClwaqHTplNLWcqhl'],
+    [1405, 'Dexter', 'aSGSxGMTP893DPMCvMl9AdnEICE iprMfJ9VHS4wMhBXyHtN7l9d2hP a7fRjgWc37Ml6bSlWoNaG7wbaqP l4pb3wCBGKYc1RaDOyXmJ1oWH9t 90j5n0K8vxf5l3ACrKaWYBgQpst sGh3WTqPaGJB3T9YNFJDNkELio5'],
+  ].map(([id, title, paths]) => ({ id, type: 'tv', title, backdrops: paths.split(' ').map((p) => 'https://image.tmdb.org/t/p/w1280/' + p + '.jpg') }));
+  // ziua dupa ora locala a vizitatorului (se schimba la miezul noptii)
+  function bannerShow() {
+    const now = new Date();
+    const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 9, 25)) / 864e5);
+    const n = BANNER_SHOWS.length;
+    return BANNER_SHOWS[((day % n) + n) % n];
+  }
   let heroTimer = null;
   function bannerTitle(t) {
     const href = backend.user ? showHref(t.type, t.id, t.title) : `https://www.themoviedb.org/${t.type}/${t.id}`;
     return `<a href="${esc(href)}" ${backend.user ? `data-add="${t.type}:${t.id}"` : 'target="_blank" rel="noopener"'}>${esc(t.title)}</a>`;
   }
 
-  // fundalurile Dexter, cu tranzitie la fiecare 6 secunde
+  // fundalurile serialului zilei, cu tranzitie la fiecare 6 secunde
   function fillBanner() {
     const heroBox = document.getElementById('disc-hero');
     clearInterval(heroTimer);
     if (!heroBox) return;
-    const slides = DEXTER.backdrops;
+    const slides = bannerShow().backdrops;
     heroBox.innerHTML = slides.map((src, i) => `<div class="disc-slide${i ? '' : ' on'}" style="background-image:url('${esc(src)}')"></div>`).join('');
     let cur = 0;
     if (slides.length > 1) heroTimer = setInterval(() => {
@@ -973,14 +999,15 @@
 
   function pageDiscover(listKey) {
     const one = DISCOVER.find((d) => d[0] === listKey);
+    const show = bannerShow();
     const head = one
       ? `<a class="see-all" href="${BASE}discover">‹ Descoperă</a><h1 class="disc-title">${one[1]}</h1>`
-      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${bannerTitle(DEXTER)}</h1>`;
+      : `<h1 class="disc-title disc-banner-title" id="disc-hero-name">${bannerTitle(show)}</h1>`;
     const rows = (one ? [one] : DISCOVER).map(([key, label]) => `<section class="section disc-section" data-key="${key}">
         ${one ? '' : `<div class="section-head"><h2>${label}</h2><a class="see-all" href="${BASE}discover/${key}">Vezi tot ›</a></div>`}
         <div class="${one ? 'grid lg' : 'disc-row'}" id="disc-${key}">${Array.from({ length: one ? 20 : 8 }, () => '<div class="poster"><div class="poster-img skeleton"></div></div>').join('')}</div>
       </section>`).join('');
-    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(DEXTER.backdrops[0])}')"></div></div>`;
+    const hero = one ? '' : `<div class="hero disc-hero" id="disc-hero" aria-hidden="true"><div class="disc-slide on" style="background-image:url('${esc(show.backdrops[0])}')"></div></div>`;
     return `${hero}<div class="container page disc-page${one ? '' : ' has-banner'}">${head}${rows}
     </div>`;
   }
